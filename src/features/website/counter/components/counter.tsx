@@ -5,6 +5,9 @@ import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Button } from "@/components/button";
 import { useCounter } from "../hooks/use-counter";
 
+
+
+
 export function Counter() {
   const { count, increment, decrement, reset } = useCounter(0);
 
