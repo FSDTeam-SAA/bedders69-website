@@ -2,14 +2,25 @@ import React from "react";
 import { FolderGit2, Blocks, Zap, ArrowRight, ShieldCheck, HeartHandshake } from "lucide-react";
 import { Button } from "@/components/button";
 import { Counter } from "../../counter/components/counter";
-import { Banner } from "./Banner/banner";
-import { OurService } from "./ourServices/ourServices";
+
+import OurServices from "./ourServices/ourServices";
+import Banner from "./Banner/banner";
+import FeaturedCompanies from "./Companies/FeaturedCompanies";
+import FeaturedAgencies from "./Agencies/FeaturedAgencies";
+import LatestCareJobs from "./CareJobs/LatestCareJobs";
+import OurCommitment from "./CareCommitment/OurCommitment";
+import CareMarketplace from "./CareMarketplace/CareMarketplace";
 
 export function HomePage() {
   return (
-    <>
+    <div>
       <Banner />
-      <OurService />
-    </>
+      <OurServices />
+      <FeaturedCompanies/>
+      <FeaturedAgencies/>
+      <LatestCareJobs/>
+      <OurCommitment/>
+      <CareMarketplace/>
+    </div>
   );
 }
