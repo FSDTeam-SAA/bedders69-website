@@ -40,8 +40,8 @@ const jobs: CareJobCardProps[] = [
 
 const LatestCareJobs = () => {
   return (
-    <section className="w-full bg-white px-5 py-16 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24">
-      <div className="container mx-auto flex w-full flex-col gap-10 sm:gap-12 lg:gap-14">
+    <section className="w-full bg-[#f4f9ff] px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-10 sm:gap-12 lg:gap-14">
         {/* Heading */}
         <div className="flex w-full flex-col items-start gap-2">
           <span className="text-base font-semibold uppercase leading-6 text-emerald-500">Latest Roles</span>

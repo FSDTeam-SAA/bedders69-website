@@ -3,11 +3,11 @@ import Image from "next/image";
 
 const OurCommitment = () => {
   return (
-    <section className="bg-white px-5 py-16 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24">
-<div className="container mx-auto w-full ">
-        <div className=" flex w-full flex-2 items-center gap-10 lg:flex-row">
+    <section className="bg-white px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
+<div className="mx-auto w-full max-w-[1600px] ">
+        <div className="flex w-full flex-col items-start gap-10 lg:flex-row lg:items-center">
         {/* Content */}
-        <div className="flex w-full max-w-175 flex-col items-start gap-2 lg:flex-1">
+        <div className="flex w-full max-w-[700px] flex-col items-start gap-2 lg:flex-1">
           <span className="text-base font-semibold uppercase leading-6 text-emerald-500">
             Our Commitment
           </span>
@@ -69,8 +69,8 @@ const OurCommitment = () => {
         </div>
 
         {/* Images + Rating */}
-<div className="flex w-full items-start gap-4 lg:flex-1">
-  <div className="w-1/2">
+<div className="flex w-full flex-col items-start gap-4 sm:flex-row lg:flex-1">
+  <div className="w-full sm:w-1/2">
     <Image
       src="/images/commitment-main.jpg"
       alt="Care services"
@@ -80,7 +80,7 @@ const OurCommitment = () => {
     />
   </div>
 
-  <div className="flex w-1/2 flex-col gap-4">
+  <div className="flex w-full flex-col gap-4 sm:w-1/2">
     <Image
       src="/images/commitment-small.jpg"
       alt="Care support"

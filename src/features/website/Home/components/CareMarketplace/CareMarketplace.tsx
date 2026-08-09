@@ -4,8 +4,8 @@ import { FiArrowUpRight } from "react-icons/fi";
 
 const CareMarketplace = () => {
   return (
-    <section className="w-full bg-[#E8E8E8] px-5 py-16 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24">
-      <div className="container mx-auto flex w-full flex-col items-start gap-10 sm:gap-12 lg:gap-14">
+    <section className="w-full bg-[#eef6ff] px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col items-start gap-10 sm:gap-12 lg:gap-14">
         {/* Heading */}
         <div className="flex w-full flex-col items-start gap-2">
           <span className="text-base font-semibold uppercase leading-6 text-emerald-500">

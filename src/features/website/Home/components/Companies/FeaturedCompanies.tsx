@@ -4,8 +4,8 @@ import { companies } from "@/Data/data";
 
 const FeaturedCompanies = () => {
   return (
-    <section className="w-full bg-white px-5 py-16 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24">
-      <div className="container mx-auto flex w-full flex-col items-center gap-10 sm:gap-12 lg:gap-14">
+    <section className="w-full bg-white px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col items-center gap-10 sm:gap-12 lg:gap-14">
         <div className="flex w-full max-w-4xl flex-col items-center gap-2 text-center">
           <span className="text-base font-semibold uppercase leading-6 text-emerald-500">Verified Services</span>
 

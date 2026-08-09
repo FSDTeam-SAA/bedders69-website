@@ -1,123 +1,158 @@
 import React from "react";
-import { Calendar, Clock, DollarSign, Star, Briefcase, ChevronRight, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/button";
+import {
+  BadgeCheck,
+  Circle,
+  BriefcaseBusiness,
+  CalendarClock,
+  Eye,
+  FileCheck2,
+  ShieldCheck,
+  Stethoscope,
+  UserRoundSearch,
+} from "lucide-react";
+
+const stats = [
+  {
+    label: "Applied Jobs",
+    value: "06",
+    icon: BriefcaseBusiness,
+  },
+  {
+    label: "Profile Views",
+    value: "12",
+    icon: Eye,
+  },
+  {
+    label: "Interviews",
+    value: "12",
+    icon: CalendarClock,
+  },
+  {
+    label: "Total Quote",
+    value: "12",
+    icon: UserRoundSearch,
+  },
+];
+
+const applications = [
+  { title: "Senior Care Assistant", company: "Sunrise Care Group", status: "Pending", tone: "bg-yellow-600/10 text-yellow-600" },
+  { title: "Registered Nurse - Dementia Ward", company: "Sunrise Care Group", status: "Reviewed", tone: "bg-fuchsia-900/10 text-fuchsia-900" },
+  { title: "Care Manager", company: "Sunrise Care Group", status: "Shortlisted", tone: "bg-fuchsia-600/10 text-fuchsia-600" },
+  { title: "Support Worker - Mental Health", company: "Sunrise Care Group", status: "Interview", tone: "bg-teal-400/10 text-teal-500" },
+  { title: "Night Carer - Residential Home", company: "Sunrise Care Group", status: "Offered", tone: "bg-blue-600/10 text-blue-600" },
+  { title: "Registered Nurse - Dementia Ward", company: "Sunrise Care Group", status: "Rejected", tone: "bg-red-600/10 text-red-600" },
+];
+
+const completionItems = [
+  { label: "CV / Resume", complete: true },
+  { label: "DBS Certificate", complete: false },
+  { label: "Care Certificate", complete: false },
+  { label: "Training Certificates", complete: false },
+  { label: "First Aid Certificate", complete: false },
+  { label: "Qualification Certificates", complete: false },
+];
 
 export function CarersPage() {
-  const stats = [
-    { label: "Completed Jobs", value: "38", icon: Briefcase, color: "text-emerald-400 bg-emerald-950/30 border-emerald-900/30" },
-    { label: "Hours Worked", value: "142h", icon: Clock, color: "text-blue-400 bg-blue-950/30 border-blue-900/30" },
-    { label: "Earnings This Month", value: "$3,450", icon: DollarSign, color: "text-amber-400 bg-amber-950/30 border-amber-900/30" },
-    { label: "Average Rating", value: "4.9", icon: Star, color: "text-purple-400 bg-purple-950/30 border-purple-900/30" },
-  ];
-
-  const upcomingVisits = [
-    { id: 1, client: "Alice Smith", time: "Tomorrow, 09:00 AM - 12:00 PM", task: "Elderly Care & Companion", address: "123 Elm St, NY" },
-    { id: 2, client: "Robert Johnson", time: "Aug 8, 02:00 PM - 05:00 PM", task: "Physical Therapy Assistant", address: "456 Oak Ave, NJ" },
-  ];
-
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] rounded-full bg-emerald-600/5 blur-[80px] pointer-events-none" />
-        <div className="space-y-2">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Welcome back, <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">John!</span>
-          </h2>
-          <p className="text-zinc-400 text-sm max-w-md">
-            You have 2 scheduled visits this week. Keep up the excellent work! Your current performance rating is top-tier.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="primary" className="shadow-lg shadow-emerald-500/10 !bg-gradient-to-r !from-emerald-600 !to-teal-600 !hover:from-emerald-500 !hover:to-teal-500">
-            Find New Jobs
-          </Button>
-          <Button variant="secondary" className="border border-zinc-800">
-            View Schedule
-          </Button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      <div className="px-6 py-6 sm:px-8 xl:px-10">
+        <section className="grid gap-4 xl:grid-cols-4">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <div key={i} className="p-6 rounded-2xl bg-zinc-900/40 border border-zinc-900 flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">{stat.label}</p>
-                <h3 className="text-2xl font-bold text-zinc-100">{stat.value}</h3>
-              </div>
-              <div className={`p-3 rounded-xl border ${stat.color}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Schedule */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-emerald-400" /> Upcoming Visits
-            </h3>
-            <button className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors flex items-center gap-1">
-              View All <ChevronRight className="h-3 w-3" />
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {upcomingVisits.map((visit) => (
-              <div key={visit.id} className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-900 hover:border-zinc-800 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <h4 className="font-semibold text-zinc-200">{visit.client}</h4>
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-xs text-zinc-500">{visit.task}</span>
+            return (
+              <article
+                key={stat.label}
+                className="flex min-h-[100px] items-start gap-5 rounded-xl bg-[#eef6ff] p-5"
+              >
+                <div className="inline-flex rounded-[84px] bg-[#dceeff] p-3">
+                  <div className="inline-flex h-10 w-10 items-center justify-center">
+                    <Icon className="h-8 w-8 text-cyan-700" strokeWidth={1.8} />
                   </div>
-                  <p className="text-sm text-zinc-400 font-mono">{visit.time}</p>
-                  <p className="text-xs text-zinc-500">{visit.address}</p>
                 </div>
-                <Button variant="outline" size="sm" className="w-full md:w-auto border-zinc-800">
-                  Manage Visit
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-xl font-medium leading-6 text-slate-700">{stat.label}</p>
+                  <p className="text-[40px] font-semibold leading-[48px] text-black">{stat.value}</p>
+                </div>
+              </article>
+            );
+          })}
+        </section>
 
-        {/* Right Column: Tips & Performance */}
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-400" /> Checklist & Guidelines
-          </h3>
-          <div className="p-6 rounded-2xl bg-zinc-900/30 border border-zinc-900 space-y-4">
-            <div className="flex items-start gap-3">
-              <input type="checkbox" defaultChecked className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900" />
-              <div>
-                <p className="text-sm text-zinc-300 font-medium">Verify credentials upload</p>
-                <p className="text-xs text-zinc-500">Your background screening will expire in 60 days.</p>
-              </div>
+        <section className="mt-6 grid gap-4 2xl:grid-cols-2">
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold leading-10 text-slate-800">
+              Application Tracker
+            </h2>
+            <div className="overflow-hidden rounded-2xl bg-[#eef6ff]">
+              {applications.map((application, index) => (
+                <div key={`${application.title}-${index}`}>
+                  <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:px-5 sm:py-3.5">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold leading-6 text-slate-800">
+                        {application.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-4 text-gray-500">
+                        {application.company}
+                      </p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-4 py-1.5 text-sm ${application.tone}`}>
+                      {application.status}
+                    </span>
+                  </div>
+                  {index < applications.length - 1 ? (
+                    <div className="h-px w-full bg-neutral-300" />
+                  ) : null}
+                </div>
+              ))}
             </div>
-            <div className="flex items-start gap-3">
-              <input type="checkbox" className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900" />
-              <div>
-                <p className="text-sm text-zinc-300 font-medium">Check messages from Alice</p>
-                <p className="text-xs text-zinc-500">She left a note regarding tomorrow's medication times.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <input type="checkbox" className="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-zinc-900" />
-              <div>
-                <p className="text-sm text-zinc-300 font-medium">Set weekly availability</p>
-                <p className="text-xs text-zinc-500">Update your calendar slots for August 10th - 17th.</p>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold leading-10 text-slate-800">
+              Profile Completion
+            </h2>
+            <div className="overflow-hidden rounded-2xl bg-[#eef6ff]">
+              {completionItems.map((item, index) => (
+                <div key={item.label}>
+                  <div className="flex items-center gap-4 p-4 sm:px-5 sm:py-4">
+                    <div
+                      className={`inline-flex rounded-[66px] p-2.5 ${
+                        item.complete ? "bg-cyan-700" : "bg-neutral-300"
+                      }`}
+                    >
+                      {item.complete ? (
+                        <FileCheck2 className="h-5 w-5 text-white" strokeWidth={1.8} />
+                      ) : (
+                        <Circle className="h-4 w-4 text-neutral-400 fill-neutral-400" strokeWidth={1.6} />
+                      )}
+                    </div>
+                    <div className="flex-1 text-xl font-semibold leading-7 text-zinc-900 sm:text-[22px]">
+                      {item.label}
+                    </div>
+                    {item.complete ? (
+                      <BadgeCheck className="h-5 w-5 text-cyan-700" strokeWidth={1.8} />
+                    ) : (
+                      <ShieldCheck className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
+                    )}
+                  </div>
+                  {index < completionItems.length - 1 ? (
+                    <div className="h-px w-full bg-neutral-300" />
+                  ) : null}
+                </div>
+              ))}
+              <div className="border-t border-neutral-300 px-4 py-3 sm:px-5">
+                <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
+                  <span>Profile Strength</span>
+                  <span className="text-cyan-700">27%</span>
+                </div>
+                <div className="h-2 rounded-full bg-neutral-300/80">
+                  <div className="h-2 w-[27%] rounded-full bg-cyan-700" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
