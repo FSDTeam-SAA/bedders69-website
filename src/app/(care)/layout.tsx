@@ -20,49 +20,49 @@ import Image from "next/image";
 const standaloneOnboardingRoutes: string[] = [];
 
 const navigationItems = [
-  { href: "/carers", label: "Overview", icon: LayoutDashboard },
-  { href: "/carers/jobs", label: "Job Board", icon: Briefcase },
-  { href: "/carers/professional-information", label: "Professional Profile", icon: BadgeCheck },
-  { href: "/carers/upload-documents", label: "Documents", icon: FileText },
-  { href: "/carers/my-applications", label: "My Applications", icon: BookmarkPlus },
-  { href: "/carers/saved-jobs", label: "Saved Jobs", icon: Save },
-  { href: "/carers/profile", label: "My Profile", icon: UserCircle2 },
-  { href: "/carers/security", label: "Security", icon: Shield },
+  { href: "/care", label: "Overview", icon: LayoutDashboard },
+  { href: "/care/jobs", label: "Job Board", icon: Briefcase },
+  { href: "/care/professional-information", label: "Professional Profile", icon: BadgeCheck },
+  { href: "/care/upload-documents", label: "Documents", icon: FileText },
+  { href: "/care/my-applications", label: "My Applications", icon: BookmarkPlus },
+  { href: "/care/saved-jobs", label: "Saved Jobs", icon: Save },
+  { href: "/care/profile", label: "My Profile", icon: UserCircle2 },
+  { href: "/care/security", label: "Security", icon: Shield },
 ];
 
 const headerContent: Record<string, { title: string; description: string }> = {
-  "/carers": {
+  "/care": {
     title: "Overview",
     description:
       "View your profile summary, application status, and recent activity at a glance.",
   },
-  "/carers/jobs": {
+  "/care/jobs": {
     title: "Job Board",
     description:
       "Find and apply for care jobs that match your skills and location.",
   },
-  "/carers/profile": {
+  "/care/profile": {
     title: "My Profile",
     description: "Manage your personal information and contact details.",
   },
-  "/carers/professional-information": {
+  "/care/professional-information": {
     title: "Professional Profile",
     description: "Manage your experience, skills, and care work preferences.",
   },
-  "/carers/my-applications": {
+  "/care/my-applications": {
     title: "My Applications",
     description: "Track your submitted applications and their latest status.",
   },
-  "/carers/upload-documents": {
+  "/care/upload-documents": {
     title: "Documents",
     description: "Upload and manage your professional documents and certifications.",
   },
-  "/carers/saved-jobs": {
+  "/care/saved-jobs": {
     title: "Saved Jobs",
     description:
       "Keep track of jobs you're interested in. Review saved opportunities and apply whenever you're ready.",
   },
-  "/carers/security": {
+  "/care/security": {
     title: "Security",
     description: "Manage your account security and login preferences.",
   },
@@ -76,21 +76,21 @@ export default function CarersLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const currentHeader = pathname.startsWith("/carers/profile")
-    ? headerContent["/carers/profile"]
-    : pathname.startsWith("/carers/professional-information")
-      ? headerContent["/carers/professional-information"]
-    : pathname.startsWith("/carers/my-applications")
-      ? headerContent["/carers/my-applications"]
-    : pathname.startsWith("/carers/upload-documents")
-      ? headerContent["/carers/upload-documents"]
-    : pathname.startsWith("/carers/saved-jobs")
-      ? headerContent["/carers/saved-jobs"]
-    : pathname.startsWith("/carers/security")
-      ? headerContent["/carers/security"]
-    : pathname.startsWith("/carers/jobs")
-      ? headerContent["/carers/jobs"]
-      : headerContent["/carers"];
+  const currentHeader = pathname.startsWith("/care/profile")
+    ? headerContent["/care/profile"]
+    : pathname.startsWith("/care/professional-information")
+      ? headerContent["/care/professional-information"]
+    : pathname.startsWith("/care/my-applications")
+      ? headerContent["/care/my-applications"]
+    : pathname.startsWith("/care/upload-documents")
+      ? headerContent["/care/upload-documents"]
+    : pathname.startsWith("/care/saved-jobs")
+      ? headerContent["/care/saved-jobs"]
+    : pathname.startsWith("/care/security")
+      ? headerContent["/care/security"]
+    : pathname.startsWith("/care/jobs")
+      ? headerContent["/care/jobs"]
+      : headerContent["/care"];
 
   if (standaloneOnboardingRoutes.some((route) => pathname.startsWith(route))) {
     return children;

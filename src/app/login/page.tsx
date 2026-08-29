@@ -1,0 +1,11 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setLoading(true); setError(""); const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) }); const body = await response.json(); setLoading(false); if (!response.ok) return setError(body.message || "Login failed"); const destination = body.dashboardPath || "/"; if (destination.startsWith("http")) window.location.assign(destination); else { router.push(destination); router.refresh(); } };
+  return <main className="flex min-h-screen items-center justify-center bg-[#fafafa] p-6"><section className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.05)] sm:p-10"><div className="mb-8 text-center"><h1 className="text-2xl font-bold text-slate-800">Login To Your Account</h1><p className="mt-2 text-sm text-slate-500">Please enter your credentials to continue</p></div><form onSubmit={submit} className="space-y-5"><label className="block text-sm font-semibold text-slate-700">Email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-cyan-700" placeholder="you@example.com" /></label><label className="block text-sm font-semibold text-slate-700">Password<input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-cyan-700" placeholder="••••••••" /></label>{error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null}<button disabled={loading} className="w-full rounded-lg bg-cyan-700 py-3 text-sm font-semibold text-white transition hover:bg-cyan-800 disabled:opacity-60">{loading ? "Logging in…" : "Log In"}</button></form></section></main>;
+}
