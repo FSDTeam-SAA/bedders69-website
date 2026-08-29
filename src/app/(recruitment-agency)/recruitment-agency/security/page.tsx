@@ -1,3 +1,5 @@
+import Security from "@/features/recruitment-agency/security/components/Security";
+
 export default function RecruitmentSecurityPage() {
-  return <main className="p-6">Security</main>;
+  return <Security />;
 }

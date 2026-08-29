@@ -167,9 +167,27 @@ export default function CarersLayout({
                     {currentHeader.description}
                   </p>
                 </div>
-                <button className="inline-flex items-center justify-center rounded-[61px] bg-white p-3 text-slate-700 shadow-sm">
-                  <Bell className="h-8 w-8" strokeWidth={1.8} />
-                </button>
+                <Link
+                  href="/care/profile"
+                  className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0"
+                >
+                  <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
+                    <Image
+                      src="/images/carer-male.png"
+                      alt="Matthew Warkentin"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-semibold leading-tight text-slate-800">
+                      Matthew Warkentin
+                    </span>
+                    <span className="text-xs font-normal text-gray-500">
+                      Carer
+                    </span>
+                  </div>
+                </Link>
               </div>
             </div>
             {children}

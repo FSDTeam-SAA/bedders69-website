@@ -23,13 +23,22 @@ const publicRoutes = new Set([
   "/care-company/contact-requests",
   "/care-company/membership",
   "/care-company/settings",
+  "/recruitment-agency/overview",
+  "/recruitment-agency/agency-profile",
+  "/recruitment-agency/staffing-requests",
+  "/recruitment-agency/job-management",
+  "/recruitment-agency/applicant-management",
+  "/recruitment-agency/carer-directory",
+  "/recruitment-agency/security",
 ]);
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (
     publicRoutes.has(pathname) ||
-    pathname.startsWith("/care-company/save-carers/")
+    pathname.startsWith("/care-company/save-carers/") ||
+    pathname.startsWith("/recruitment-agency/staffing-requests/") ||
+    pathname.startsWith("/recruitment-agency/carer-directory/")
   ) {
     return NextResponse.next();
   }

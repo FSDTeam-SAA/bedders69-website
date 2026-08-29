@@ -1,3 +1,5 @@
+import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   BriefcaseBusiness, CircleHelp, Files, UserRoundSearch, Wrench,
@@ -76,8 +78,32 @@ export default function Overview() {
       <div className="mx-auto flex w-full max-w-[1920px] flex-col lg:flex-row">
         <CareCompanySidebar activeHref="/care-company/dashboard-overview" />
         <div className="min-w-0 flex-1">
-          <header className="flex min-h-[100px] items-center bg-white px-6 py-[26px]">
-            <div><h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">Good morning, Sarah!</h1><p className="mt-2 text-xs leading-4 text-[#667481]">Here&apos;s what&apos;s happening with Sunrise Care Services today</p></div>
+          <header className="flex min-h-[100px] items-center justify-between bg-white px-6 py-[26px] border-b border-[#f0f1f2]">
+            <div>
+              <h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">Good morning, Sarah!</h1>
+              <p className="mt-2 text-xs leading-4 text-[#667481]">Here&apos;s what&apos;s happening with Sunrise Care Services today</p>
+            </div>
+            <Link
+              href="/care-company/company-profile"
+              className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
+            >
+              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
+                <Image
+                  src="/images/logo.png"
+                  alt="Sunrise Care"
+                  fill
+                  className="object-contain p-1"
+                />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-semibold leading-tight text-slate-800">
+                  Sunrise Care
+                </span>
+                <span className="text-xs font-normal text-gray-500">
+                  Care Company
+                </span>
+              </div>
+            </Link>
           </header>
           <div className="space-y-6 p-4 sm:p-6">
             <section className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-4">

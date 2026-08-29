@@ -1,8 +1,5 @@
+import AgencyProfile from "@/features/recruitment-agency/agency-profile/components/AgencyProfile";
 
-export default function page() {
-  return (
-    <div>
-      <h1>Agency Profile</h1>
-    </div>
-  )
+export default function AgencyProfilePage() {
+  return <AgencyProfile />;
 }

@@ -1,3 +1,5 @@
+import Overview from "@/features/recruitment-agency/overview/components/Overview";
+
 export default function RecruitmentOverviewPage() {
-  return <main className="p-6">Overview</main>;
+  return <Overview />;
 }

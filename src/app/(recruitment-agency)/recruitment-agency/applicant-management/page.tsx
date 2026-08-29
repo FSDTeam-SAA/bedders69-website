@@ -1,3 +1,5 @@
+import ApplicantManagement from "@/features/recruitment-agency/applicant-management/components/ApplicantManagement";
+
 export default function ApplicantManagementPage() {
-  return <main className="p-6">Applicant management</main>;
+  return <ApplicantManagement />;
 }

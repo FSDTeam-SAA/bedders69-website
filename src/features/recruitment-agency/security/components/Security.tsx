@@ -3,10 +3,16 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-import { Check, Eye, EyeOff, X } from "lucide-react";
+import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
+import {
+  Bell,
+  Check,
+  Eye,
+  EyeOff,
+  X,
+} from "lucide-react";
 
-export default function Settings() {
+export default function Security() {
   const [currentPassword, setCurrentPassword] = useState("********");
   const [newPassword, setNewPassword] = useState("********");
   const [confirmPassword, setConfirmPassword] = useState("********");
@@ -17,16 +23,6 @@ export default function Settings() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Dynamic Validation checks
-  const isMinLength = newPassword.length >= 8;
-  const hasUppercase = /[A-Z]/.test(newPassword);
-  const hasLowercase = /[a-z]/.test(newPassword);
-  const hasNumber = /[0-9]/.test(newPassword);
-  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
-  const noSpaces = !/\s/.test(newPassword) && newPassword.length > 0;
-
-  const isMatching = newPassword === confirmPassword && newPassword.length > 0;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,46 +52,48 @@ export default function Settings() {
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col lg:flex-row">
         {/* Left Sidebar */}
-        <CareCompanySidebar activeHref="/care-company/settings" />
+        <RecruitmentAgencySidebar activeHref="/recruitment-agency/security" />
 
         {/* Right Main Content */}
         <div className="min-w-0 flex-1">
-          {/* Header */}
-          <header className="flex min-h-[96px] w-full items-center justify-between bg-white px-6 py-6 border-b border-[#f0f1f2]">
-            <div className="flex flex-col justify-start items-start gap-1">
-              <h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">
-                Password
+          {/* Top Header Banner */}
+          <header className="w-full px-6 sm:px-10 py-5 bg-cyan-700/10 flex items-center justify-between border-b border-cyan-700/10">
+            <div className="flex-1 flex flex-col justify-start items-start gap-1">
+              <h1 className="text-black text-2xl sm:text-3xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                Security
               </h1>
-              <p className="text-xs font-normal leading-4 text-gray-500">
-                Manage your personal information and contact details.
+              <p className="text-slate-700 text-sm sm:text-base lg:text-lg font-normal font-['Wix_Madefor_Text'] leading-normal">
+                Manage your account security and login preferences.
               </p>
             </div>
+
+            {/* Profile Badge */}
             <Link
-              href="/care-company/company-profile"
+              href="/recruitment-agency/agency-profile"
               className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
             >
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
                 <Image
                   src="/images/logo.png"
-                  alt="Sunrise Care"
+                  alt="CareRecruitPro"
                   fill
                   className="object-contain p-1"
                 />
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
+                  CareRecruitPro
                 </span>
                 <span className="text-xs font-normal text-gray-500">
-                  Care Company
+                  Agency
                 </span>
               </div>
             </Link>
           </header>
 
           {/* Form Container */}
-          <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1486px]">
-            <div className="w-full p-6 sm:p-8 bg-[#eef5fa]/60 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-center items-end gap-6">
+          <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1536px]">
+            <div className="w-full p-6 sm:p-8 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-center items-end gap-6">
               {/* Form Title */}
               <div className="self-stretch text-slate-800 text-2xl font-normal font-['Wix_Madefor_Text'] leading-7">
                 Changes Password
@@ -109,7 +107,7 @@ export default function Settings() {
                     <label className="self-stretch justify-start text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
                       Current Password
                     </label>
-                    <div className="self-stretch h-12 px-4 rounded-sm border border-neutral-300 bg-white inline-flex justify-between items-center focus-within:border-[#2b6ea6] focus-within:ring-1 focus-within:ring-[#2b6ea6]">
+                    <div className="self-stretch h-12 px-4 rounded-sm border border-neutral-300 bg-white inline-flex justify-between items-center focus-within:border-cyan-700 focus-within:ring-1 focus-within:ring-cyan-700">
                       <input
                         type={showCurrent ? "text" : "password"}
                         value={currentPassword}
@@ -137,7 +135,7 @@ export default function Settings() {
                     <label className="self-stretch justify-start text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
                       New Password
                     </label>
-                    <div className="self-stretch h-12 px-4 rounded-sm border border-neutral-300 bg-white inline-flex justify-between items-center focus-within:border-[#2b6ea6] focus-within:ring-1 focus-within:ring-[#2b6ea6]">
+                    <div className="self-stretch h-12 px-4 rounded-sm border border-neutral-300 bg-white inline-flex justify-between items-center focus-within:border-cyan-700 focus-within:ring-1 focus-within:ring-cyan-700">
                       <input
                         type={showNew ? "text" : "password"}
                         value={newPassword}
@@ -166,7 +164,7 @@ export default function Settings() {
                   <label className="self-stretch justify-start text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
                     Confirm New Password
                   </label>
-                  <div className="self-stretch h-12 px-4 rounded-sm border border-red-400 bg-white inline-flex justify-between items-center focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-400">
+                  <div className="self-stretch h-12 px-4 rounded-sm border border-red-500 bg-white inline-flex justify-between items-center focus-within:border-red-600 focus-within:ring-1 focus-within:ring-red-500">
                     <input
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}

@@ -1,3 +1,5 @@
+import CarerDirectory from "@/features/recruitment-agency/carer-directory/components/CarerDirectory";
+
 export default function CarerDirectoryPage() {
-  return <main className="p-6">Carer directory</main>;
+  return <CarerDirectory />;
 }
