@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { FormEvent, useMemo, useState } from "react";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 
 function PasswordField({
@@ -47,9 +47,11 @@ function PasswordField({
 }
 
 export function CarerSecurityPage() {
-  const [currentPassword, setCurrentPassword] = useState("password123");
-  const [newPassword, setNewPassword] = useState("password123");
-  const [confirmPassword, setConfirmPassword] = useState("password123");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -86,13 +88,22 @@ export function CarerSecurityPage() {
   }, [confirmPassword]);
 
   const confirmHasError = confirmPassword.length > 0 && confirmPassword !== newPassword;
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (confirmHasError) return setMessage("New passwords do not match.");
+    setIsSaving(true); setMessage("");
+    const response = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldPassword: currentPassword, newPassword }) });
+    const body = await response.json(); setIsSaving(false);
+    if (!response.ok) return setMessage(body?.message || "Unable to change password.");
+    setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setMessage("Password changed successfully.");
+  };
 
   return (
     <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
       <section className="rounded-2xl bg-cyan-700/5 p-5 outline outline-1 outline-neutral-200">
         <h2 className="text-[32px] font-medium leading-10 text-slate-800">Changes Password</h2>
 
-        <div className="mt-5 flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
           <div className="grid gap-4 lg:grid-cols-2">
             <PasswordField
               label="Current Password"
@@ -137,21 +148,24 @@ export function CarerSecurityPage() {
             ))}
           </div>
 
+          {message ? <p role="status" className={message.includes("successfully") ? "text-emerald-600" : "text-red-500"}>{message}</p> : null}
           <div className="flex items-center justify-end gap-2 pt-4">
             <button
-              type="button"
+              type="reset"
+              onClick={() => { setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setMessage(""); }}
               className="inline-flex min-w-[138px] items-center justify-center rounded-lg border border-cyan-700 px-8 py-4 text-base font-medium leading-5 text-cyan-700 transition hover:bg-white cursor-pointer"
             >
               Cancel
             </button>
             <button
-              type="button"
+              type="submit"
+              disabled={isSaving}
               className="inline-flex min-w-[138px] items-center justify-center rounded-lg bg-cyan-700 px-8 py-4 text-base font-medium leading-5 text-white transition hover:bg-cyan-800 cursor-pointer"
             >
-              Save Changes
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
           </div>
-        </div>
+        </form>
       </section>
     </div>
   );
