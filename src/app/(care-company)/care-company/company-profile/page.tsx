@@ -1,9 +1,5 @@
-import React from 'react'
+import CompanyProfile from "@/features/care-company/company-profile/components/CompanyProfile";
 
-export default function page() {
-  return (
-    <div>
-      <h1>Company Profile</h1>
-    </div>
-  )
+export default function CompanyProfilePage() {
+  return <CompanyProfile />;
 }

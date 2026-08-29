@@ -1,9 +1,5 @@
-import React from 'react'
+import SavedCarers from "@/features/care-company/saved-carers/components/SavedCarers";
 
-export default function page() {
-  return (
-    <div>
-      <h1>Save Carers</h1>
-    </div>
-  )
+export default function SaveCarersPage() {
+  return <SavedCarers />;
 }

@@ -1,9 +1,10 @@
+import ContactRequests from '@/features/care-company/contact-requests/components/ContactRequests'
 import React from 'react'
 
 export default function page() {
   return (
     <div>
-      <h1>Contact Requests</h1>
+      <ContactRequests />
     </div>
   )
 }

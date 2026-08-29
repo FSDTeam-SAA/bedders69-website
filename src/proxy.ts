@@ -12,8 +12,28 @@ const routeRoles: Array<[string, string]> = [
   ["/care", "carer"],
 ];
 
+const publicRoutes = new Set([
+  "/care-company/dashboard-overview",
+  "/care-company/company-profile",
+  "/care-company/company-profile/edit",
+  "/care-company/edit-profile",
+  "/care-company/save-carers",
+  "/care-company/create-job",
+  "/care-company/applicants",
+  "/care-company/contact-requests",
+  "/care-company/membership",
+  "/care-company/settings",
+]);
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (
+    publicRoutes.has(pathname) ||
+    pathname.startsWith("/care-company/save-carers/")
+  ) {
+    return NextResponse.next();
+  }
+
   const role = request.cookies.get("bedders_role")?.value;
   const token = request.cookies.get("bedders_access_token")?.value;
   const requiredRole = routeRoles.find(([prefix]) => pathname.startsWith(prefix))?.[1];

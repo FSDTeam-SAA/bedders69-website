@@ -1,9 +1,10 @@
+import Applicants from '@/features/care-company/applicants/components/Applicants'
 import React from 'react'
 
 export default function page() {
   return (
     <div>
-      <h1>Applicants</h1>
+      <Applicants />
     </div>
   )
 }

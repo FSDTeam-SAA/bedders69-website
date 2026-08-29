@@ -1,11 +1,5 @@
-// import Overview from '@/features/care-company/overview/hooks/overview'
-import React from 'react'
+import Overview from "@/features/care-company/overview/components/Overview";
 
-export default function page() {
-  return (
-    <div>
-      {/* <Overview /> */}
-      <h1>Dashboard Overview</h1>
-    </div>
-  )
+export default function DashboardOverviewPage() {
+  return <Overview />;
 }

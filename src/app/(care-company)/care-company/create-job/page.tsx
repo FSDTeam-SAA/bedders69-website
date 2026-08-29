@@ -1,9 +1,5 @@
-import React from 'react'
+import CreateJob from "@/features/care-company/create-job/components/CreateJob";
 
-export default function page() {
-  return (
-    <div>
-      <h1>Create Job</h1>
-    </div>
-  )
+export default function CreateJobPage() {
+  return <CreateJob />;
 }
