@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  Bell,
   BookmarkPlus,
   Briefcase,
   FileText,
@@ -76,6 +75,7 @@ export default function CarersLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const currentHeader = pathname.startsWith("/care/profile")
     ? headerContent["/care/profile"]
     : pathname.startsWith("/care/professional-information")
@@ -96,9 +96,16 @@ export default function CarersLayout({
     return children;
   }
 
-  function handleLogout() {
-    setIsLogoutModalOpen(false);
-    router.push("/");
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setIsLogoutModalOpen(false);
+      router.replace("/login");
+      router.refresh();
+      setIsLoggingOut(false);
+    }
   }
 
   return (
@@ -216,9 +223,10 @@ export default function CarersLayout({
               <button
                 type="button"
                 onClick={handleLogout}
+                disabled={isLoggingOut}
                 className="inline-flex min-w-[120px] items-center justify-center rounded-lg bg-red-500 px-6 py-3 text-base font-medium leading-5 text-white transition hover:bg-red-600 cursor-pointer"
               >
-                Log Out
+                {isLoggingOut ? "Logging out…" : "Log Out"}
               </button>
             </div>
           </div>
