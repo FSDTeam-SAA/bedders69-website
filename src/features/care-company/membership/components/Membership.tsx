@@ -4,75 +4,17 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-import { Check, Sparkles, X } from "lucide-react";
-
-interface Plan {
-  id: string;
-  name: string;
-  subtext: string;
-  price: string;
-  period: string;
-  features: string[];
-  isCurrent?: boolean;
-  isPopular?: boolean;
-  buttonText: string;
-}
-
-const plans: Plan[] = [
-  {
-    id: "free",
-    name: "Free",
-    subtext: "Billed monthly, cancel anytime",
-    price: "£0",
-    period: "/month",
-    features: [
-      "Basic directory listing",
-      "Up to 2 job posts/month",
-      "Standard profile page",
-      "Community access",
-    ],
-    isCurrent: true,
-    buttonText: "Current Plan",
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    subtext: "Billed monthly, cancel anytime",
-    price: "£49",
-    period: "/month",
-    features: [
-      "Enhanced directory listing",
-      "Unlimited job posts",
-      "Premium profile badge",
-      "Priority support",
-      "Featured placement (3 days/month)",
-    ],
-    isPopular: true,
-    buttonText: "Upgrade Now",
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    subtext: "Billed monthly, cancel anytime",
-    price: "£149",
-    period: "/month",
-    features: [
-      "Top-tier directory placement",
-      "Unlimited everything",
-      "Enterprise verification badge",
-      "Homepage featured slot",
-      "Dedicated account manager",
-    ],
-    buttonText: "Upgrade Now",
-  },
-];
+import { Check, Sparkles, X, Loader2 } from "lucide-react";
+import { useMembership } from "../hooks/useMembership";
+import { MembershipPlan } from "../types/membership.types";
 
 export default function Membership() {
-  const [currentPlanId, setCurrentPlanId] = useState<string>("free");
-  const [selectedPlanModal, setSelectedPlanModal] = useState<Plan | null>(null);
+  const { plans, currentPlanId, setCurrentPlanId, isLoading } = useMembership();
+  const [selectedPlanModal, setSelectedPlanModal] =
+    useState<MembershipPlan | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handlePlanAction = (plan: Plan) => {
+  const handlePlanAction = (plan: MembershipPlan) => {
     if (plan.id === currentPlanId) return;
     setSelectedPlanModal(plan);
   };
@@ -136,20 +78,28 @@ export default function Membership() {
 
           {/* Pricing Cards Container */}
           <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1486px]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-              {plans.map((plan) => {
-                const isCurrent = currentPlanId === plan.id;
-                const isHighlighted = plan.id === "premium" && !isCurrent;
+            {isLoading ? (
+              <div className="w-full min-h-[400px] flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-sky-950/10 p-12">
+                <Loader2 className="h-9 w-9 animate-spin text-[#2b6ea6]" />
+                <p className="text-slate-600 font-medium text-sm">
+                  Loading membership packages...
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                {plans.map((plan) => {
+                  const isCurrent = currentPlanId === plan.id;
+                  const isHighlighted = (plan.isPopular || plan.rawPrice === 49) && !isCurrent;
 
-                return (
-                  <div
-                    key={plan.id}
-                    className={`h-[500px] p-6 rounded-2xl flex flex-col justify-between items-start transition-all duration-200 ${
-                      isHighlighted
-                        ? "bg-slate-100/90 rounded-2xl shadow-[3px_5px_10px_0px_rgba(0,0,0,0.14)] border-2 border-cyan-700"
-                        : "bg-white rounded-2xl shadow-[0px_0px_10px_0px_rgba(0,0,0,0.15)] border border-neutral-100"
-                    }`}
-                  >
+                  return (
+                    <div
+                      key={plan.id}
+                      className={`min-h-[500px] p-6 rounded-2xl flex flex-col justify-between items-start transition-all duration-200 ${
+                        isHighlighted
+                          ? "bg-slate-100/90 rounded-2xl shadow-[3px_5px_10px_0px_rgba(0,0,0,0.14)] border-2 border-cyan-700"
+                          : "bg-white rounded-2xl shadow-[0px_0px_10px_0px_rgba(0,0,0,0.15)] border border-neutral-100"
+                      }`}
+                    >
                     {/* Top: Plan Name & Subtitle */}
                     <div className="w-full flex flex-col justify-start items-start gap-2">
                       <h2 className="text-gray-900 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
@@ -219,6 +169,7 @@ export default function Membership() {
                 );
               })}
             </div>
+            )}
           </div>
         </div>
       </div>

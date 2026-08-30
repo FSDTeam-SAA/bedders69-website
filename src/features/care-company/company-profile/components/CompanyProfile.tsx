@@ -1,9 +1,31 @@
+"use client";
+
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-import { CalendarPlus, Clock3, MapPin, Pencil, Star } from "lucide-react";
+import { CalendarPlus, Clock3, MapPin, Pencil, Star, Loader2 } from "lucide-react";
+import { useCompanyProfile } from "../hooks/useCompanyProfile";
 
 export default function CompanyProfile() {
+  const { profile, isLoading } = useCompanyProfile();
+
+  const companyName = profile?.companyName || "Sunrise Care Group";
+  const tradingName = profile?.tradingName || profile?.companyName || "Sunrise Care";
+  const about = profile?.about || "Sunrise Care Group has built a strong reputation for providing professional, compassionate, and reliable care services throughout Greater Manchester. Our dedicated team specialises in elderly care, dementia support, personal care, and assisted living, ensuring every individual receives personalised support that enhances their quality of life.";
+  const services: string[] = profile?.serviceOffered && profile.serviceOffered.length > 0 
+    ? profile.serviceOffered 
+    : ["Residential Care", "Dementia Care", "Respite Care", "Home Care", "Day Services"];
+  const serviceHours = profile?.serviceHours || "Mon–Fri 7am–6pm · Sat 8am–2pm · Emergency 24/7";
+  const serviceArea = profile?.address 
+    ? `${profile.address}${profile.postCode ? `, ${profile.postCode}` : ""}`
+    : "Manchester, Greater Manchester";
+  const founded = profile?.founded || "2008";
+  const staff = profile?.staffCount || "320+";
+  const locations = profile?.locationsCount || "8";
+  const rating = profile?.cqcRating || "Outstanding (CQC)";
+  const logo = profile?.logo || "/images/logo.png";
+
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
       <div className="mx-auto flex min-h-[1641px] w-full max-w-[1920px] flex-col lg:flex-row">
@@ -18,15 +40,15 @@ export default function CompanyProfile() {
             <div className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm border border-slate-100 shrink-0 ml-4">
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
                 <Image
-                  src="/images/logo.png"
-                  alt="Sunrise Care"
+                  src={logo}
+                  alt={tradingName}
                   fill
                   className="object-contain p-1"
                 />
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
+                  {tradingName}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Care Company
@@ -46,67 +68,75 @@ export default function CompanyProfile() {
               </Link>
             </div>
 
-            <section className="rounded-t-2xl bg-white p-6">
-              <h2 className="text-[32px] font-semibold leading-10 text-[#203746]">Sunrise Care Group</h2>
-              <div className="mt-2.5 flex flex-wrap items-center gap-1">
-                <div className="flex gap-0.5" aria-label="4.8 out of 5 stars">
-                  {[1, 2, 3, 4, 5].map((star) => <Star key={star} className="h-4 w-4 fill-[#eab308] text-[#eab308]" strokeWidth={1.5} />)}
-                </div>
-                <span className="text-sm font-semibold leading-4">4.8</span>
-                <span className="text-xs leading-4 text-[#667481]">(142 reviews)</span>
+            {isLoading ? (
+              <div className="flex min-h-[300px] items-center justify-center rounded-2xl bg-white p-12 shadow-sm">
+                <Loader2 className="h-8 w-8 animate-spin text-[#2b6ea6]" />
               </div>
-            </section>
+            ) : (
+              <>
+                <section className="rounded-t-2xl bg-white p-6">
+                  <h2 className="text-[32px] font-semibold leading-10 text-[#203746]">{companyName}</h2>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1">
+                    <div className="flex gap-0.5" aria-label="4.8 out of 5 stars">
+                      {[1, 2, 3, 4, 5].map((star) => <Star key={star} className="h-4 w-4 fill-[#eab308] text-[#eab308]" strokeWidth={1.5} />)}
+                    </div>
+                    <span className="text-sm font-semibold leading-4">4.8</span>
+                    <span className="text-xs leading-4 text-[#667481]">(142 reviews)</span>
+                  </div>
+                </section>
 
-            <div className="space-y-4">
-              <ProfileCard title="About">
-                <p className="max-w-[999px] text-base leading-5 text-[#667481]">
-                  Sunrise Care Group has built a strong reputation for providing professional, compassionate, and reliable care services throughout Greater Manchester. Our dedicated team specialises in elderly care, dementia support, personal care, and assisted living, ensuring every individual receives personalised support that enhances their quality of life. By combining experienced professionals with a person-centred approach, we strive to make a meaningful difference for every client and their family.
-                </p>
-              </ProfileCard>
+                <div className="space-y-4">
+                  <ProfileCard title="About">
+                    <p className="max-w-[999px] text-base leading-5 text-[#667481]">
+                      {about}
+                    </p>
+                  </ProfileCard>
 
-              <ProfileCard title="Services">
-                <div className="flex flex-wrap items-center gap-2">
-                  {["Residential Care", "Dementia Care", "Respite Care", "Home Care", "Day Services"].map((service) => (
-                    <span key={service} className="flex h-6 items-center justify-center rounded-full bg-[#eaf1f6] px-3 text-center text-xs font-semibold leading-4 text-[#2b6ea6]">{service}</span>
-                  ))}
+                  <ProfileCard title="Services">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {services.map((service) => (
+                        <span key={service} className="flex h-6 items-center justify-center rounded-full bg-[#eaf1f6] px-3 text-center text-xs font-semibold leading-4 text-[#2b6ea6]">{service}</span>
+                      ))}
+                    </div>
+                  </ProfileCard>
+
+                  <ProfileCard title="Service Hours">
+                    <div className="flex items-start gap-2 text-base leading-5 text-[#667481]">
+                      <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#2b6ea6]" strokeWidth={1.7} />
+                      <span>{serviceHours}</span>
+                    </div>
+                  </ProfileCard>
+
+                  <ProfileCard title="Others Information's">
+                    <dl className="w-full space-y-2 text-base leading-5">
+                      <InfoRow label="Staff" value={staff} />
+                      <InfoRow label="Locations" value={locations} />
+                      <InfoRow label="Rating" value={rating} />
+                    </dl>
+                  </ProfileCard>
+
+                  <ProfileCard title="Founded">
+                    <div className="flex items-center gap-1 text-base leading-5 text-[#667481]">
+                      <CalendarPlus className="h-4 w-4 text-[#2b6ea6]" strokeWidth={1.4} /><span>{founded}</span>
+                    </div>
+                  </ProfileCard>
+
+                  <ProfileCard title="Service Area">
+                    <div className="flex items-center gap-1 text-base leading-5 text-[#667481]">
+                      <MapPin className="h-4 w-4 text-[#2b6ea6]" strokeWidth={1.7} /><span>{serviceArea}</span>
+                    </div>
+                  </ProfileCard>
+
+                  <ProfileCard title="Jobs">
+                    <div className="w-full space-y-6">
+                      <Job title="Senior Care Assistant" details="Full-time · £24,000–£28,000" />
+                      <Job title="Registered Nurse – Dementia Ward" details="Full-time · £38,000–£44,000" />
+                      <Job title="Live-In Carer" details="Live-In · £600–£750/week" />
+                    </div>
+                  </ProfileCard>
                 </div>
-              </ProfileCard>
-
-              <ProfileCard title="Service Hours">
-                <div className="flex items-start gap-2 text-base leading-5 text-[#667481]">
-                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#2b6ea6]" strokeWidth={1.7} />
-                  <span>Mon–Fri 7am–6pm · Sat 8am–2pm · Emergency 24/7</span>
-                </div>
-              </ProfileCard>
-
-              <ProfileCard title="Others Information's">
-                <dl className="w-full space-y-2 text-base leading-5">
-                  <InfoRow label="Staff" value="320+" />
-                  <InfoRow label="Locations" value="8" />
-                  <InfoRow label="Rating" value="Outstanding (CQC)" />
-                </dl>
-              </ProfileCard>
-
-              <ProfileCard title="Founded">
-                <div className="flex items-center gap-1 text-base leading-5 text-[#667481]">
-                  <CalendarPlus className="h-4 w-4 text-[#2b6ea6]" strokeWidth={1.4} /><span>2008</span>
-                </div>
-              </ProfileCard>
-
-              <ProfileCard title="Service Area">
-                <div className="flex items-center gap-1 text-base leading-5 text-[#667481]">
-                  <MapPin className="h-4 w-4 text-[#2b6ea6]" strokeWidth={1.7} /><span>Manchester, Greater Manchester</span>
-                </div>
-              </ProfileCard>
-
-              <ProfileCard title="Jobs">
-                <div className="w-full space-y-6">
-                  <Job title="Senior Care Assistant" details="Full-time · £24,000–£28,000" />
-                  <Job title="Registered Nurse – Dementia Ward" details="Full-time · £38,000–£44,000" />
-                  <Job title="Live-In Carer" details="Live-In · £600–£750/week" />
-                </div>
-              </ProfileCard>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
