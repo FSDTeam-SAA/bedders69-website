@@ -11,20 +11,16 @@ export const metadata: Metadata = {
   description: "Care Industry Platform",
 };
 
-export default function RootLayout({
+export default function WebsiteLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-white antialiased">
-        <Navbar />
-        <main>
-          {children}
-        </main>
-        <Footer/>
-      </body>
-    </html>
+    <div className="flex min-h-screen flex-col bg-white antialiased">
+      <Navbar />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
   );
 }

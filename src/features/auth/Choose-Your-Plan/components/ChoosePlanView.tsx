@@ -34,33 +34,75 @@ export const ChoosePlanView = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("free");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     setLoading(true);
+    setError("");
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("bedders_selected_plan", selectedPlan);
-    }
+    try {
+      let businessInfo: any = {};
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bedders_selected_plan", selectedPlan);
+        const stored = localStorage.getItem("bedders_business_info");
+        if (stored) {
+          try {
+            businessInfo = JSON.parse(stored);
+          } catch (e) {}
+        }
+      }
 
-    setTimeout(() => {
+      const role = businessInfo.accountType || accountType || "care_company";
+      const email = (businessInfo.email || "").trim().toLowerCase();
+      const password = businessInfo.password || "Secret123!";
+      const fullName = businessInfo.companyName || "Organization";
+
+      if (email) {
+        // Register in backend
+        await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName,
+            email,
+            password,
+            role,
+          }),
+        });
+
+        // Attempt automatic login
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (loginRes.ok) {
+          const loginData = await loginRes.json();
+          setLoading(false);
+          setSuccess(true);
+          const destination = loginData.dashboardPath || "/login";
+          setTimeout(() => {
+            if (destination.startsWith("http")) {
+              window.location.assign(destination);
+            } else {
+              router.push(destination);
+              router.refresh();
+            }
+          }, 1200);
+          return;
+        }
+      }
+
       setLoading(false);
       setSuccess(true);
-
       setTimeout(() => {
-        // Direct to role dashboard or login
-        if (accountType === "care_company") {
-          router.push("/care-company");
-        } else if (accountType === "agency") {
-          router.push("/recruitment-agency");
-        } else if (accountType === "supplier") {
-          router.push("/supplier");
-        } else if (accountType === "service_provider") {
-          router.push("/service");
-        } else {
-          router.push("/login");
-        }
-      }, 1500);
-    }, 1000);
+        router.push("/login");
+      }, 1200);
+    } catch (err: any) {
+      setLoading(false);
+      router.push("/login");
+    }
   };
 
   return (

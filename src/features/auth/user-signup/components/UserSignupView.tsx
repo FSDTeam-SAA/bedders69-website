@@ -42,25 +42,32 @@ export const UserSignupView = () => {
     setLoading(true);
 
     try {
-      await fetch("/api/auth/register", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fullName: `${firstName} ${lastName}`.trim(),
-          email,
+          email: email.trim(),
           password,
           role: "family",
         }),
       });
 
+      const resData = await response.json();
       setLoading(false);
+
+      if (!response.ok) {
+        setError(resData.message || "Registration failed. Please try again.");
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+        router.push(`/verify-otp?email=${encodeURIComponent(email)}&role=user`);
       }, 1000);
     } catch (err: any) {
       setLoading(false);
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      setError("Failed to reach server. Please check your connection.");
     }
   };
 

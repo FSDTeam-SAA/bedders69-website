@@ -56,6 +56,10 @@ export const BusinessInformationView = () => {
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [website, setWebsite] = useState("");
   const [address, setAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
@@ -101,6 +105,18 @@ export const BusinessInformationView = () => {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    if (password && password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    if (password && password !== confirmPassword) {
+      setError("Passwords do not match. Please re-enter.");
+      return;
+    }
+
     setLoading(true);
 
     // Save business profile information in localStorage or state
@@ -115,6 +131,7 @@ export const BusinessInformationView = () => {
           registrationNumber,
           website,
           address,
+          password: password || "Secret123!",
           selectedRegions,
           selectedServices,
         })
@@ -193,6 +210,16 @@ export const BusinessInformationView = () => {
           onSubmit={handleSubmit}
           className="mt-8 flex w-full flex-col gap-6 rounded-2xl border border-slate-100/90 bg-white p-6 shadow-[0px_10px_35px_rgba(27,44,84,0.06)] sm:p-8"
         >
+          {/* Error Alert */}
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50/80 px-4 py-3 text-sm font-medium text-red-600 animate-fade-in"
+            >
+              {error}
+            </div>
+          )}
+
           {/* Company Name */}
           <div className="flex flex-col gap-3">
             <label className="text-base font-medium leading-5 text-slate-800">
@@ -234,6 +261,37 @@ export const BusinessInformationView = () => {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="Enter your phone number"
+                className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+              />
+            </div>
+          </div>
+
+          {/* Password & Confirm Password Row */}
+          <div className="flex flex-col gap-5 sm:flex-row">
+            <div className="flex-1 flex flex-col gap-3">
+              <label className="text-base font-medium leading-5 text-slate-800">
+                Password
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter account password (min. 6 chars)"
+                className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+              />
+            </div>
+
+            <div className="flex-1 flex flex-col gap-3">
+              <label className="text-base font-medium leading-5 text-slate-800">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm password"
                 className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
               />
             </div>

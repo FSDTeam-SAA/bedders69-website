@@ -19,6 +19,17 @@ export const OtpVerificationView = () => {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Automatically trigger real email OTP send on mount
+  useEffect(() => {
+    if (emailParam && emailParam !== "your email") {
+      fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailParam }),
+      }).catch((err) => console.error("Error sending initial OTP:", err));
+    }
+  }, [emailParam]);
+
   // Countdown timer for resend
   useEffect(() => {
     if (timer > 0) {
@@ -66,18 +77,31 @@ export const OtpVerificationView = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (!canResend) return;
     setTimer(45);
     setCanResend(false);
     setError("");
-    // Resend code logic
+
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailParam }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || "Failed to resend OTP");
+      }
+    } catch (err: any) {
+      setError("Failed to connect to server to resend OTP");
+    }
   };
 
   const fromParam = searchParams.get("from") || "";
   const accountType = searchParams.get("type") || "care_company";
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const enteredOtp = otp.join("");
     if (enteredOtp.length < 6) {
@@ -88,8 +112,21 @@ export const OtpVerificationView = () => {
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailParam, otp: enteredOtp }),
+      });
+
+      const data = await res.json();
       setLoading(false);
+
+      if (!res.ok) {
+        setError(data.message || "Invalid or expired OTP. Please try again.");
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         if (fromParam === "business") {
@@ -97,8 +134,11 @@ export const OtpVerificationView = () => {
         } else {
           router.push("/login");
         }
-      }, 1200);
-    }, 1000);
+      }, 1000);
+    } catch (err: any) {
+      setLoading(false);
+      setError("Failed to verify OTP. Please try again.");
+    }
   };
 
   return (
