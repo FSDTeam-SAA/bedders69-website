@@ -4,7 +4,8 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-import { Check, ChevronLeft, Clock3, MapPin } from "lucide-react";
+import { Check, ChevronLeft, Clock3, MapPin, Loader2 } from "lucide-react";
+import { useSavedCarerDetail } from "../hooks/useSavedCarers";
 
 export interface CarerDetailData {
   id: string;
@@ -58,7 +59,7 @@ export const savedCarersData: Record<string, CarerDetailData> = {
     qualifications: [
       "BSc in Health & Social Care",
       "Mental Health First Aid Certified",
-      "Safeguarding Adults Level 3",
+      "Autism Awareness Level 2",
     ],
     serviceArea: "Birmingham, West Midlands",
   },
@@ -67,27 +68,42 @@ export const savedCarersData: Record<string, CarerDetailData> = {
     name: "John Smith",
     subtitle: "See the details",
     about:
-      "John Smith is an experienced Home Carer specializing in personal care, palliative support, and companionship. With more than 7 years of direct care experience, John brings enthusiasm, respect, and utmost dependability to every household he assists.",
+      "John Smith is an experienced home carer with a background in adult rehabilitation and physical disability support. He prides himself on fostering a comfortable, empowering environment for each client under his care.",
     skills: [
       "Personal Care",
       "Companionship",
-      "Mobility Handling",
-      "Respite Care",
-      "Live-In Support",
+      "Rehabilitation Support",
+      "Meal Prep",
+      "Live-In Care",
     ],
     availability:
-      "Mon–Sun 7am–8pm · Overnight Care · Live-In Available · Weekends",
+      "Flexible Hours · Day & Night Shifts · Weekend Availability",
     qualifications: [
-      "NVQ Level 3 in Health and Social Care",
-      "First Aid at Work (2024)",
-      "Manual Handling & Hoist Certified",
+      "Care Certificate Certified",
+      "Moving and Handling Level 3",
+      "Food Hygiene Level 2",
     ],
     serviceArea: "Manchester, Greater Manchester",
   },
 };
 
-export default function SavedCarerDetail({ id }: { id: string }) {
-  const carer = savedCarersData[id] || savedCarersData["1"];
+interface SavedCarerDetailProps {
+  id: string;
+}
+
+export default function SavedCarerDetail({ id }: SavedCarerDetailProps) {
+  const { carer: apiCarer, isLoading } = useSavedCarerDetail(id);
+  const fallback = savedCarersData[id] || savedCarersData["1"];
+  const carer = apiCarer ? {
+    id: apiCarer.carerId || apiCarer.id || id,
+    name: apiCarer.name,
+    subtitle: "See the details",
+    about: apiCarer.bio || fallback.about,
+    skills: apiCarer.skills && apiCarer.skills.length > 0 ? apiCarer.skills : fallback.skills,
+    availability: apiCarer.availability || fallback.availability,
+    qualifications: apiCarer.qualifications && apiCarer.qualifications.length > 0 ? apiCarer.qualifications : fallback.qualifications,
+    serviceArea: apiCarer.serviceArea || apiCarer.location || fallback.serviceArea,
+  } : fallback;
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">

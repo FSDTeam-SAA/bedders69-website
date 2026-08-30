@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
@@ -12,14 +12,17 @@ import {
   Plus,
   X,
   Check,
+  Loader2,
 } from "lucide-react";
+import { useCompanyProfile } from "../hooks/useCompanyProfile";
 
 export default function EditCompanyProfile() {
   const router = useRouter();
+  const { profile, updateProfile, isUpdating, isLoading } = useCompanyProfile();
 
   // Form states matching screenshot
-  const [companyName, setCompanyName] = useState("Sunrise Care Group");
-  const [tradingName, setTradingName] = useState("Sunrise Care");
+  const [companyName, setCompanyName] = useState("");
+  const [tradingName, setTradingName] = useState("");
   const [about, setAbout] = useState("");
   const [services, setServices] = useState<string[]>([
     "Residential Care",
@@ -31,12 +34,15 @@ export default function EditCompanyProfile() {
   const [isAddingService, setIsAddingService] = useState(false);
   const [newServiceText, setNewServiceText] = useState("");
 
-  const [serviceHourDay, setServiceHourDay] = useState("");
-  const [serviceHourTime, setServiceHourTime] = useState("");
+  const [serviceHourDay, setServiceHourDay] = useState("Mon–Fri 7am–6pm · Sat 8am–2pm");
+  const [serviceHourTime, setServiceHourTime] = useState("Emergency 24/7");
   const [serviceArea, setServiceArea] = useState(
     "Manchester, Greater Manchester"
   );
   const [founded, setFounded] = useState("2008");
+  const [staffCount, setStaffCount] = useState("320+");
+  const [locationsCount, setLocationsCount] = useState("8");
+  const [cqcRating, setCqcRating] = useState("Outstanding (CQC)");
 
   // Jobs Post states
   const [jobName, setJobName] = useState("Senior Care Assistant");
@@ -44,6 +50,26 @@ export default function EditCompanyProfile() {
   const [jobSalary, setJobSalary] = useState("£24,000–£28,000");
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync profile data from hook
+  useEffect(() => {
+    if (profile) {
+      if (profile.companyName) setCompanyName(profile.companyName);
+      if (profile.tradingName) setTradingName(profile.tradingName);
+      if (profile.about) setAbout(profile.about);
+      if (profile.serviceOffered && profile.serviceOffered.length > 0) setServices(profile.serviceOffered);
+      if (profile.address) setServiceArea(profile.address);
+      if (profile.founded) setFounded(profile.founded);
+      if (profile.staffCount) setStaffCount(profile.staffCount);
+      if (profile.locationsCount) setLocationsCount(profile.locationsCount);
+      if (profile.cqcRating) setCqcRating(profile.cqcRating);
+      if (profile.serviceHours) {
+        const parts = profile.serviceHours.split("·");
+        if (parts[0]) setServiceHourDay(parts[0].trim());
+        if (parts[1]) setServiceHourTime(parts.slice(1).join("·").trim());
+      }
+    }
+  }, [profile]);
 
   const handleAddService = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -58,13 +84,32 @@ export default function EditCompanyProfile() {
     setServices(services.filter((s) => s !== serviceToRemove));
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setToastMessage("Changes saved successfully!");
-    setTimeout(() => {
-      setToastMessage(null);
-      router.push("/care-company/company-profile");
-    }, 1200);
+
+    const combinedHours = [serviceHourDay, serviceHourTime].filter(Boolean).join(" · ");
+    const success = await updateProfile({
+      companyName,
+      tradingName,
+      about,
+      serviceOffered: services,
+      serviceHours: combinedHours,
+      address: serviceArea,
+      founded,
+      staffCount,
+      locationsCount,
+      cqcRating,
+    });
+
+    if (success) {
+      setToastMessage("Changes saved successfully!");
+      setTimeout(() => {
+        setToastMessage(null);
+        router.push("/care-company/company-profile");
+      }, 1000);
+    } else {
+      setToastMessage("Failed to update profile. Please try again.");
+    }
   };
 
   return (
@@ -332,6 +377,24 @@ export default function EditCompanyProfile() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Actions: Save & Cancel */}
+            <div className="flex items-center justify-end gap-4 pt-4">
+              <Link
+                href="/care-company/company-profile"
+                className="h-12 px-6 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold text-base hover:bg-slate-50 transition-colors flex items-center justify-center"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={isUpdating}
+                className="h-12 px-8 rounded-xl bg-[#2b6ea6] hover:bg-[#245e8f] text-white font-semibold text-base transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60"
+              >
+                {isUpdating && <Loader2 className="h-5 w-5 animate-spin" />}
+                {isUpdating ? "Saving..." : "Save Changes"}
+              </button>
             </div>
           </form>
         </div>

@@ -11,7 +11,9 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
+import { useCreateJob } from "../hooks/useCreateJob";
 
 const steps = [
   { id: 1, label: "Job Details" },
@@ -23,34 +25,49 @@ const steps = [
 
 export default function CreateJob() {
   const router = useRouter();
+  const { isPublishing, error, submitJob } = useCreateJob();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isPublishing, setIsPublishing] = useState(false);
   const [publishedToast, setPublishedToast] = useState(false);
 
   // Step 1: Job Details
-  const [jobTitle, setJobTitle] = useState("");
-  const [department, setDepartment] = useState("");
+  const [jobTitle, setJobTitle] = useState("Senior Care Assistant");
+  const [department, setDepartment] = useState("Residential Care");
   const [selectedJobType, setSelectedJobType] = useState("Full-time");
-  const [jobDescription, setJobDescription] = useState("");
+  const [jobDescription, setJobDescription] = useState(
+    "We are seeking a compassionate, skilled, and dedicated Senior Care Assistant to lead our care delivery team. The ideal candidate will possess great empathy and leadership skills."
+  );
 
   // Step 2: Requirements
   const [essentialRequirements, setEssentialRequirements] = useState(
     "• NVQ Level 2/3 in Health & Social Care\n• Minimum 1 year care experience\n• Valid DBS (enhanced) check\n• Good communication skills"
   );
-  const [desiredSkills, setDesiredSkills] = useState<string[]>([]);
-  const [minExperience, setMinExperience] = useState("No requirement");
+  const [desiredSkills, setDesiredSkills] = useState<string[]>([
+    "Dementia Care",
+    "Medication Administration",
+    "Palliative Care",
+  ]);
+  const [minExperience, setMinExperience] = useState("1-2 years");
   const [pinRequired, setPinRequired] = useState("Not required");
 
   // Step 3: Salary & Benefits
-  const [salaryFrom, setSalaryFrom] = useState("£22,000");
-  const [salaryTo, setSalaryTo] = useState("£26,000");
-  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([]);
-  const [closingDate, setClosingDate] = useState("01/31/2027");
+  const [salaryFrom, setSalaryFrom] = useState("£24,000");
+  const [salaryTo, setSalaryTo] = useState("£28,000");
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([
+    "Paid Training & Qualifications",
+    "Company Pension Scheme",
+    "Employee Assistance Programme",
+  ]);
+  const [closingDate, setClosingDate] = useState("2027-01-31");
 
   // Step 4: Location & Hours
-  const [workLocations, setWorkLocations] = useState<string[]>([]);
+  const [workLocations, setWorkLocations] = useState<string[]>([
+    "Care Home / Residential",
+  ]);
   const [address, setAddress] = useState("123 Care Lane, Manchester, M1 2AB");
-  const [workingPatterns, setWorkingPatterns] = useState<string[]>([]);
+  const [workingPatterns, setWorkingPatterns] = useState<string[]>([
+    "Day Shifts",
+    "Weekend Rotation",
+  ]);
   const [hoursPerWeek, setHoursPerWeek] = useState("37.5");
   const [contractType, setContractType] = useState("Permanent");
 
@@ -82,15 +99,55 @@ export default function CreateJob() {
     }
   };
 
-  const handlePublish = () => {
-    setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+  const handlePublish = async () => {
+    const jobTypeMap: Record<string, any> = {
+      "Full-time": "full_time",
+      "Part-time": "part_time",
+      "Contract": "contract",
+      "Temporary": "temporary",
+      "Bank / Flexible": "temporary",
+      "Night Shift": "full_time",
+    };
+
+    const numSalaryFrom = parseInt(salaryFrom.replace(/[^0-9]/g, ""), 10) || 24000;
+    const numSalaryTo = parseInt(salaryTo.replace(/[^0-9]/g, ""), 10) || 28000;
+
+    const parsedRequirements = essentialRequirements
+      .split("\n")
+      .map((r) => r.replace(/^[•\-\*]\s*/, "").trim())
+      .filter(Boolean);
+
+    const payload = {
+      title: jobTitle || "Senior Care Assistant",
+      department,
+      jobType: jobTypeMap[selectedJobType] || "full_time",
+      description: jobDescription,
+      requirements: parsedRequirements,
+      requiredSkills: desiredSkills,
+      minExperience,
+      pinRequired,
+      salaryMin: numSalaryFrom,
+      salaryMax: numSalaryTo,
+      salaryCurrency: "GBP",
+      benefits: selectedBenefits,
+      closesAt: closingDate ? new Date(closingDate).toISOString() : new Date("2027-01-31").toISOString(),
+      workLocations,
+      location: address,
+      address,
+      workingPatterns,
+      hoursPerWeek,
+      contractType,
+      isFeaturedBoost,
+      isUrgentHire,
+    };
+
+    const result = await submitJob(payload);
+    if (result.success) {
       setPublishedToast(true);
       setTimeout(() => {
-        router.push("/care-company/job-posts");
+        router.push("/care-company/dashboard-overview");
       }, 1500);
-    }, 800);
+    }
   };
 
   return (
@@ -926,8 +983,9 @@ export default function CreateJob() {
                     disabled={isPublishing}
                     className="flex-1 h-12 p-2.5 bg-[#2b6ea6] hover:bg-[#20527f] rounded-lg flex justify-center items-center gap-2 transition-colors cursor-pointer shadow-sm text-white font-semibold disabled:opacity-50 active:scale-[0.99]"
                   >
-                    <span>{isPublishing ? "Publishing..." : "Publish Job Now"}</span>
-                    <ArrowRight className="h-4 w-4 text-white" strokeWidth={2} />
+                    {isPublishing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <span>{isPublishing ? "Publishing Job..." : "Publish Job Now"}</span>
+                    {!isPublishing && <ArrowRight className="h-4 w-4 text-white" strokeWidth={2} />}
                   </button>
                 </div>
               </div>

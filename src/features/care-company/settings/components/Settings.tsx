@@ -4,18 +4,19 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-import { Check, Eye, EyeOff, X } from "lucide-react";
+import { Check, Eye, EyeOff, X, AlertCircle, Loader2 } from "lucide-react";
+import { useSettings } from "../hooks/useSettings";
 
 export default function Settings() {
-  const [currentPassword, setCurrentPassword] = useState("********");
-  const [newPassword, setNewPassword] = useState("********");
-  const [confirmPassword, setConfirmPassword] = useState("********");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [isSaving, setIsSaving] = useState(false);
+  const { isSaving, error, setError, changePassword } = useSettings();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dynamic Validation checks
@@ -25,23 +26,49 @@ export default function Settings() {
   const hasNumber = /[0-9]/.test(newPassword);
   const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
   const noSpaces = !/\s/.test(newPassword) && newPassword.length > 0;
+  const isMatching =
+    newPassword === confirmPassword &&
+    newPassword.length > 0 &&
+    confirmPassword.length > 0;
 
-  const isMatching = newPassword === confirmPassword && newPassword.length > 0;
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setToastMessage("Password updated successfully!");
-      setTimeout(() => setToastMessage(null), 3000);
-    }, 600);
+    setError(null);
+
+    if (!currentPassword) {
+      setError("Please enter your current password.");
+      return;
+    }
+
+    if (!isMinLength) {
+      setError("New password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!isMatching) {
+      setError("New password and confirm password do not match.");
+      return;
+    }
+
+    const result = await changePassword({
+      oldPassword: currentPassword,
+      newPassword,
+    });
+
+    if (result.success) {
+      setToastMessage(result.message);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setToastMessage(null), 3500);
+    }
   };
 
   const handleCancel = () => {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    setError(null);
   };
 
   return (
@@ -101,6 +128,14 @@ export default function Settings() {
                 Changes Password
               </div>
 
+              {/* Error Banner */}
+              {error && (
+                <div className="self-stretch flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                  <AlertCircle className="size-5 shrink-0 text-red-600" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <form onSubmit={handleSave} className="self-stretch flex flex-col justify-start items-start gap-6">
                 {/* Row 1: Current Password & New Password */}
                 <div className="self-stretch grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
@@ -114,7 +149,7 @@ export default function Settings() {
                         type={showCurrent ? "text" : "password"}
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="Current password"
+                        placeholder="Enter current password"
                         className="flex-1 bg-transparent text-slate-800 text-base font-normal font-['Wix_Madefor_Text'] leading-5 outline-none placeholder:text-gray-400"
                       />
                       <button
@@ -142,7 +177,7 @@ export default function Settings() {
                         type={showNew ? "text" : "password"}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="New password"
+                        placeholder="Enter new password"
                         className="flex-1 bg-transparent text-slate-800 text-base font-normal font-['Wix_Madefor_Text'] leading-5 outline-none placeholder:text-gray-400"
                       />
                       <button
@@ -166,7 +201,13 @@ export default function Settings() {
                   <label className="self-stretch justify-start text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
                     Confirm New Password
                   </label>
-                  <div className="self-stretch h-12 px-4 rounded-sm border border-red-400 bg-white inline-flex justify-between items-center focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-400">
+                  <div
+                    className={`self-stretch h-12 px-4 rounded-sm border bg-white inline-flex justify-between items-center ${
+                      confirmPassword && !isMatching
+                        ? "border-red-400 focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-400"
+                        : "border-neutral-300 focus-within:border-[#2b6ea6] focus-within:ring-1 focus-within:ring-[#2b6ea6]"
+                    }`}
+                  >
                     <input
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
@@ -191,53 +232,123 @@ export default function Settings() {
 
                 {/* Password Requirements Checklist */}
                 <div className="self-stretch flex flex-col justify-start items-start gap-2 pt-1">
-                  {/* Rule 1: Min 8-12 characters */}
+                  {/* Rule 1: Min 8 characters */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
+                    {isMinLength ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        isMinLength ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       Minimum 8–12 characters (recommend 12+ for stronger security).
                     </span>
                   </div>
 
                   {/* Rule 2: Uppercase letter */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
+                    {hasUppercase ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        hasUppercase ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       At least one uppercase letter must.
                     </span>
                   </div>
 
                   {/* Rule 3: Lowercase letter */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
+                    {hasLowercase ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        hasLowercase ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       At least one lowercase letter must.
                     </span>
                   </div>
 
                   {/* Rule 4: One number */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
+                    {hasNumber ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        hasNumber ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       At least one number must (0–9).
                     </span>
                   </div>
 
                   {/* Rule 5: Special character */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <X className="size-4 text-red-600 stroke-[2.5]" />
-                    <span className="justify-start text-red-600 text-sm font-normal font-['Poppins'] leading-5">
+                    {hasSpecial ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        hasSpecial ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       At least special character (! @ # $ % ^ & * etc.).
                     </span>
                   </div>
 
                   {/* Rule 6: No spaces */}
                   <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <X className="size-4 text-red-600 stroke-[2.5]" />
-                    <span className="justify-start text-red-600 text-sm font-normal font-['Poppins'] leading-5">
+                    {noSpaces ? (
+                      <Check className="size-4 text-green-700 stroke-[2.5]" />
+                    ) : (
+                      <X className="size-4 text-neutral-400 stroke-[2.5]" />
+                    )}
+                    <span
+                      className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        noSpaces ? "text-green-700 font-medium" : "text-neutral-500"
+                      }`}
+                    >
                       No spaces allowed.
                     </span>
                   </div>
+
+                  {/* Rule 7: Matching passwords */}
+                  {confirmPassword && (
+                    <div className="self-stretch inline-flex justify-start items-center gap-2">
+                      {isMatching ? (
+                        <Check className="size-4 text-green-700 stroke-[2.5]" />
+                      ) : (
+                        <X className="size-4 text-red-600 stroke-[2.5]" />
+                      )}
+                      <span
+                        className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                          isMatching
+                            ? "text-green-700 font-medium"
+                            : "text-red-600 font-medium"
+                        }`}
+                      >
+                        {isMatching
+                          ? "Passwords match."
+                          : "Passwords do not match."}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom Action Buttons */}
@@ -245,7 +356,8 @@ export default function Settings() {
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="w-36 h-12 px-6 py-3 rounded-lg border border-cyan-700 flex justify-center items-center gap-2 text-cyan-700 hover:bg-cyan-50/50 text-sm font-medium font-['Wix_Madefor_Text'] leading-4 transition-colors cursor-pointer"
+                    disabled={isSaving}
+                    className="w-36 h-12 px-6 py-3 rounded-lg border border-cyan-700 flex justify-center items-center gap-2 text-cyan-700 hover:bg-cyan-50/50 text-sm font-medium font-['Wix_Madefor_Text'] leading-4 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Cancel
                   </button>
@@ -255,7 +367,14 @@ export default function Settings() {
                     disabled={isSaving}
                     className="h-12 px-6 py-3 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg flex justify-center items-center gap-2 text-sm font-medium font-['Wix_Madefor_Text'] leading-4 transition-colors cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-60"
                   >
-                    {isSaving ? "Saving Changes..." : "Save Changes"}
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Saving Changes...</span>
+                      </>
+                    ) : (
+                      <span>Save Changes</span>
+                    )}
                   </button>
                 </div>
               </form>

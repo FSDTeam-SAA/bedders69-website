@@ -13,125 +13,16 @@ import {
     FileText,
     ShieldCheck,
     X,
+    Loader2,
 } from "lucide-react";
-
-interface Applicant {
-    id: string;
-    name: string;
-    initials: string;
-    avatarBg: string;
-    experience: string;
-    role: string;
-    location: string;
-    applied: string;
-    status: "New" | "Shortlisted" | "Interview" | "Hired" | "Rejected";
-    matchScore: number;
-    verified: boolean;
-    notes: string;
-    documents: { name: string; size: string }[];
-}
-
-const initialApplicants: Applicant[] = [
-    {
-        id: "1",
-        name: "James Okafor",
-        initials: "JO",
-        avatarBg: "bg-emerald-600",
-        experience: "5 years",
-        role: "Senior Care Assistant",
-        location: "Manchester",
-        applied: "Today 10:23",
-        status: "New",
-        matchScore: 87,
-        verified: true,
-        notes:
-            "Strong candidate — excellent dementia experience. Follow up re: availability.",
-        documents: [
-            { name: "CV / Resume", size: "245 KB" },
-            { name: "NVQ Certificate", size: "182 KB" },
-        ],
-    },
-    {
-        id: "2",
-        name: "Emma Williams",
-        initials: "EW",
-        avatarBg: "bg-indigo-600",
-        experience: "8 years",
-        role: "Registered Nurse",
-        location: "Salford",
-        applied: "Today 08:45",
-        status: "Shortlisted",
-        matchScore: 92,
-        verified: true,
-        notes:
-            "Extensive clinical experience in dementia ward management and medication admin.",
-        documents: [
-            { name: "CV / Resume", size: "310 KB" },
-            { name: "Nursing Pin Certificate", size: "215 KB" },
-        ],
-    },
-    {
-        id: "3",
-        name: "Priya Patel",
-        initials: "PP",
-        avatarBg: "bg-rose-600",
-        experience: "3 years",
-        role: "Support Worker",
-        location: "Stockport",
-        applied: "Yesterday",
-        status: "Interview",
-        matchScore: 79,
-        verified: true,
-        notes: "Interview scheduled for Tuesday 2:00 PM via video call.",
-        documents: [
-            { name: "CV / Resume", size: "198 KB" },
-            { name: "First Aid Certificate", size: "140 KB" },
-        ],
-    },
-    {
-        id: "4",
-        name: "Michael Thompson",
-        initials: "MT",
-        avatarBg: "bg-blue-600",
-        experience: "7 years",
-        role: "Senior Care Assistant",
-        location: "Bolton",
-        applied: "2 weeks ago",
-        status: "New",
-        matchScore: 84,
-        verified: true,
-        notes: "Reliable background in residential care and complex physical support.",
-        documents: [
-            { name: "CV / Resume", size: "220 KB" },
-            { name: "DBS Enhanced Check", size: "175 KB" },
-        ],
-    },
-    {
-        id: "5",
-        name: "Lisa Chen",
-        initials: "LC",
-        avatarBg: "bg-teal-600",
-        experience: "10 years",
-        role: "Registered Nurse",
-        location: "Wigan",
-        applied: "2 weeks ago",
-        status: "Hired",
-        matchScore: 95,
-        verified: true,
-        notes: "Offer accepted! Induction scheduled for next Monday.",
-        documents: [
-            { name: "CV / Resume", size: "280 KB" },
-            { name: "References & Clearances", size: "320 KB" },
-        ],
-    },
-];
+import { useApplicants } from "../hooks/useApplicants";
+import { Applicant } from "../types/applicants.types";
 
 export default function Applicants() {
-    const [applicants, setApplicants] = useState<Applicant[]>(initialApplicants);
+    const { applicants, updateApplicant, isLoading, page, setPage, meta } = useApplicants(5);
     const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(
         null
     );
-    const [currentPage, setCurrentPage] = useState(1);
     const [selectedStage, setSelectedStage] = useState<string>("");
     const [newNote, setNewNote] = useState("");
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -146,23 +37,15 @@ export default function Applicants() {
         setSelectedApplicant(null);
     };
 
-    const handleUpdateApplicant = () => {
+    const handleUpdateApplicant = async () => {
         if (!selectedApplicant) return;
 
-        const updated = applicants.map((app) => {
-            if (app.id === selectedApplicant.id) {
-                return {
-                    ...app,
-                    status: (selectedStage as Applicant["status"]) || app.status,
-                    notes: newNote.trim()
-                        ? `${app.notes}\nNote: ${newNote.trim()}`
-                        : app.notes,
-                };
-            }
-            return app;
-        });
+        await updateApplicant(
+            selectedApplicant.id,
+            selectedStage || selectedApplicant.status,
+            newNote
+        );
 
-        setApplicants(updated);
         setToastMessage(`Applicant status updated successfully!`);
         closeModal();
         setTimeout(() => {
@@ -277,11 +160,27 @@ export default function Applicants() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-neutral-100">
-                                        {applicants.map((applicant) => (
-                                            <tr
-                                                key={applicant.id}
-                                                className="h-16 hover:bg-neutral-50/70 transition-colors"
-                                            >
+                                        {isLoading ? (
+                                            <tr>
+                                                <td colSpan={6} className="h-40 text-center py-10">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <Loader2 className="h-7 w-7 animate-spin text-[#2b6ea6]" />
+                                                        <span className="text-sm text-slate-500 font-medium">Loading applicants...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : applicants.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="h-40 text-center py-10 text-slate-500 text-sm">
+                                                    No applicants found for your jobs yet.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            applicants.map((applicant) => (
+                                                <tr
+                                                    key={applicant.id}
+                                                    className="h-16 hover:bg-neutral-50/70 transition-colors"
+                                                >
                                                 {/* Applicant Name & Experience */}
                                                 <td className="px-6 py-3.5">
                                                     <div className="flex flex-col">
@@ -332,65 +231,60 @@ export default function Applicants() {
                                                     </button>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ))
+                                    )}
                                     </tbody>
                                 </table>
                             </div>
 
                             {/* Pagination Bar */}
                             <div className="p-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-4">
-                                <span className="text-neutral-400 text-base font-normal font-['Poppins']">
-                                    Showing 1 to 5 of 12 results
+                                <span className="text-neutral-500 text-sm sm:text-base font-normal font-['Poppins']">
+                                    {meta.total > 0 ? (
+                                        <>
+                                            Showing <span className="font-semibold text-slate-800">{(page - 1) * meta.limit + 1}</span> to{" "}
+                                            <span className="font-semibold text-slate-800">
+                                                {Math.min(page * meta.limit, meta.total)}
+                                            </span>{" "}
+                                            of <span className="font-semibold text-slate-800">{meta.total}</span> results
+                                        </>
+                                    ) : (
+                                        "No results"
+                                    )}
                                 </span>
 
                                 <div className="flex items-center gap-2 select-none">
                                     <button
                                         type="button"
-                                        disabled={currentPage === 1}
-                                        className="size-10 rounded-sm border border-neutral-300 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-colors cursor-pointer"
+                                        onClick={() => setPage(Math.max(1, page - 1))}
+                                        disabled={page <= 1}
+                                        className="size-10 rounded-lg border border-neutral-300 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-colors cursor-pointer"
+                                        aria-label="Previous page"
                                     >
                                         <ChevronLeft className="size-4" />
                                     </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage(1)}
-                                        className="size-10 rounded-sm bg-slate-900 text-white font-medium font-['Poppins'] text-base flex items-center justify-center"
-                                    >
-                                        1
-                                    </button>
+                                    {Array.from({ length: meta.totalPages || 1 }, (_, i) => i + 1).map((pageNum) => (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            onClick={() => setPage(pageNum)}
+                                            className={`size-10 rounded-lg font-medium font-['Poppins'] text-sm sm:text-base flex items-center justify-center transition-colors cursor-pointer ${
+                                                page === pageNum
+                                                    ? "bg-[#2b6ea6] text-white shadow-sm font-semibold"
+                                                    : "border border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ))}
 
                                     <button
                                         type="button"
-                                        onClick={() => setCurrentPage(2)}
-                                        className="size-10 rounded-sm border border-neutral-300 text-neutral-500 font-medium font-['Poppins'] text-base flex items-center justify-center hover:bg-neutral-50 transition-colors cursor-pointer"
-                                    >
-                                        2
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage(3)}
-                                        className="size-10 rounded-sm border border-neutral-300 text-neutral-500 font-medium font-['Poppins'] text-base flex items-center justify-center hover:bg-neutral-50 transition-colors cursor-pointer"
-                                    >
-                                        3
-                                    </button>
-
-                                    <span className="size-10 rounded-sm border border-neutral-300 text-neutral-500 font-medium font-['Poppins'] text-base flex items-center justify-center">
-                                        ...
-                                    </span>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentPage(8)}
-                                        className="size-10 rounded-sm border border-neutral-300 text-neutral-500 font-medium font-['Poppins'] text-base flex items-center justify-center hover:bg-neutral-50 transition-colors cursor-pointer"
-                                    >
-                                        8
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        className="size-10 rounded-sm border border-neutral-300 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 transition-colors cursor-pointer"
+                                        onClick={() => setPage(Math.min(meta.totalPages || 1, page + 1))}
+                                        disabled={page >= (meta.totalPages || 1)}
+                                        className="size-10 rounded-lg border border-neutral-300 flex items-center justify-center text-neutral-600 hover:bg-neutral-50 disabled:opacity-40 transition-colors cursor-pointer"
+                                        aria-label="Next page"
                                     >
                                         <ChevronRight className="size-4" />
                                     </button>

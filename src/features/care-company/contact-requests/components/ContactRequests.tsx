@@ -12,97 +12,40 @@ import {
   Phone,
   X,
   XCircle,
+  Loader2,
 } from "lucide-react";
-
-interface ContactRequest {
-  id: string;
-  name: string;
-  initials: string;
-  avatarBg: string;
-  category: string;
-  status: "Pending" | "Accepted" | "Rejected";
-  message: string;
-  time: string;
-  phone: string;
-}
-
-const initialRequests: ContactRequest[] = [
-  {
-    id: "1",
-    name: "Margaret Turner",
-    initials: "MT",
-    avatarBg: "bg-cyan-600",
-    category: "Family",
-    status: "Pending",
-    message:
-      "I'm looking for residential care for my 82-year-old mother. Could you advise on availability?",
-    time: "Today 11:30",
-    phone: "07700 900 123",
-  },
-  {
-    id: "2",
-    name: "Dr. Sarah Hammond",
-    initials: "SH",
-    avatarBg: "bg-indigo-600",
-    category: "Healthcare Professional",
-    status: "Pending",
-    message:
-      "I'd like to discuss a partnership referral arrangement for our patients.",
-    time: "Today 09:15",
-    phone: "07700 900 456",
-  },
-  {
-    id: "3",
-    name: "Robert Wilson",
-    initials: "RW",
-    avatarBg: "bg-teal-600",
-    category: "Family",
-    status: "Accepted",
-    message:
-      "Seeking respite care services for 2 weeks starting next month for my father.",
-    time: "Yesterday 16:40",
-    phone: "07700 900 789",
-  },
-  {
-    id: "4",
-    name: "Arthur Lewis",
-    initials: "AL",
-    avatarBg: "bg-rose-600",
-    category: "Individual",
-    status: "Rejected",
-    message:
-      "Inquiring about immediate live-in care outside your primary service area.",
-    time: "3 days ago",
-    phone: "07700 900 999",
-  },
-];
+import { useContactRequests } from "../hooks/useContactRequests";
 
 export default function ContactRequests() {
-  const [requests, setRequests] = useState<ContactRequest[]>(initialRequests);
-  const [activeTab, setActiveTab] = useState<"All" | "Accepted" | "Rejected" | "Pending">("All");
+  const {
+    filteredRequests,
+    counts,
+    activeTab,
+    setActiveTab,
+    isLoading,
+    updateStatus,
+  } = useContactRequests();
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handleStatusChange = (id: string, newStatus: "Accepted" | "Rejected") => {
-    setRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: newStatus } : req))
-    );
+  const handleStatusChange = async (
+    id: string,
+    newStatus: "Accepted" | "Rejected"
+  ) => {
+    const target = filteredRequests.find((r) => r.id === id || r._id === id);
+    await updateStatus(id, newStatus);
     setToastMessage(
-      `Contact request from ${requests.find((r) => r.id === id)?.name} has been ${
+      `Contact request from ${target?.name || "User"} has been ${
         newStatus === "Accepted" ? "accepted" : "declined"
       }.`
     );
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const filteredRequests = requests.filter((req) => {
-    if (activeTab === "All") return true;
-    return req.status === activeTab;
-  });
-
-  const countAll = requests.length;
-  const countAccepted = requests.filter((r) => r.status === "Accepted").length;
-  const countRejected = requests.filter((r) => r.status === "Rejected").length;
-  const countPending = requests.filter((r) => r.status === "Pending").length;
+  const countAll = counts.all;
+  const countAccepted = counts.accepted;
+  const countRejected = counts.rejected;
+  const countPending = counts.pending;
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
@@ -212,7 +155,14 @@ export default function ContactRequests() {
 
             {/* Requests Cards List */}
             <div className="flex flex-col gap-4">
-              {filteredRequests.length === 0 ? (
+              {isLoading ? (
+                <div className="w-full p-12 bg-white rounded-2xl border border-sky-950/10 text-center flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-cyan-700" />
+                  <p className="text-slate-600 font-medium text-sm">
+                    Loading contact requests...
+                  </p>
+                </div>
+              ) : filteredRequests.length === 0 ? (
                 <div className="w-full p-12 bg-white rounded-2xl border border-sky-950/10 text-center flex flex-col items-center justify-center gap-2">
                   <MessageSquare className="h-10 w-10 text-gray-400" />
                   <p className="text-slate-700 font-semibold text-base">

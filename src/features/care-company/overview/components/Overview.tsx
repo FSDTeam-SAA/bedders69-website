@@ -1,24 +1,19 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  BriefcaseBusiness, CircleHelp, Files, UserRoundSearch, Wrench,
+  BriefcaseBusiness,
+  CircleHelp,
+  Files,
+  UserRoundSearch,
+  Wrench,
+  Loader2,
 } from "lucide-react";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
-
-const metrics = [
-  { value: "620", label: "Profile Views", icon: Files },
-  { value: "8", label: "Active Jobs", icon: BriefcaseBusiness },
-  { value: "47", label: "New Applicants", icon: Wrench },
-  { value: "6", label: "Contact Requests", icon: UserRoundSearch },
-];
-
-const applicants = [
-  { name: "James Okafor", role: "Senior Care Assistant", time: "10m ago" },
-  { name: "Emma Williams", role: "Registered Nurse", time: "2h ago" },
-  { name: "Priya Patel", role: "Support Worker", time: "Yesterday" },
-  { name: "Michael Thompson", role: "Care Manager", time: "Yesterday" },
-];
+import { useOverview } from "../hooks/useOverview";
+import { RecentApplicantItem } from "../types/overview.types";
 
 function PerformanceChart() {
   return (
@@ -54,25 +49,57 @@ function PerformanceChart() {
   );
 }
 
-function RecentApplicants() {
+function RecentApplicants({ applicants }: { applicants: RecentApplicantItem[] }) {
   return (
     <section className="rounded-xl border border-[#e6e6e8] bg-white p-4 sm:p-6">
       <div className="flex items-start justify-between gap-4">
-        <div><h2 className="text-lg font-semibold leading-5 text-[#203746]">Recent Applicants</h2><p className="mt-2 text-sm leading-4 text-[#667481]">Latest leads from customers</p></div>
-        <Link href="/care-company/applicants" className="text-lg font-semibold leading-5 text-[#2b6ea6] underline underline-offset-2">View All</Link>
+        <div>
+          <h2 className="text-lg font-semibold leading-5 text-[#203746]">Recent Applicants</h2>
+          <p className="mt-2 text-sm leading-4 text-[#667481]">Latest leads from job applications</p>
+        </div>
+        <Link
+          href="/care-company/applicants"
+          className="text-sm font-semibold leading-5 text-[#2b6ea6] hover:underline underline-offset-2"
+        >
+          View All
+        </Link>
       </div>
       <div className="mt-4">
-        {applicants.map((applicant, index) => (
-          <div key={applicant.name} className={`grid min-h-[72px] grid-cols-[1.25fr_1fr_auto] items-center gap-3 px-4 py-2 ${index < applicants.length - 1 ? "border-b border-[#e6e6e8]" : ""}`}>
-            <p className="text-base font-medium leading-5 text-[#203746]">{applicant.name}</p><p className="truncate text-center text-xs leading-4 text-[#667481]">{applicant.role}</p><p className="text-right text-xs leading-4 text-[#667481]">{applicant.time}</p>
-          </div>
-        ))}
+        {applicants && applicants.length > 0 ? (
+          applicants.map((applicant, index) => (
+            <div
+              key={applicant.name + index}
+              className={`grid min-h-[72px] grid-cols-[1.25fr_1fr_auto] items-center gap-3 px-4 py-2 ${
+                index < applicants.length - 1 ? "border-b border-[#e6e6e8]" : ""
+              }`}
+            >
+              <p className="text-base font-medium leading-5 text-[#203746]">{applicant.name}</p>
+              <p className="truncate text-center text-xs leading-4 text-[#667481]">{applicant.role}</p>
+              <p className="text-right text-xs leading-4 text-[#667481]">{applicant.time}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-xs text-gray-500 py-6">No recent applicants found</p>
+        )}
       </div>
     </section>
   );
 }
 
 export default function Overview() {
+  const { overview, isLoading } = useOverview();
+
+  const metrics = [
+    { value: String(overview.metrics.profileViews), label: "Profile Views", icon: Files },
+    { value: String(overview.metrics.activeJobs), label: "Active Jobs", icon: BriefcaseBusiness },
+    { value: String(overview.metrics.newApplicants), label: "New Applicants", icon: Wrench },
+    { value: String(overview.metrics.contactRequests), label: "Contact Requests", icon: UserRoundSearch },
+  ];
+
+  const companyName = overview.company.companyName;
+  const tradingName = overview.company.tradingName;
+  const logo = overview.company.logo || "/images/logo.png";
+
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
       <div className="mx-auto flex w-full max-w-[1920px] flex-col lg:flex-row">
@@ -80,8 +107,10 @@ export default function Overview() {
         <div className="min-w-0 flex-1">
           <header className="flex min-h-[100px] items-center justify-between bg-white px-6 py-[26px] border-b border-[#f0f1f2]">
             <div>
-              <h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">Good morning, Sarah!</h1>
-              <p className="mt-2 text-xs leading-4 text-[#667481]">Here&apos;s what&apos;s happening with Sunrise Care Services today</p>
+              <h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">Good morning!</h1>
+              <p className="mt-2 text-xs leading-4 text-[#667481]">
+                Here&apos;s what&apos;s happening with {companyName} today
+              </p>
             </div>
             <Link
               href="/care-company/company-profile"
@@ -89,15 +118,15 @@ export default function Overview() {
             >
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
                 <Image
-                  src="/images/logo.png"
-                  alt="Sunrise Care"
+                  src={logo}
+                  alt={tradingName}
                   fill
                   className="object-contain p-1"
                 />
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
+                  {tradingName}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Care Company
@@ -106,16 +135,28 @@ export default function Overview() {
             </Link>
           </header>
           <div className="space-y-6 p-4 sm:p-6">
-            <section className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-4">
-              {metrics.map(({ value, label, icon: Icon }) => (
-                <article key={label} className="flex h-[139px] items-center justify-between rounded-lg bg-white p-4 shadow-[0_4px_6px_rgba(0,0,0,0.10)]">
-                  <div><p className="text-[32px] font-bold leading-10 text-[#2b6ea6]">{value}</p><p className="mt-1 text-sm leading-4 text-[#616161]">{label}</p></div>
-                  <div className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#e8ebec] text-[#2b6ea6]"><Icon className="h-6 w-6" strokeWidth={1.8} /></div>
-                </article>
-              ))}
-            </section>
+            {isLoading ? (
+              <div className="w-full p-8 flex items-center justify-center gap-2 bg-white rounded-xl border border-neutral-100">
+                <Loader2 className="h-6 w-6 animate-spin text-[#2b6ea6]" />
+                <span className="text-sm text-slate-600 font-medium">Loading dashboard statistics...</span>
+              </div>
+            ) : (
+              <section className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-4">
+                {metrics.map(({ value, label, icon: Icon }) => (
+                  <article key={label} className="flex h-[139px] items-center justify-between rounded-lg bg-white p-4 shadow-[0_4px_6px_rgba(0,0,0,0.10)]">
+                    <div>
+                      <p className="text-[32px] font-bold leading-10 text-[#2b6ea6]">{value}</p>
+                      <p className="mt-1 text-sm leading-4 text-[#616161]">{label}</p>
+                    </div>
+                    <div className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#e8ebec] text-[#2b6ea6]">
+                      <Icon className="h-6 w-6" strokeWidth={1.8} />
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
             <PerformanceChart />
-            <RecentApplicants />
+            <RecentApplicants applicants={overview.recentApplicants} />
           </div>
         </div>
       </div>
