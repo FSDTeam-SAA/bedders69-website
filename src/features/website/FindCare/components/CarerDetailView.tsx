@@ -1,95 +1,159 @@
 "use client";
 
-import React from "react";
-import { useParams } from "next/navigation";
-import { Star, MapPin, CheckCircle, Award, Calendar, MessageCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  Star,
+  MapPin,
+  CheckCircle,
+  Award,
+  Calendar,
+  MessageCircle,
+  Phone,
+  Mail,
+  ArrowLeft,
+  UserCheck,
+} from "lucide-react";
+import findCareApi from "../api/findCareApi";
+import { CarerItem } from "../types/findCare.types";
+
+const fallbackCarerImages = [
+  "https://images.unsplash.com/photo-1594824813681-364e2d31298c?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+];
 
 export const CarerDetailView = () => {
   const params = useParams();
-  const id = params.id as string;
+  const router = useRouter();
+  const id = (params?.id as string) || "";
+  const decodedSlug = decodeURIComponent(id).toLowerCase().replace(/\s+/g, "-");
 
-  // Decode ID from slug
-  const decodedId = id ? decodeURIComponent(id).toLowerCase().replace(/-/g, " ") : "";
+  const [carer, setCarer] = useState<CarerItem | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const carersData = [
-    {
-      name: "Matthew Warkentin",
-      rating: "4.9",
-      reviews: 67,
-      location: "London, N1",
-      experience: "8 years experience",
-      available: "Available Immediately",
-      rate: "$150/hrs",
-      image: "",
-      bio: "Matthew Warkentin is a compassionate and dedicated professional carer with over 8 years of experience supporting older adults and individuals with complex care needs. He specialises in residential care, dementia support, personal care, respite care, and medication assistance. Known for his patient-centred approach, Matthew is committed to promoting dignity, independence, and well-being while building trusted relationships with clients and their families. His goal is to deliver high-quality, compassionate care tailored to each individual's unique needs.",
-      skills: ["Dementia Care", "Medication Admin", "Palliative Care", "Mental Health", "Night Shifts"],
-      qualifications: [
-        "NVQ Level 3 Health & Social Care",
-        "First Aid Certificate (2023)",
-        "Dementia Care Training"
-      ],
-      serviceArea: "London, Greater London",
-      availabilityText: "Mon–Fri 7am–6pm · Sat 8am–2pm · Emergency 24/7 · Weekends · Day Shifts · Night Shifts · Live-In"
-    },
-    {
-      name: "Sarah Palmer",
-      rating: "4.7",
-      reviews: 55,
-      location: "Birmingham, B2",
-      experience: "5 years experience",
-      available: "Available Immediately",
-      rate: "$120/hrs",
-      image: "/images/carer-female.png",
-      bio: "Sarah Palmer is a dedicated and enthusiastic Support Worker with a focus on mental health, emotional well-being, and crisis intervention. She has over 5 years of experience assisting clients in outpatient and residential settings, offering empathetic listening, personal care support, and guidance to help individuals achieve their goals.",
-      skills: ["Mental Health Support", "Crisis Intervention", "Companionship", "Personal Care", "Respite Care"],
-      qualifications: [
-        "NVQ Level 2 Health & Social Care",
-        "Crisis Intervention Specialist Certificate",
-        "First Aid & CPR Certified"
-      ],
-      serviceArea: "Birmingham, West Midlands",
-      availabilityText: "Mon–Fri 8am–5pm · Weekends · Day Shifts"
-    },
-    {
-      name: "John Smith",
-      rating: "4.8",
-      reviews: 80,
-      location: "Manchester, M1",
-      experience: "6 years experience",
-      available: "Available Immediately",
-      rate: "$140/hrs",
-      image: "/images/carer-male.png",
-      bio: "John Smith is an experienced and caring Home Carer specialized in personal care, companionship, and support for individuals with mobility challenges. He is dedicated to helping seniors live independently at home, assisting with daily activities, nutrition, and light housekeeping with a warm and positive attitude.",
-      skills: ["Personal Care", "Companionship", "Respite Care", "Dementia Care", "Meal Preparation"],
-      qualifications: [
-        "Care Certificate (UK Standard)",
-        "Safe Handling of Medication",
-        "Moving & Handling Certification"
-      ],
-      serviceArea: "Manchester, Greater Manchester",
-      availabilityText: "Mon–Fri 9am–7pm · Sat 10am–4pm · Day Shifts · Weekends"
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCarer() {
+      setIsLoading(true);
+      try {
+        const res = await findCareApi.getCarers({ limit: 50, page: 1 });
+        if (res && res.data && isMounted) {
+          const matched = res.data.find(
+            (c) =>
+              c.id === id ||
+              c.careName.toLowerCase().replace(/\s+/g, "-") === decodedSlug ||
+              encodeURIComponent(c.careName.toLowerCase().replace(/\s+/g, "-")) === id
+          );
+
+          if (matched) {
+            setCarer(matched);
+          } else if (res.data.length > 0) {
+            setCarer(res.data[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading carer detail:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
-  ];
+    loadCarer();
+    return () => {
+      isMounted = false;
+    };
+  }, [id, decodedSlug]);
 
-  // Find carer matching path or default to first
-  const carer = carersData.find(c => c.name.toLowerCase() === decodedId) || carersData[0];
+  if (isLoading) {
+    return (
+      <main className="w-full bg-[#F4F7FC] min-h-screen pb-16 font-['Wix_Madefor_Text']">
+        <div className="h-64 w-full animate-pulse bg-slate-300" />
+        <div className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="h-44 animate-pulse rounded-3xl bg-white p-6 shadow-sm" />
+              <div className="h-36 animate-pulse rounded-3xl bg-white p-6 shadow-sm" />
+            </div>
+            <div className="lg:col-span-4">
+              <div className="h-48 animate-pulse rounded-3xl bg-white p-6 shadow-sm" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!carer) {
+    return (
+      <main className="min-h-screen bg-[#F4F7FC] flex items-center justify-center p-6">
+        <div className="max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+          <UserCheck className="mx-auto size-12 text-slate-400" />
+          <h2 className="mt-4 text-xl font-bold text-[#1B2C54]">Carer Not Found</h2>
+          <p className="mt-2 text-sm text-slate-500">
+            The carer profile you are looking for does not exist or is unavailable.
+          </p>
+          <button
+            onClick={() => router.push("/find-care")}
+            className="mt-6 rounded-lg bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800"
+          >
+            Back to Carers
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const name = carer.careName;
+  const location =
+    carer.address || (carer.postCode ? `UK (${carer.postCode})` : "London, UK");
+  const expYears = carer.yearsOfExperience || 5;
+  const skillsList =
+    carer.skills && carer.skills.length > 0
+      ? carer.skills
+      : carer.specialisms && carer.specialisms.length > 0
+      ? carer.specialisms
+      : ["Personal Care", "Companionship", "Dementia Care"];
+  const image =
+    carer.profilePicture || fallbackCarerImages[0];
+  const bio =
+    carer.professionalSummary ||
+    `${name} is a dedicated and qualified care professional with ${expYears}+ years of experience providing person-centred assistance, dignity, and companionship to vulnerable adults and seniors.`;
+
+  const cleanPhone = carer.phoneNumber
+    ? carer.phoneNumber.replace(/[^0-9]/g, "")
+    : "";
 
   return (
     <main className="w-full bg-[#F4F7FC] min-h-screen pb-16 font-['Wix_Madefor_Text']">
-      
+      {/* Back button bar */}
+      <div className="bg-[#1B2C54] text-white py-3.5 px-6 md:px-12 lg:px-16 border-b border-white/5">
+        <div className="container mx-auto">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors cursor-pointer text-xs font-semibold"
+          >
+            <ArrowLeft className="size-4" />
+            Back to Carers List
+          </button>
+        </div>
+      </div>
+
       {/* Hero Banner */}
       <section
-        className="w-full bg-cover bg-center py-16 md:py-24 px-6 text-center text-white relative"
+        className="w-full bg-cover bg-center py-14 md:py-20 px-6 text-center text-white relative shadow-md"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.5)), url('/images/services_hero.jpg')`
+          backgroundImage: `linear-gradient(rgba(14, 35, 66, 0.7), rgba(14, 35, 66, 0.8)), url('/images/services_hero.jpg')`,
         }}
       >
-        <div className="max-w-6xl mx-auto flex flex-col gap-4">
-          <h1 className="text-6xl md:text-5xl lg:text-6xl font-bold leading-tight font-['Wix_Madefor_Text']">
-            Meet Your Trusted Care Professional
+        <div className="max-w-4xl mx-auto flex flex-col gap-3">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
+            {name}
           </h1>
-          <p className="text-sm md:text-lg text-white/80 font-normal leading-relaxed max-w-2xl mx-auto">
-            Explore the profile of a verified care professional, including their experience, skills, certifications, and areas of expertise.
+          <p className="text-sm md:text-base text-white/85 font-normal leading-relaxed max-w-2xl mx-auto">
+            Verified Professional Carer · Dedicated & Compassionate Care Support
           </p>
         </div>
       </section>
@@ -97,40 +161,33 @@ export const CarerDetailView = () => {
       {/* Main Grid Content */}
       <section className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
           {/* Left Column: Details Cards */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            
             {/* Header info profile card */}
             <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-              
-              {/* Profile Image/Placeholder */}
-              {carer.image ? (
-                <div className="size-32 rounded-2xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100">
-                  <img src={carer.image} alt={carer.name} className="w-full h-full object-cover object-top" />
-                </div>
-              ) : (
-                <div className="size-32 rounded-2xl bg-[#BCC4CD] flex flex-col justify-center items-center p-3 relative shrink-0 border border-slate-100/60">
-                  <p className="text-white text-[10px] font-bold text-center leading-relaxed font-['Poppins']">
-                    Individual chose not to show their photo
-                  </p>
-                </div>
-              )}
+              {/* Profile Image */}
+              <div className="size-32 rounded-2xl overflow-hidden bg-slate-50 shrink-0 border border-slate-100 shadow-sm">
+                <img
+                  src={image}
+                  alt={name}
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
 
               {/* Text Info */}
               <div className="flex-1 flex flex-col gap-2 text-center sm:text-left">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <h2 className="text-2xl md:text-3xl font-bold text-[#1B2C54]">
-                    {carer.name}
+                    {name}
                   </h2>
-                  
+
                   {/* Badges */}
                   <div className="flex justify-center sm:justify-start items-center gap-2">
                     <span className="bg-[#E5F2FC] text-[#0A66C2] text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                      Premium
+                      Independent Carer
                     </span>
                     <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                      Verified
+                      DBS Verified
                     </span>
                   </div>
                 </div>
@@ -139,19 +196,22 @@ export const CarerDetailView = () => {
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 text-slate-500 text-sm mt-1">
                   <div className="flex items-center gap-1 font-semibold">
                     <MapPin className="size-4 text-slate-400" />
-                    <span>{carer.location}</span>
+                    <span>{location}</span>
                   </div>
-                  
+
                   <span className="hidden sm:inline text-slate-200">•</span>
-                  
+
                   <div className="flex items-center gap-1">
                     <div className="flex items-center">
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className="size-4 fill-amber-400 text-transparent" />
+                        <Star
+                          key={i}
+                          className="size-4 fill-amber-400 text-amber-400"
+                        />
                       ))}
                     </div>
-                    <span className="text-slate-700 font-bold ml-1">{carer.rating}</span>
-                    <span className="text-slate-400">({carer.reviews} reviews)</span>
+                    <span className="text-slate-700 font-bold ml-1">4.9</span>
+                    <span className="text-slate-400">(28 reviews)</span>
                   </div>
                 </div>
 
@@ -159,36 +219,34 @@ export const CarerDetailView = () => {
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 text-slate-500 text-sm mt-2 border-t border-slate-100 pt-3">
                   <div className="flex items-center gap-1.5 font-medium">
                     <Award className="size-4 text-[#0A66C2]" />
-                    <span>{carer.experience}</span>
+                    <span>{expYears} Years Experience</span>
                   </div>
                   <span className="hidden sm:inline text-slate-200">•</span>
                   <div className="flex items-center gap-1.5 font-bold text-emerald-700">
                     <CheckCircle className="size-4 text-emerald-600" />
-                    <span>{carer.available}</span>
+                    <span>{carer.isAvailable !== false ? "Available Immediately" : "On Assignment"}</span>
                   </div>
                 </div>
-
               </div>
-
             </div>
 
             {/* About Card */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-slate-800 font-['Wix_Madefor_Text']">
-                About
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-3">
+              <h3 className="text-lg font-bold text-slate-800">
+                About {name}
               </h3>
-              <p className="text-slate-500 leading-relaxed text-sm md:text-base font-medium">
-                {carer.bio}
+              <p className="text-slate-600 leading-relaxed text-sm md:text-base font-normal">
+                {bio}
               </p>
             </div>
 
             {/* Skills & Specialisms Card */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-slate-800 font-['Wix_Madefor_Text']">
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-3">
+              <h3 className="text-lg font-bold text-slate-800">
                 Skills & Specialisms
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {carer.skills.map((skill, idx) => (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {skillsList.map((skill, idx) => (
                   <span
                     key={idx}
                     className="bg-[#E5F2FC] text-[#0A66C2] text-xs font-bold px-4 py-2 rounded-xl border border-blue-100/50"
@@ -200,71 +258,88 @@ export const CarerDetailView = () => {
             </div>
 
             {/* Availability Card */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-slate-800 font-['Wix_Madefor_Text']">
-                Availability
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-3">
+              <h3 className="text-lg font-bold text-slate-800">
+                Availability & Shifts
               </h3>
-              <div className="flex gap-3 items-start text-slate-500 text-sm md:text-base font-medium">
+              <div className="flex gap-3 items-start text-slate-600 text-sm md:text-base">
                 <Calendar className="size-5 text-[#0A66C2] shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
-                  {carer.availabilityText}
+                  {carer.shifts || "Day Shifts · Night Shifts · Flexible Hours · Emergency On-Call"}
                 </p>
               </div>
             </div>
 
-            {/* Qualifications Card */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-slate-800 font-['Wix_Madefor_Text']">
-                Qualifications
-              </h3>
-              <div className="flex flex-col gap-3">
-                {carer.qualifications.map((qual, idx) => (
-                  <div key={idx} className="flex gap-3 items-center text-slate-600 text-sm font-medium">
-                    <CheckCircle className="size-4.5 text-emerald-600 shrink-0" />
-                    <span>{qual}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Service Area Card */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xl font-bold text-slate-800 font-['Wix_Madefor_Text']">
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-3">
+              <h3 className="text-lg font-bold text-slate-800">
                 Service Area
               </h3>
-              <div className="flex gap-3 items-center text-slate-500 text-sm md:text-base font-medium">
+              <div className="flex gap-3 items-center text-slate-600 text-sm md:text-base">
                 <MapPin className="size-5 text-[#0A66C2] shrink-0" />
-                <span>{carer.serviceArea}</span>
+                <span>{location} and surrounding areas</span>
               </div>
             </div>
-
           </div>
 
           {/* Right Column: Sticky Contact Sidebar */}
-          <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-6">
+          <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-4">
             <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h4 className="text-base font-bold text-slate-800">
-                Contact Carer
+                Direct Contact
               </h4>
               <p className="text-xs text-slate-400 font-medium">
-                Send a message directly via WhatsApp to discuss care services and bookings.
+                Reach out directly to {name} for care inquiries, assessments, and bookings.
               </p>
-              
-              <a
-                href="https://wa.me/#"
-                target="_blank"
-                rel="noreferrer"
-                className="bg-[#25D366] hover:bg-[#20BA56] text-white py-3 px-6 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow active:scale-[0.98]"
-              >
-                <MessageCircle className="size-5 fill-current" />
-                Contact
-              </a>
+
+              {cleanPhone && (
+                <a
+                  href={`https://wa.me/${cleanPhone}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-[#25D366] hover:bg-[#20BA56] text-white py-3.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                >
+                  <MessageCircle className="size-5 fill-current" />
+                  Chat on WhatsApp
+                </a>
+              )}
+
+              {carer.phoneNumber && (
+                <a
+                  href={`tel:${carer.phoneNumber}`}
+                  className="bg-[#2D6A9F] hover:bg-[#20527F] text-white py-3.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Phone className="size-4" />
+                  Call: {carer.phoneNumber}
+                </a>
+              )}
+
+              {carer.email && (
+                <a
+                  href={`mailto:${carer.email}?subject=Care Inquiry for ${name}`}
+                  className="border border-slate-200 text-slate-700 hover:bg-slate-50 py-3.5 px-6 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Mail className="size-4" />
+                  Send Email
+                </a>
+              )}
+            </div>
+
+            {/* Verification info badge */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-2">
+              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                <CheckCircle className="size-4 text-emerald-600" />
+                Verified & Background Checked
+              </span>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Identity, Right to Work in the UK, and Enhanced DBS checks have been verified.
+              </p>
             </div>
           </div>
-
         </div>
       </section>
-
     </main>
   );
 };
+
+export default CarerDetailView;

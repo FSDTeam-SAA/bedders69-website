@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { AgenciesHero } from "./AgenciesHero";
 import { AgenciesSidebar } from "./AgenciesSidebar";
 import { AgenciesList } from "./AgenciesList";
+import { AgencyProps } from "../types/agencies.types";
 import { X, Send, CheckCircle2, Phone, Globe, Mail, MapPin } from "lucide-react";
 
 export const AgenciesView = () => {
@@ -15,60 +16,12 @@ export const AgenciesView = () => {
   const [selectedRating, setSelectedRating] = useState("");
 
   // Contact Modal States
-  const [contactingAgency, setContactingAgency] = useState<string | null>(null);
+  const [contactingAgency, setContactingAgency] = useState<AgencyProps | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-
-  // Simulated Agency Contact details lookup
-  const getAgencyDetails = (agencyName: string) => {
-    switch (agencyName) {
-      case "Apex Care Agency":
-        return {
-          phone: "+44 161 8899 11",
-          email: "contact@apexcare.co.uk",
-          website: "www.apexcare.co.uk",
-          address: "Manchester, M1 1AE",
-        };
-      case "Guardian Staffing":
-        return {
-          phone: "+44 121 7788 22",
-          email: "info@guardianstaffing.co.uk",
-          website: "www.guardianstaffing.co.uk",
-          address: "Birmingham, B1 2AA",
-        };
-      case "Sunrise Health Link":
-        return {
-          phone: "+44 207 5544 33",
-          email: "admin@sunrisehealth.co.uk",
-          website: "www.sunrisehealth.co.uk",
-          address: "London, EC1A 1BB",
-        };
-      case "Elite Carers Direct":
-        return {
-          phone: "+44 117 3322 44",
-          email: "hello@elitecarers.co.uk",
-          website: "www.elitecarers.co.uk",
-          address: "Bristol, BS1 3AD",
-        };
-      case "Beacon Recruitment":
-        return {
-          phone: "+44 161 4455 66",
-          email: "jobs@beaconrecruitment.co.uk",
-          website: "www.beaconrecruitment.co.uk",
-          address: "Manchester, M2 2BC",
-        };
-      default: // CareFirst Recruitment
-        return {
-          phone: "+44 208 9988 77",
-          email: "admin@carefirst.co.uk",
-          website: "www.carefirst.co.uk",
-          address: "London, W1A 1AA",
-        };
-    }
-  };
 
   const handleSearch = () => {
     setSearchTriggeredQuery(searchQuery);
@@ -94,8 +47,8 @@ export const AgenciesView = () => {
     setSelectedRating("");
   };
 
-  const handleContactClick = (agencyName: string) => {
-    setContactingAgency(agencyName);
+  const handleContactClick = (agency: AgencyProps) => {
+    setContactingAgency(agency);
     setName("");
     setEmail("");
     setMessage("");
@@ -116,11 +69,8 @@ export const AgenciesView = () => {
     }, 1200);
   };
 
-  const currentDetails = contactingAgency ? getAgencyDetails(contactingAgency) : null;
-
   return (
     <div className="bg-[#F4F7FC] min-h-screen pb-16 relative">
-      
       {/* Hero Banner */}
       <AgenciesHero
         searchQuery={searchQuery}
@@ -131,7 +81,6 @@ export const AgenciesView = () => {
       {/* Main Layout */}
       <div className="container mx-auto px-6 md:px-12 lg:px-16 py-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          
           <AgenciesSidebar
             selectedServices={selectedServices}
             toggleService={toggleService}
@@ -149,15 +98,13 @@ export const AgenciesView = () => {
             selectedRating={selectedRating}
             onContactClick={handleContactClick}
           />
-
         </div>
       </div>
 
-      {/* FIGMA: Contact Agency Modal (5151:8194) */}
-      {contactingAgency && currentDetails && (
+      {/* Contact Agency Modal */}
+      {contactingAgency && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto animate-fade-in font-['Wix_Madefor_Text']">
           <div className="bg-white rounded-3xl w-full max-w-2xl border border-slate-100 shadow-2xl p-6 md:p-8 flex flex-col gap-6 relative max-h-[95vh] overflow-y-auto animate-scale-up">
-            
             {/* Close Button */}
             <button
               onClick={() => setContactingAgency(null)}
@@ -173,61 +120,79 @@ export const AgenciesView = () => {
               </h2>
               <div className="mt-3 p-4 bg-slate-50 rounded-2xl flex flex-col gap-1 border border-slate-100">
                 <span className="text-sm font-bold text-slate-800">
-                  {contactingAgency}
+                  {contactingAgency.name}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
-                  Recruitment & Directory Service
+                  Verified Recruitment & Care Staffing Partner
                 </span>
               </div>
             </div>
 
-            {/* Agency Contact Details Grid (Figma: Frame 2147234793) */}
+            {/* Agency Contact Details Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100/50 text-sm">
-              <div className="flex items-center gap-3 text-slate-700">
-                <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
-                  <Phone className="size-4" />
+              {contactingAgency.phone && (
+                <div className="flex items-center gap-3 text-slate-700">
+                  <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
+                    <Phone className="size-4" />
+                  </div>
+                  <a
+                    href={`tel:${contactingAgency.phone}`}
+                    className="font-semibold hover:underline"
+                  >
+                    {contactingAgency.phone}
+                  </a>
                 </div>
-                <span className="font-semibold">{currentDetails.phone}</span>
-              </div>
+              )}
 
-              <div className="flex items-center gap-3 text-slate-700">
-                <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
-                  <Globe className="size-4" />
+              {contactingAgency.website && (
+                <div className="flex items-center gap-3 text-slate-700">
+                  <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
+                    <Globe className="size-4" />
+                  </div>
+                  <a
+                    href={
+                      contactingAgency.website.startsWith("http")
+                        ? contactingAgency.website
+                        : `https://${contactingAgency.website}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold hover:underline text-[#2D6A9F] truncate"
+                  >
+                    {contactingAgency.website.replace(/^https?:\/\//, "")}
+                  </a>
                 </div>
-                <a
-                  href={`https://${currentDetails.website}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold hover:underline text-[#2D6A9F]"
-                >
-                  {currentDetails.website}
-                </a>
-              </div>
+              )}
 
-              <div className="flex items-center gap-3 text-slate-700">
-                <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
-                  <Mail className="size-4" />
+              {contactingAgency.email && (
+                <div className="flex items-center gap-3 text-slate-700">
+                  <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
+                    <Mail className="size-4" />
+                  </div>
+                  <a
+                    href={`mailto:${contactingAgency.email}?subject=Inquiry from Care Directory`}
+                    className="font-semibold hover:underline break-all"
+                  >
+                    {contactingAgency.email}
+                  </a>
                 </div>
-                <span className="font-semibold break-all">{currentDetails.email}</span>
-              </div>
+              )}
 
               <div className="flex items-center gap-3 text-slate-700">
                 <div className="size-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2D6A9F] shrink-0">
                   <MapPin className="size-4" />
                 </div>
-                <span className="font-semibold">{currentDetails.address}</span>
+                <span className="font-semibold truncate">{contactingAgency.location}</span>
               </div>
             </div>
 
-            {/* Message Form (Figma: Send a message) */}
+            {/* Message Form */}
             <form onSubmit={handleContactSubmit} className="flex flex-col gap-4">
-              
               <h3 className="text-lg font-bold text-slate-800 border-b border-slate-50 pb-2">
                 Send a message
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                
                 {/* Your Name */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-bold text-slate-700">
@@ -257,7 +222,6 @@ export const AgenciesView = () => {
                     required
                   />
                 </div>
-
               </div>
 
               {/* Message */}
@@ -269,7 +233,7 @@ export const AgenciesView = () => {
                   rows={4}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type here..."
+                  placeholder="Type your inquiry regarding staffing, shifts, or vacancies..."
                   className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#2D6A9F] focus:ring-1 focus:ring-[#2D6A9F] font-medium transition-all"
                   required
                 />
@@ -284,7 +248,7 @@ export const AgenciesView = () => {
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -294,15 +258,13 @@ export const AgenciesView = () => {
                     <span>Sending...</span>
                   ) : (
                     <>
-                      <span>Submit Application</span>
+                      <span>Send Inquiry</span>
                       <Send className="size-4 stroke-[2.5]" />
                     </>
                   )}
                 </button>
               </div>
-
             </form>
-
           </div>
         </div>
       )}
@@ -313,11 +275,14 @@ export const AgenciesView = () => {
           <CheckCircle2 className="size-6 text-emerald-600 shrink-0" />
           <div className="flex flex-col">
             <span className="text-sm font-bold">Inquiry Sent!</span>
-            <span className="text-xs text-emerald-600/95 font-medium mt-0.5">Your message has been sent to the agency. They will contact you shortly.</span>
+            <span className="text-xs text-emerald-600/95 font-medium mt-0.5">
+              Your message has been sent to the agency. They will contact you shortly.
+            </span>
           </div>
         </div>
       )}
-
     </div>
   );
 };
+
+export default AgenciesView;

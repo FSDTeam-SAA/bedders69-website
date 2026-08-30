@@ -3,7 +3,8 @@
 import React, { useState, useRef } from "react";
 import { JobsHero } from "./JobsHero";
 import { JobsFilterSidebar } from "./JobsFilterSidebar";
-import { JobsList, JobProps } from "./JobsList";
+import { JobsList } from "./JobsList";
+import { JobProps } from "../types/jobs.types";
 import { X, UploadCloud, Send, FileText, Check } from "lucide-react";
 
 export const JobsView = () => {
