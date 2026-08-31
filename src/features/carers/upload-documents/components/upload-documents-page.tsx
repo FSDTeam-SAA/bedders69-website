@@ -1,12 +1,21 @@
 "use client";
 
-import React, { ChangeEvent, FormEvent, useState } from "react";
-import { CheckCircle2, Upload } from "lucide-react";
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { CheckCircle2, ExternalLink, FileText, Upload } from "lucide-react";
 
 type UploadErrors = {
   cvResume?: string;
   supportingDocuments?: string;
 };
+
+type UploadedDocuments = {
+  cv?: string;
+  documents?: string[];
+};
+
+function getFileName(url: string) {
+  return decodeURIComponent(url.split("/").pop()?.split("?")[0] || "Document");
+}
 
 function UploadCard({
   label,
@@ -66,8 +75,37 @@ export function UploadDocumentsPage() {
   const [supportingDocuments, setSupportingDocuments] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingUploads, setIsLoadingUploads] = useState(true);
   const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<UploadErrors>({});
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocuments>({});
+
+  useEffect(() => {
+    async function loadUploadedDocuments() {
+      try {
+        const response = await fetch("/api/care/profile", { cache: "no-store" });
+        const body = await response.json();
+
+        if (!response.ok) {
+          throw new Error(body?.message || "Unable to load uploaded documents.");
+        }
+
+        const profile: UploadedDocuments = body.data ?? body;
+        setUploadedDocuments({
+          cv: profile.cv,
+          documents: Array.isArray(profile.documents) ? profile.documents : [],
+        });
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : "Unable to load uploaded documents.",
+        );
+      } finally {
+        setIsLoadingUploads(false);
+      }
+    }
+
+    void loadUploadedDocuments();
+  }, []);
 
   function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -133,6 +171,11 @@ export function UploadDocumentsPage() {
         throw new Error(body?.message || "Unable to upload documents. Please try again.");
       }
 
+      const profile: UploadedDocuments = body.data ?? body;
+      setUploadedDocuments({
+        cv: profile.cv,
+        documents: Array.isArray(profile.documents) ? profile.documents : [],
+      });
       setSubmitted(true);
     } catch (error) {
       setSubmitted(false);
@@ -176,6 +219,41 @@ export function UploadDocumentsPage() {
             error={errors.supportingDocuments}
           />
         </div>
+
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h2 className="text-base font-semibold text-slate-800">Uploaded documents</h2>
+          {isLoadingUploads ? (
+            <p role="status" className="mt-2 text-sm text-slate-500">Loading uploaded documents…</p>
+          ) : uploadedDocuments.cv || uploadedDocuments.documents?.length ? (
+            <div className="mt-3 space-y-2">
+              {uploadedDocuments.cv ? (
+                <a
+                  href={uploadedDocuments.cv}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
+                >
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">CV / Resume: {getFileName(uploadedDocuments.cv)}</span></span>
+                  <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+                </a>
+              ) : null}
+              {uploadedDocuments.documents?.map((documentUrl) => (
+                <a
+                  key={documentUrl}
+                  href={documentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
+                >
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">{getFileName(documentUrl)}</span></span>
+                  <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">No documents uploaded yet.</p>
+          )}
+        </section>
 
         {submitted ? (
           <div className="flex w-full items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
