@@ -21,7 +21,9 @@ type Profile = {
   email?: string;
   phoneNumber?: string;
   cv?: string;
+  cvFileName?: string;
   documents?: string[];
+  documentNames?: string[];
 };
 type ApplyForm = {
   resumeUrl: string;
@@ -84,6 +86,11 @@ export function CarerJobDetailPage({ slug: jobId }: { slug: string }) {
   const resumes = [profile.cv, ...(profile.documents ?? [])].filter(
     (url): url is string => Boolean(url),
   );
+  const resumeName = (url: string) =>
+    url === profile.cv
+      ? profile.cvFileName || fileName(url)
+      : profile.documentNames?.[(profile.documents ?? []).indexOf(url)] ||
+        fileName(url);
   const salary =
     job?.salaryMin || job?.salaryMax
       ? `${job.salaryCurrency === "GBP" || !job.salaryCurrency ? "£" : `${job.salaryCurrency} `}${job.salaryMin?.toLocaleString() ?? ""}${job.salaryMax ? ` – ${job.salaryMax.toLocaleString()}` : ""}`
@@ -253,7 +260,7 @@ export function CarerJobDetailPage({ slug: jobId }: { slug: string }) {
                     <option value="">Select an uploaded document</option>
                     {resumes.map((url) => (
                       <option key={url} value={url}>
-                        {fileName(url)}
+                        {resumeName(url)}
                       </option>
                     ))}
                   </select>

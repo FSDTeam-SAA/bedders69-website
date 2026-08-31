@@ -10,7 +10,9 @@ type UploadErrors = {
 
 type UploadedDocuments = {
   cv?: string;
+  cvFileName?: string;
   documents?: string[];
+  documentNames?: string[];
 };
 
 function getFileName(url: string) {
@@ -93,7 +95,9 @@ export function UploadDocumentsPage() {
         const profile: UploadedDocuments = body.data ?? body;
         setUploadedDocuments({
           cv: profile.cv,
+          cvFileName: profile.cvFileName,
           documents: Array.isArray(profile.documents) ? profile.documents : [],
+          documentNames: Array.isArray(profile.documentNames) ? profile.documentNames : [],
         });
       } catch (error) {
         setSubmitError(
@@ -174,7 +178,9 @@ export function UploadDocumentsPage() {
       const profile: UploadedDocuments = body.data ?? body;
       setUploadedDocuments({
         cv: profile.cv,
+        cvFileName: profile.cvFileName,
         documents: Array.isArray(profile.documents) ? profile.documents : [],
+        documentNames: Array.isArray(profile.documentNames) ? profile.documentNames : [],
       });
       setSubmitted(true);
     } catch (error) {
@@ -233,11 +239,11 @@ export function UploadDocumentsPage() {
                   rel="noreferrer"
                   className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
                 >
-                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">CV / Resume: {getFileName(uploadedDocuments.cv)}</span></span>
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">CV / Resume: {uploadedDocuments.cvFileName || getFileName(uploadedDocuments.cv)}</span></span>
                   <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </a>
               ) : null}
-              {uploadedDocuments.documents?.map((documentUrl) => (
+              {uploadedDocuments.documents?.map((documentUrl, index) => (
                 <a
                   key={documentUrl}
                   href={documentUrl}
@@ -245,7 +251,7 @@ export function UploadDocumentsPage() {
                   rel="noreferrer"
                   className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
                 >
-                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">{getFileName(documentUrl)}</span></span>
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">{uploadedDocuments.documentNames?.[index] || getFileName(documentUrl)}</span></span>
                   <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </a>
               ))}
