@@ -1,161 +1,17 @@
-import React from "react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Clock3, MapPin, Search } from "lucide-react";
 
-const filters = ["All", "Reviewed", "Shortlisted", "Interview", "Offered", "Rejected", "Hired"];
-
-const applications = [
-  {
-    title: "Senior Care Assistant",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Pending",
-    tone: "bg-yellow-600/10 text-yellow-600",
-  },
-  {
-    title: "Registered Nurse – Dementia Ward",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Reviewed",
-    tone: "bg-fuchsia-900/10 text-fuchsia-900",
-  },
-  {
-    title: "Care Manager",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Shortlisted",
-    tone: "bg-fuchsia-600/10 text-fuchsia-600",
-  },
-  {
-    title: "Support Worker – Mental Health",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Interview",
-    tone: "bg-cyan-400/20 text-cyan-500",
-  },
-  {
-    title: "Night Carer – Residential Home",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Offered",
-    tone: "bg-blue-600/10 text-blue-600",
-  },
-  {
-    title: "Registered Nurse – Dementia Ward",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Rejected",
-    tone: "bg-red-600/10 text-red-500",
-  },
-  {
-    title: "Care Manager",
-    company: "Sunrise Care Group",
-    location: "Austin, TX",
-    type: "Full-Time",
-    salary: "£32,000 – £38,000",
-    status: "Hired",
-    tone: "bg-green-500/10 text-green-500",
-  },
-];
-
-function FilterChip({ label, active = false }: { label: string; active?: boolean }) {
-  return (
-    <button
-      type="button"
-      className={`rounded-[100px] border px-4 py-1.5 text-sm leading-4 transition ${
-        active
-          ? "border-cyan-700 bg-cyan-700 text-white"
-          : "border-gray-500 text-gray-500 hover:border-cyan-700 hover:text-cyan-700"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-function ApplicationCard({
-  title,
-  company,
-  location,
-  type,
-  salary,
-  status,
-  tone,
-}: (typeof applications)[number]) {
-  return (
-    <article className="rounded-xl bg-cyan-700/5 p-6">
-      <div className="flex items-center gap-4">
-        <div className="flex flex-1 flex-col justify-center gap-4">
-          <div className="inline-flex items-center gap-2.5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-300">
-              <BriefcaseBusiness className="h-6 w-6 text-cyan-700" strokeWidth={1.6} />
-            </div>
-            <div className="flex flex-1 flex-col gap-1">
-              <h3 className="text-xl font-semibold leading-6 text-slate-800">{title}</h3>
-              <p className="text-base leading-5 text-gray-500">{company}</p>
-            </div>
-          </div>
-          <div className="inline-flex items-center gap-5">
-            <div className="inline-flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
-              <span className="text-sm leading-4 text-zinc-500">{location}</span>
-            </div>
-            <div className="inline-flex items-center gap-1">
-              <Clock3 className="h-3.5 w-3.5 text-zinc-500" strokeWidth={1.5} />
-              <span className="text-sm leading-4 text-zinc-500">{type}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex w-36 self-stretch flex-col items-end justify-between">
-          <div className={`rounded-[100px] px-4 py-1.5 text-base leading-5 ${tone}`}>
-            {status}
-          </div>
-          <div className="self-stretch text-center text-base font-medium leading-5 text-cyan-700">
-            {salary}
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
+type Application = { _id: string; status: string; appliedAt: string; jobId?: { title?: string; city?: string; location?: string; jobType?: string; salaryMin?: number; salaryMax?: number; salaryCurrency?: string; organizationUserId?: { fullName?: string } } };
+const filters = ["All", "Pending", "Shortlisted", "Interview", "Accepted", "Hired", "Rejected", "Withdrawn"];
+const tone = (status: string) => ({ pending: "bg-yellow-100 text-yellow-700", shortlisted: "bg-fuchsia-100 text-fuchsia-800", interview: "bg-cyan-100 text-cyan-800", accepted: "bg-blue-100 text-blue-800", hired: "bg-emerald-100 text-emerald-800", rejected: "bg-red-100 text-red-700", withdrawn: "bg-slate-200 text-slate-700" }[status.toLowerCase()] || "bg-slate-100 text-slate-700");
+const label = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, (v) => v.toUpperCase());
 
 export function CarerMyApplicationsPage() {
-  return (
-    <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col justify-between gap-4 2xl:flex-row 2xl:items-center">
-          <div className="flex w-full max-w-[520px] items-center gap-2 overflow-hidden rounded-xl bg-black/5 p-4">
-            <Search className="h-5 w-5 text-zinc-600" strokeWidth={1.6} />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full bg-transparent text-base leading-5 text-zinc-600 outline-none placeholder:text-zinc-600"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {filters.map((filter, index) => (
-              <FilterChip key={filter} label={filter} active={index === 0} />
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          {applications.map((application, index) => (
-            <ApplicationCard key={`${application.title}-${index}`} {...application} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [search, setSearch] = useState(""); const [filter, setFilter] = useState("All"); const [message, setMessage] = useState("Loading applications…");
+  useEffect(() => { fetch("/api/care/my-applications?limit=100&sortBy=appliedAt&sortOrder=desc").then(async (response) => { const body = await response.json(); if (!response.ok) throw Error(body?.message); setApplications(body.data || []); setMessage(""); }).catch((error) => setMessage(error.message || "Unable to load applications")); }, []);
+  const visible = useMemo(() => applications.filter((application) => { const job = application.jobId; const text = `${job?.title || ""} ${job?.city || job?.location || ""}`.toLowerCase(); return (filter === "All" || application.status.toLowerCase() === filter.toLowerCase()) && text.includes(search.toLowerCase()); }), [applications, filter, search]);
+  return <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10"><div className="flex flex-col gap-8"><div className="flex flex-col justify-between gap-4 2xl:flex-row 2xl:items-center"><label className="flex w-full max-w-[520px] items-center gap-2 overflow-hidden rounded-xl bg-black/5 p-4"><Search className="h-5 w-5 text-zinc-600" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by job title or location…" className="w-full bg-transparent outline-none" /></label><div className="flex flex-wrap gap-2">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`rounded-full border px-4 py-1.5 text-sm ${filter === item ? "border-cyan-700 bg-cyan-700 text-white" : "border-gray-400 text-gray-600"}`}>{item}</button>)}</div></div>{message ? <p role="status" className="text-slate-600">{message}</p> : visible.length ? <div className="grid gap-4 xl:grid-cols-2">{visible.map((application) => { const job = application.jobId; const salary = job?.salaryMin || job?.salaryMax ? `£${job.salaryMin?.toLocaleString() || ""}${job.salaryMax ? ` – ${job.salaryMax.toLocaleString()}` : ""}` : "Salary not specified"; return <article key={application._id} className="rounded-xl bg-cyan-700/5 p-6"><div className="flex justify-between gap-4"><div><div className="flex items-center gap-3"><div className="rounded-lg bg-slate-300 p-3"><BriefcaseBusiness className="h-6 w-6 text-cyan-700" /></div><div><h2 className="text-xl font-semibold">{job?.title || "Job unavailable"}</h2><p className="text-gray-500">{job?.organizationUserId?.fullName || "Organisation"}</p></div></div><div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600"><span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{job?.city || job?.location || "Location not specified"}</span><span className="flex items-center gap-1"><Clock3 className="h-4 w-4" />{label(job?.jobType || "Not specified")}</span></div><p className="mt-3 text-sm text-gray-500">Applied {new Date(application.appliedAt).toLocaleDateString()}</p></div><div className="text-right"><span className={`inline-block rounded-full px-3 py-1 text-sm ${tone(application.status)}`}>{label(application.status)}</span><p className="mt-6 font-medium text-cyan-700">{salary}</p></div></div></article>; })}</div> : <p className="text-slate-600">No applications match your search or filter.</p>}</div></div>;
 }

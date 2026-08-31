@@ -1,13 +1,23 @@
 "use client";
 
-import React, { ChangeEvent, FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle2, Upload } from "lucide-react";
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { CheckCircle2, ExternalLink, FileText, Upload } from "lucide-react";
 
 type UploadErrors = {
   cvResume?: string;
   supportingDocuments?: string;
 };
+
+type UploadedDocuments = {
+  cv?: string;
+  cvFileName?: string;
+  documents?: string[];
+  documentNames?: string[];
+};
+
+function getFileName(url: string) {
+  return decodeURIComponent(url.split("/").pop()?.split("?")[0] || "Document");
+}
 
 function UploadCard({
   label,
@@ -63,36 +73,78 @@ function UploadCard({
 }
 
 export function UploadDocumentsPage() {
-  const router = useRouter();
-  const [cvResumeName, setCvResumeName] = useState("");
-  const [supportingCountText, setSupportingCountText] = useState("");
+  const [cvResume, setCvResume] = useState<File | null>(null);
+  const [supportingDocuments, setSupportingDocuments] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLoadingUploads, setIsLoadingUploads] = useState(true);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<UploadErrors>({});
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocuments>({});
+
+  useEffect(() => {
+    async function loadUploadedDocuments() {
+      try {
+        const response = await fetch("/api/care/profile", { cache: "no-store" });
+        const body = await response.json();
+
+        if (!response.ok) {
+          throw new Error(body?.message || "Unable to load uploaded documents.");
+        }
+
+        const profile: UploadedDocuments = body.data ?? body;
+        setUploadedDocuments({
+          cv: profile.cv,
+          cvFileName: profile.cvFileName,
+          documents: Array.isArray(profile.documents) ? profile.documents : [],
+          documentNames: Array.isArray(profile.documentNames) ? profile.documentNames : [],
+        });
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : "Unable to load uploaded documents.",
+        );
+      } finally {
+        setIsLoadingUploads(false);
+      }
+    }
+
+    void loadUploadedDocuments();
+  }, []);
 
   function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    setCvResumeName(file?.name ?? "");
+    setCvResume(file ?? null);
     setErrors((current) => ({ ...current, cvResume: "" }));
+    setSubmitError("");
+    setSubmitted(false);
   }
 
   function handleSupportingChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      setSupportingCountText("");
-    } else if (files.length === 1) {
-      setSupportingCountText(files[0].name);
-    } else {
-      setSupportingCountText(`${files.length} files selected`);
+    const files = Array.from(event.target.files ?? []);
+
+    if (files.length > 10) {
+      setSupportingDocuments([]);
+      setErrors((current) => ({
+        ...current,
+        supportingDocuments: "You can upload up to 10 supporting documents.",
+      }));
+      return;
     }
+
+    setSupportingDocuments(files);
     setErrors((current) => ({ ...current, supportingDocuments: "" }));
+    setSubmitError("");
+    setSubmitted(false);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: UploadErrors = {};
-    if (!cvResumeName) nextErrors.cvResume = "Please upload your CV / Resume.";
-    if (!supportingCountText) nextErrors.supportingDocuments = "Please upload supporting documents.";
+    if (!cvResume) nextErrors.cvResume = "Please upload your CV / Resume.";
+    if (supportingDocuments.length === 0) {
+      nextErrors.supportingDocuments = "Please upload supporting documents.";
+    }
 
     setErrors(nextErrors);
 
@@ -101,8 +153,44 @@ export function UploadDocumentsPage() {
       return;
     }
 
-    setSubmitted(true);
-    router.push("/carers");
+    if (!cvResume) return;
+
+    const cvFile = cvResume;
+
+    setIsUploading(true);
+    setSubmitError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("cv", cvFile);
+      supportingDocuments.forEach((file) => formData.append("documents", file));
+
+      const response = await fetch("/api/care/profile", {
+        method: "PATCH",
+        body: formData,
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(body?.message || "Unable to upload documents. Please try again.");
+      }
+
+      const profile: UploadedDocuments = body.data ?? body;
+      setUploadedDocuments({
+        cv: profile.cv,
+        cvFileName: profile.cvFileName,
+        documents: Array.isArray(profile.documents) ? profile.documents : [],
+        documentNames: Array.isArray(profile.documentNames) ? profile.documentNames : [],
+      });
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitted(false);
+      setSubmitError(
+        error instanceof Error ? error.message : "Unable to upload documents. Please try again.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
@@ -114,7 +202,7 @@ export function UploadDocumentsPage() {
             inputId="cv-resume"
             accept=".pdf,.doc,.docx"
             onChange={handleCvChange}
-            fileLabel={cvResumeName || "Supported formats: PDF, DOC, DOCX • Max file size: 10 MB"}
+            fileLabel={cvResume?.name || "Supported formats: PDF, DOC, DOCX • Max file size: 10 MB"}
             description=""
             error={errors.cvResume}
           />
@@ -126,7 +214,11 @@ export function UploadDocumentsPage() {
             multiple
             onChange={handleSupportingChange}
             fileLabel={
-              supportingCountText ||
+              (supportingDocuments.length === 1
+                ? supportingDocuments[0].name
+                : supportingDocuments.length > 1
+                  ? `${supportingDocuments.length} files selected`
+                  : "") ||
               "Upload your supporting documents, including certificates, identification, DBS, proof of address, right-to-work documents, or any other relevant files."
             }
             description=""
@@ -134,12 +226,59 @@ export function UploadDocumentsPage() {
           />
         </div>
 
+        <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h2 className="text-base font-semibold text-slate-800">Uploaded documents</h2>
+          {isLoadingUploads ? (
+            <p role="status" className="mt-2 text-sm text-slate-500">Loading uploaded documents…</p>
+          ) : uploadedDocuments.cv || uploadedDocuments.documents?.length ? (
+            <div className="mt-3 space-y-2">
+              {uploadedDocuments.cv ? (
+                <a
+                  href={uploadedDocuments.cv}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
+                >
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">CV / Resume: {uploadedDocuments.cvFileName || getFileName(uploadedDocuments.cv)}</span></span>
+                  <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+                </a>
+              ) : null}
+              {uploadedDocuments.documents?.map((documentUrl, index) => (
+                <a
+                  key={documentUrl}
+                  href={documentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2 text-sm text-cyan-700 hover:bg-cyan-50"
+                >
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0" /> <span className="truncate">{uploadedDocuments.documentNames?.[index] || getFileName(documentUrl)}</span></span>
+                  <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">No documents uploaded yet.</p>
+          )}
+        </section>
+
         {submitted ? (
           <div className="flex w-full items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             <CheckCircle2 className="h-4 w-4" />
             Documents uploaded successfully.
           </div>
         ) : null}
+
+        {submitError ? <p role="alert" className="text-sm text-red-600">{submitError}</p> : null}
+
+        <div className="flex justify-end border-t border-slate-100 pt-5">
+          <button
+            type="submit"
+            disabled={isUploading}
+            className="rounded-lg bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isUploading ? "Uploading…" : "Upload documents"}
+          </button>
+        </div>
       </form>
     </div>
   );
