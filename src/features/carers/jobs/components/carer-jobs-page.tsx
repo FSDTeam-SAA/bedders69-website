@@ -1,5 +1,88 @@
 "use client";
+
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bookmark, MapPin } from "lucide-react";
-type Job={id:string;title:string;city?:string;location?:string;jobType?:string};
-export function CarerJobsPage(){const[jobs,setJobs]=useState<Job[]>([]);const[saved,setSaved]=useState<Set<string>>(new Set());const[message,setMessage]=useState("Loading jobs…");useEffect(()=>{Promise.all([fetch("/api/care/jobs"),fetch("/api/care/saved-jobs")]).then(async([a,b])=>{const x=await a.json(),y=await b.json();if(!a.ok)throw Error(x.message);setJobs(x.data||[]);const ids=(y.data||[]).map((v:{jobId:{_id:string}|string})=>typeof v.jobId==="string"?v.jobId:v.jobId._id);setSaved(new Set(ids));setMessage("")}).catch(e=>setMessage(e.message||"Unable to load jobs"))},[]);async function save(id:string){const active=saved.has(id);const r=await fetch("/api/care/saved-jobs",{method:active?"DELETE":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId:id})});if(!r.ok)return setMessage("Unable to update saved jobs");setSaved(v=>{const n=new Set(v);active?n.delete(id):n.add(id);return n})}async function apply(id:string){const r=await fetch("/api/care/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobId:id})});const b=await r.json();setMessage(r.ok?"Application submitted successfully":b.message||"Unable to apply")}return <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10"><h2 className="mb-5 text-2xl font-semibold">Job Board</h2>{message&&<p className="mb-4 text-slate-600">{message}</p>}<div className="space-y-4">{jobs.map(job=><article key={job.id} className="flex items-center justify-between rounded-xl bg-cyan-700/5 p-6"><div><h3 className="text-xl font-semibold">{job.title}</h3><p className="mt-2 flex items-center gap-1 text-slate-600"><MapPin className="h-4 w-4"/>{job.city||job.location||"Location not specified"}</p></div><div className="flex gap-2"><button onClick={()=>save(job.id)} aria-label="Save job" className="rounded-full bg-cyan-700/10 p-3"><Bookmark className={saved.has(job.id)?"fill-cyan-700 text-cyan-700":"text-cyan-700"}/></button><button onClick={()=>apply(job.id)} className="rounded-lg bg-cyan-700 px-4 text-white">Apply now</button></div></article>)}</div></div>}
+
+type Job = { id: string; title: string; city?: string; location?: string };
+
+export function CarerJobsPage() {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [message, setMessage] = useState("Loading jobs…");
+
+  useEffect(() => {
+    Promise.all([fetch("/api/care/jobs"), fetch("/api/care/saved-jobs")])
+      .then(async ([jobsResponse, savedResponse]) => {
+        const jobsBody = await jobsResponse.json();
+        const savedBody = await savedResponse.json();
+        if (!jobsResponse.ok) throw Error(jobsBody.message);
+        setJobs(jobsBody.data || []);
+        const ids = (savedBody.data || []).map(
+          (item: { jobId: { _id: string } | string }) =>
+            typeof item.jobId === "string" ? item.jobId : item.jobId._id,
+        );
+        setSaved(new Set(ids));
+        setMessage("");
+      })
+      .catch((error) => setMessage(error.message || "Unable to load jobs"));
+  }, []);
+
+  async function save(id: string) {
+    const active = saved.has(id);
+    const response = await fetch("/api/care/saved-jobs", {
+      method: active ? "DELETE" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: id }),
+    });
+    if (!response.ok) return setMessage("Unable to update saved jobs");
+    setSaved((current) => {
+      const next = new Set(current);
+      if (active) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
+      <h2 className="mb-5 text-2xl font-semibold">Job Board</h2>
+      {message && <p className="mb-4 text-slate-600">{message}</p>}
+      <div className="space-y-4">
+        {jobs.map((job) => (
+          <article
+            key={job.id}
+            className="flex items-center justify-between rounded-xl bg-cyan-700/5 p-6"
+          >
+            <Link
+              href={`/care/jobs/${job.id}`}
+              className="min-w-0 flex-1 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-700"
+            >
+              <h3 className="text-xl font-semibold">{job.title}</h3>
+              <p className="mt-2 flex items-center gap-1 text-slate-600">
+                <MapPin className="h-4 w-4" />
+                {job.city || job.location || "Location not specified"}
+              </p>
+              <span className="mt-3 inline-block text-sm font-medium text-cyan-700">
+                View details
+              </span>
+            </Link>
+            <button
+              onClick={() => save(job.id)}
+              aria-label="Save job"
+              className="ml-4 rounded-full bg-cyan-700/10 p-3"
+            >
+              <Bookmark
+                className={
+                  saved.has(job.id)
+                    ? "fill-cyan-700 text-cyan-700"
+                    : "text-cyan-700"
+                }
+              />
+            </button>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
