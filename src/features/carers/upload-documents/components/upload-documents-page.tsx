@@ -1,7 +1,6 @@
 "use client";
 
 import React, { ChangeEvent, FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CheckCircle2, Upload } from "lucide-react";
 
 type UploadErrors = {
@@ -63,36 +62,47 @@ function UploadCard({
 }
 
 export function UploadDocumentsPage() {
-  const router = useRouter();
-  const [cvResumeName, setCvResumeName] = useState("");
-  const [supportingCountText, setSupportingCountText] = useState("");
+  const [cvResume, setCvResume] = useState<File | null>(null);
+  const [supportingDocuments, setSupportingDocuments] = useState<File[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [errors, setErrors] = useState<UploadErrors>({});
 
   function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    setCvResumeName(file?.name ?? "");
+    setCvResume(file ?? null);
     setErrors((current) => ({ ...current, cvResume: "" }));
+    setSubmitError("");
+    setSubmitted(false);
   }
 
   function handleSupportingChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      setSupportingCountText("");
-    } else if (files.length === 1) {
-      setSupportingCountText(files[0].name);
-    } else {
-      setSupportingCountText(`${files.length} files selected`);
+    const files = Array.from(event.target.files ?? []);
+
+    if (files.length > 10) {
+      setSupportingDocuments([]);
+      setErrors((current) => ({
+        ...current,
+        supportingDocuments: "You can upload up to 10 supporting documents.",
+      }));
+      return;
     }
+
+    setSupportingDocuments(files);
     setErrors((current) => ({ ...current, supportingDocuments: "" }));
+    setSubmitError("");
+    setSubmitted(false);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: UploadErrors = {};
-    if (!cvResumeName) nextErrors.cvResume = "Please upload your CV / Resume.";
-    if (!supportingCountText) nextErrors.supportingDocuments = "Please upload supporting documents.";
+    if (!cvResume) nextErrors.cvResume = "Please upload your CV / Resume.";
+    if (supportingDocuments.length === 0) {
+      nextErrors.supportingDocuments = "Please upload supporting documents.";
+    }
 
     setErrors(nextErrors);
 
@@ -101,8 +111,37 @@ export function UploadDocumentsPage() {
       return;
     }
 
-    setSubmitted(true);
-    router.push("/carers");
+    if (!cvResume) return;
+
+    const cvFile = cvResume;
+
+    setIsUploading(true);
+    setSubmitError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("cv", cvFile);
+      supportingDocuments.forEach((file) => formData.append("documents", file));
+
+      const response = await fetch("/api/care/profile", {
+        method: "PATCH",
+        body: formData,
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(body?.message || "Unable to upload documents. Please try again.");
+      }
+
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitted(false);
+      setSubmitError(
+        error instanceof Error ? error.message : "Unable to upload documents. Please try again.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
@@ -114,7 +153,7 @@ export function UploadDocumentsPage() {
             inputId="cv-resume"
             accept=".pdf,.doc,.docx"
             onChange={handleCvChange}
-            fileLabel={cvResumeName || "Supported formats: PDF, DOC, DOCX • Max file size: 10 MB"}
+            fileLabel={cvResume?.name || "Supported formats: PDF, DOC, DOCX • Max file size: 10 MB"}
             description=""
             error={errors.cvResume}
           />
@@ -126,7 +165,11 @@ export function UploadDocumentsPage() {
             multiple
             onChange={handleSupportingChange}
             fileLabel={
-              supportingCountText ||
+              (supportingDocuments.length === 1
+                ? supportingDocuments[0].name
+                : supportingDocuments.length > 1
+                  ? `${supportingDocuments.length} files selected`
+                  : "") ||
               "Upload your supporting documents, including certificates, identification, DBS, proof of address, right-to-work documents, or any other relevant files."
             }
             description=""
@@ -140,6 +183,18 @@ export function UploadDocumentsPage() {
             Documents uploaded successfully.
           </div>
         ) : null}
+
+        {submitError ? <p role="alert" className="text-sm text-red-600">{submitError}</p> : null}
+
+        <div className="flex justify-end border-t border-slate-100 pt-5">
+          <button
+            type="submit"
+            disabled={isUploading}
+            className="rounded-lg bg-cyan-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isUploading ? "Uploading…" : "Upload documents"}
+          </button>
+        </div>
       </form>
     </div>
   );
