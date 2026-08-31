@@ -31,13 +31,23 @@ const navigation = [
 export default function CareCompanySidebar({ activeHref }: { activeHref: string }) {
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleConfirmLogout = () => {
-    // Clear cookies
-    document.cookie = "bedders_role=; path=/; max-age=0";
-    document.cookie = "bedders_access_token=; path=/; max-age=0";
-    setShowLogoutModal(false);
-    router.push("/login");
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      // Clear cookies on client side as fallback
+      document.cookie = "bedders_role=; path=/; max-age=0";
+      document.cookie = "bedders_access_token=; path=/; max-age=0";
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setShowLogoutModal(false);
+      setIsLoggingOut(false);
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
   return (
@@ -124,9 +134,10 @@ export default function CareCompanySidebar({ activeHref }: { activeHref: string 
               <button
                 type="button"
                 onClick={handleConfirmLogout}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                disabled={isLoggingOut}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
               >
-                Log Out
+                {isLoggingOut ? "Logging out..." : "Log Out"}
               </button>
             </div>
           </div>
