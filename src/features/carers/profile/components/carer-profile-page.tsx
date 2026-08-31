@@ -1,216 +1,39 @@
-import React from "react";
-import { CalendarDays, ChevronDown, PencilLine } from "lucide-react";
+"use client";
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="inline-flex w-full items-center gap-2.5">
-      <h2 className="flex-1 text-xl font-semibold leading-6 text-slate-800">{title}</h2>
-      <button
-        type="button"
-        aria-label={`Edit ${title}`}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-800 transition hover:bg-white/70"
-      >
-        <PencilLine className="h-5 w-5" strokeWidth={1.7} />
-      </button>
-    </div>
-  );
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { Camera, LoaderCircle, Save } from "lucide-react";
+
+type Profile = {
+  careName?: string; profilePicture?: string; phoneNumber?: string; email?: string;
+  dateOfBirth?: string; gender?: "male" | "female"; address?: string; country?: string;
+  region?: string; nationality?: string; postCode?: string;
+  emergencyContactName?: string; emergencyContactRelationship?: string; emergencyContactPhoneNumber?: string;
+};
+type Form = Required<Omit<Profile, "profilePicture" | "gender">> & { gender: "" | "male" | "female" };
+const blank: Form = { careName: "", phoneNumber: "", email: "", dateOfBirth: "", gender: "", address: "", country: "", region: "", nationality: "", postCode: "", emergencyContactName: "", emergencyContactRelationship: "", emergencyContactPhoneNumber: "" };
+const imageFallback = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80";
+const options = { country: ["United Kingdom", "England", "Scotland", "Wales"], region: ["London", "Manchester", "Birmingham", "Leeds"], nationality: ["British", "Irish", "Scottish", "Welsh"], emergencyContactRelationship: ["Parent", "Sibling", "Spouse", "Friend"] };
+
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+  return <label className="flex flex-col gap-2"><span className="font-medium text-slate-800">{label}</span><input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="h-12 rounded-lg border border-neutral-400 bg-transparent px-4 text-slate-700 outline-none focus:border-cyan-700" /></label>;
 }
-
-function TextField({
-  label,
-  value,
-  placeholder,
-}: {
-  label: string;
-  value?: string;
-  placeholder?: string;
-}) {
-  return (
-    <label className="flex w-full flex-col gap-3">
-      <span className="text-base font-medium leading-5 text-slate-800">{label}</span>
-      <input
-        type="text"
-        defaultValue={value}
-        placeholder={placeholder}
-        className="h-14 rounded-lg border border-neutral-400 bg-transparent px-4 text-base leading-5 text-slate-700 outline-none transition placeholder:text-gray-500 focus:border-cyan-700"
-      />
-    </label>
-  );
+function Select({ label, value, onChange, items }: { label: string; value: string; onChange: (value: string) => void; items: string[] }) {
+  return <label className="flex flex-col gap-2"><span className="font-medium text-slate-800">{label}</span><select value={value} onChange={(e) => onChange(e.target.value)} className="h-12 rounded-lg border border-neutral-400 bg-transparent px-4 text-slate-700 outline-none focus:border-cyan-700"><option value="">Choose any one</option>{items.map((item) => <option key={item}>{item}</option>)}</select></label>;
 }
-
-function SelectField({
-  label,
-  value,
-  options,
-}: {
-  label: string;
-  value?: string;
-  options: string[];
-}) {
-  return (
-    <label className="flex w-full flex-col gap-3">
-      <span className="text-base font-medium leading-5 text-slate-800">{label}</span>
-      <div className="relative">
-        <select
-          defaultValue={value ?? ""}
-          className="h-14 w-full appearance-none rounded-lg border border-neutral-400 bg-transparent px-4 pr-12 text-base leading-5 text-slate-700 outline-none transition focus:border-cyan-700"
-        >
-          <option value="" disabled>
-            Choose any one
-          </option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" />
-      </div>
-    </label>
-  );
-}
-
-function DateField({ label, value }: { label: string; value?: string }) {
-  return (
-    <label className="flex w-full flex-col gap-3">
-      <span className="text-base font-medium leading-5 text-slate-800">{label}</span>
-      <div className="relative">
-        <input
-          type="text"
-          defaultValue={value}
-          placeholder="DD/MM/YYYY"
-          className="h-14 w-full rounded-lg border border-neutral-400 bg-transparent px-4 pr-12 text-base leading-5 text-slate-700 outline-none transition placeholder:text-gray-500 focus:border-cyan-700"
-        />
-        <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" strokeWidth={1.7} />
-      </div>
-    </label>
-  );
-}
-
-const countries = ["United Kingdom", "England", "Scotland", "Wales"];
-const regions = ["London", "Manchester", "Birmingham", "Leeds"];
-const nationalities = ["British", "Irish", "Scottish", "Welsh"];
-const relationships = ["Parent", "Sibling", "Spouse", "Friend"];
+function Card({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-2xl bg-[#eef6ff] p-6"><h2 className="text-xl font-semibold text-slate-800">{title}</h2><div className="mt-5 flex flex-col gap-5">{children}</div></section>; }
 
 export function CarerProfilePage() {
-  return (
-    <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
-      <div className="grid gap-4 xl:grid-cols-[460px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <section className="overflow-hidden rounded-2xl bg-[#eef6ff]">
-            <div className="relative h-[220px] w-full overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80"
-                alt="Carer helping a patient at home"
-                className="h-full w-full object-cover"
-              />
-              <button
-                type="button"
-                aria-label="Edit cover image"
-                className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-700 text-white shadow-sm"
-              >
-                <PencilLine className="h-5 w-5" strokeWidth={1.7} />
-              </button>
-            </div>
-            <div className="relative px-6 pb-6 pt-14">
-              <div className="absolute left-6 top-0 -translate-y-1/2">
-                <div className="relative">
-                  <img
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
-                    alt="Profile picture of Cody Fisher"
-                    className="h-[140px] w-[140px] rounded-full border-4 border-[#eef6ff] object-cover shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Edit profile image"
-                    className="absolute bottom-2 right-0 inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-700 text-white shadow-sm"
-                  >
-                    <PencilLine className="h-5 w-5" strokeWidth={1.7} />
-                  </button>
-                </div>
-              </div>
-              <div className="pl-[154px]">
-                <h2 className="text-[44px] font-semibold leading-[52px] text-black">
-                  Cody Fisher
-                </h2>
-                <p className="text-[28px] leading-8 text-slate-500">@codyfisher</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-2xl bg-[#eef6ff] p-6">
-            <SectionHeader title="Personal Information" />
-            <div className="mt-5 flex flex-col gap-5">
-              <TextField label="First Name" value="Cody" />
-              <TextField label="Last Name" value="Fisher" />
-              <div className="grid gap-5 md:grid-cols-2">
-                <DateField label="Date of Birth" />
-                <div className="flex flex-col gap-3">
-                  <span className="text-base font-medium leading-5 text-slate-800">Gender</span>
-                  <div className="flex h-14 items-center gap-6">
-                    <label className="inline-flex items-center gap-2 text-base text-gray-500">
-                      <input
-                        type="radio"
-                        name="gender"
-                        defaultChecked
-                        className="h-4 w-4 border-neutral-400 accent-cyan-700"
-                      />
-                      <span>Male</span>
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-base text-gray-500">
-                      <input
-                        type="radio"
-                        name="gender"
-                        className="h-4 w-4 border-neutral-400 accent-cyan-700"
-                      />
-                      <span>Female</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="space-y-4">
-          <section className="rounded-2xl bg-[#eef6ff] p-6">
-            <SectionHeader title="Contact Information" />
-            <div className="mt-5 flex flex-col gap-5">
-              <div className="grid gap-5 md:grid-cols-2">
-                <TextField label="Email" placeholder="Enter your email address" />
-                <TextField label="Phone Number" placeholder="Enter your phone number" />
-              </div>
-              <div className="grid gap-5 md:grid-cols-2">
-                <SelectField label="Country" options={countries} />
-                <SelectField label="State/Region" options={regions} />
-              </div>
-              <div className="grid gap-5 md:grid-cols-2">
-                <SelectField label="Nationality" options={nationalities} />
-                <TextField label="Postcode" placeholder="e.g. 5585" />
-              </div>
-              <label className="flex w-full flex-col gap-3">
-                <span className="text-base font-medium leading-5 text-slate-800">Address</span>
-                <textarea
-                  placeholder="Enter your full address"
-                  rows={4}
-                  className="w-full rounded-lg border border-neutral-400 bg-transparent px-4 py-4 text-base leading-5 text-slate-700 outline-none transition placeholder:text-gray-500 focus:border-cyan-700"
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="rounded-2xl bg-[#eef6ff] p-6">
-            <SectionHeader title="Emergency Contact" />
-            <div className="mt-5 flex flex-col gap-5">
-              <TextField label="Contact Name" placeholder="Enter your contact name" />
-              <div className="grid gap-5 md:grid-cols-2">
-                <SelectField label="Relationship" options={relationships} />
-                <TextField label="Phone Number" placeholder="Enter your phone number" />
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-  );
+  const [form, setForm] = useState<Form>(blank); const [photo, setPhoto] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [uploadingPhoto, setUploadingPhoto] = useState(false); const [notice, setNotice] = useState(""); const [error, setError] = useState(""); const photoInput = useRef<HTMLInputElement>(null);
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((current) => ({ ...current, [key]: value }));
+  useEffect(() => { (async () => { try { const response = await fetch("/api/care/profile", { cache: "no-store" }); const body = await response.json(); if (!response.ok) throw new Error(body?.message || "Unable to load your profile"); const profile: Profile = body.data ?? body; setPhoto(profile.profilePicture ?? ""); setForm({ ...blank, ...profile, dateOfBirth: profile.dateOfBirth?.slice(0, 10) ?? "", gender: profile.gender ?? "" }); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load your profile"); } finally { setLoading(false); } })(); }, []);
+  async function selectPhoto(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; if (!file.type.startsWith("image/")) { setError("Please select an image file"); return; } if (file.size > 5 * 1024 * 1024) { setError("Profile photo must be 5 MB or smaller"); return; } setUploadingPhoto(true); setError(""); setNotice(""); const previewUrl = URL.createObjectURL(file); setPhoto(previewUrl); try { const payload = new FormData(); payload.append("profilePicture", file); const response = await fetch("/api/care/profile", { method: "PATCH", body: payload }); const body = await response.json(); if (!response.ok) throw new Error(body?.message || "Unable to upload profile photo"); setPhoto((body.data ?? body).profilePicture ?? previewUrl); setNotice("Profile photo updated successfully"); } catch (e) { setError(e instanceof Error ? e.message : "Unable to upload profile photo"); } finally { setUploadingPhoto(false); event.target.value = ""; } }
+  async function submit(e: FormEvent) { e.preventDefault(); setSaving(true); setError(""); setNotice(""); try { const payload = new FormData(); Object.entries(form).forEach(([key, value]) => { if (value) payload.append(key, value); }); const response = await fetch("/api/care/profile", { method: "PATCH", body: payload }); const body = await response.json(); if (!response.ok) throw new Error(body?.message || "Unable to update your profile"); setPhoto((body.data ?? body).profilePicture ?? photo); setNotice(body.message || "Profile updated successfully"); } catch (e) { setError(e instanceof Error ? e.message : "Unable to update your profile"); } finally { setSaving(false); } }
+  const name = form.careName.trim().split(/\s+/); const first = name[0] ?? ""; const last = name.slice(1).join(" ");
+  if (loading) return <div role="status" className="p-10 text-center text-slate-600">Loading profile…</div>;
+  return <form onSubmit={submit} className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
+    {(error || notice) && <p role={error ? "alert" : "status"} className={`mb-4 rounded-lg px-4 py-3 ${error ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>{error || notice}</p>}
+    <div className="grid gap-4 xl:grid-cols-[460px_minmax(0,1fr)]"><div className="space-y-4"><section className="overflow-hidden rounded-2xl bg-[#eef6ff]"><div className="h-40 bg-slate-300" /><div className="relative px-6 pb-6 pt-14"><input ref={photoInput} type="file" accept="image/*" className="sr-only" onChange={selectPhoto} /><div className="absolute left-6 top-0 -translate-y-1/2"><img src={photo || imageFallback} alt="Your profile" className="h-28 w-28 rounded-full border-4 border-[#eef6ff] object-cover" /><button type="button" onClick={() => photoInput.current?.click()} disabled={saving || uploadingPhoto} aria-label="Choose profile photo" className="absolute bottom-0 right-0 inline-flex h-9 w-9 items-center justify-center rounded-full bg-cyan-700 text-white shadow transition hover:bg-cyan-800 disabled:opacity-60">{uploadingPhoto ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}</button></div><div className="pl-32"><h1 className="text-3xl font-semibold text-black">{form.careName || "Your name"}</h1><p className="text-slate-500">{form.email || "Your email"}</p><button type="button" onClick={() => photoInput.current?.click()} disabled={uploadingPhoto} className="mt-2 text-sm font-medium text-cyan-700 hover:text-cyan-800 disabled:opacity-60">{uploadingPhoto ? "Uploading photo…" : "Change photo"}</button></div></div></section><Card title="Personal Information"><Field label="First Name" value={first} onChange={(value) => set("careName", `${value} ${last}`.trim())} /><Field label="Last Name" value={last} onChange={(value) => set("careName", `${first} ${value}`.trim())} /><div className="grid gap-5 md:grid-cols-2"><Field label="Date of Birth" type="date" value={form.dateOfBirth} onChange={(value) => set("dateOfBirth", value)} /><fieldset><legend className="font-medium text-slate-800">Gender</legend><div className="mt-3 flex gap-5">{(["male", "female"] as const).map((gender) => <label key={gender} className="capitalize"><input type="radio" name="gender" checked={form.gender === gender} onChange={() => set("gender", gender)} /> {gender}</label>)}</div></fieldset></div></Card></div>
+      <div className="space-y-4"><Card title="Contact Information"><div className="grid gap-5 md:grid-cols-2"><Field label="Email" type="email" value={form.email} onChange={(value) => set("email", value)} /><Field label="Phone Number" value={form.phoneNumber} onChange={(value) => set("phoneNumber", value)} /></div><div className="grid gap-5 md:grid-cols-2"><Select label="Country" value={form.country} onChange={(value) => set("country", value)} items={options.country} /><Select label="State/Region" value={form.region} onChange={(value) => set("region", value)} items={options.region} /></div><div className="grid gap-5 md:grid-cols-2"><Select label="Nationality" value={form.nationality} onChange={(value) => set("nationality", value)} items={options.nationality} /><Field label="Postcode" value={form.postCode} onChange={(value) => set("postCode", value)} /></div><label className="flex flex-col gap-2"><span className="font-medium text-slate-800">Address</span><textarea value={form.address} onChange={(e) => set("address", e.target.value)} rows={4} className="rounded-lg border border-neutral-400 bg-transparent p-4 text-slate-700 outline-none focus:border-cyan-700" /></label></Card><Card title="Emergency Contact"><Field label="Contact Name" value={form.emergencyContactName} onChange={(value) => set("emergencyContactName", value)} /><div className="grid gap-5 md:grid-cols-2"><Select label="Relationship" value={form.emergencyContactRelationship} onChange={(value) => set("emergencyContactRelationship", value)} items={options.emergencyContactRelationship} /><Field label="Phone Number" value={form.emergencyContactPhoneNumber} onChange={(value) => set("emergencyContactPhoneNumber", value)} /></div></Card></div></div>
+    <div className="mt-6 flex justify-end"><button disabled={saving} className="inline-flex h-11 items-center gap-2 rounded-lg bg-indigo-700 px-5 font-semibold text-white hover:bg-indigo-800 disabled:opacity-60"><Save className="h-4 w-4" />{saving ? "Saving…" : "Save changes"}</button></div>
+  </form>;
 }

@@ -10,6 +10,7 @@ function PasswordField({
   visible,
   onToggleVisibility,
   hasError = false,
+  required = false,
 }: {
   label: string;
   value: string;
@@ -17,6 +18,7 @@ function PasswordField({
   visible: boolean;
   onToggleVisibility: () => void;
   hasError?: boolean;
+  required?: boolean;
 }) {
   return (
     <label className="flex w-full flex-col gap-2">
@@ -29,6 +31,7 @@ function PasswordField({
         <input
           type={visible ? "text" : "password"}
           value={value}
+          required={required}
           onChange={(event) => onChange(event.target.value)}
           placeholder="********"
           className="w-full bg-transparent text-base text-slate-700 outline-none placeholder:text-gray-500"
@@ -57,7 +60,7 @@ export function CarerSecurityPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const rules = useMemo(() => {
-    const password = confirmPassword;
+    const password = newPassword;
 
     return [
       {
@@ -90,12 +93,20 @@ export function CarerSecurityPage() {
   const confirmHasError = confirmPassword.length > 0 && confirmPassword !== newPassword;
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) return setMessage("Please complete all password fields.");
     if (confirmHasError) return setMessage("New passwords do not match.");
+    if (rules.some((rule) => !rule.valid)) return setMessage("Your new password does not meet the requirements.");
     setIsSaving(true); setMessage("");
-    const response = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldPassword: currentPassword, newPassword }) });
-    const body = await response.json(); setIsSaving(false);
-    if (!response.ok) return setMessage(body?.message || "Unable to change password.");
-    setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setMessage("Password changed successfully.");
+    try {
+      const response = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oldPassword: currentPassword, newPassword }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) return setMessage(body?.message || "Unable to change password.");
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setMessage(body?.message || "Password changed successfully.");
+    } catch {
+      setMessage("Unable to connect to the server. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -111,6 +122,7 @@ export function CarerSecurityPage() {
               onChange={setCurrentPassword}
               visible={showCurrentPassword}
               onToggleVisibility={() => setShowCurrentPassword((current) => !current)}
+              required
             />
             <PasswordField
               label="New Password"
@@ -118,6 +130,7 @@ export function CarerSecurityPage() {
               onChange={setNewPassword}
               visible={showNewPassword}
               onToggleVisibility={() => setShowNewPassword((current) => !current)}
+              required
             />
           </div>
 
@@ -128,6 +141,7 @@ export function CarerSecurityPage() {
             visible={showConfirmPassword}
             onToggleVisibility={() => setShowConfirmPassword((current) => !current)}
             hasError={confirmHasError}
+            required
           />
 
           <div className="flex flex-col gap-3 pt-1">
