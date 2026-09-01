@@ -29,7 +29,7 @@ export async function PATCH(
       );
     }
 
-    const response = await fetch(`${backendUrl}/jobs/publish-job/${id}`, {
+    const response = await fetch(`${backendUrl}/jobs/close-job/${id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -40,7 +40,7 @@ export async function PATCH(
 
     if (!response.ok) {
       return NextResponse.json(
-        { message: data?.message || "Failed to publish job" },
+        { message: data?.message || "Failed to close job" },
         { status: response.status }
       );
     }

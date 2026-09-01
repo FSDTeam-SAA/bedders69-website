@@ -27,7 +27,7 @@ export interface CreateJobFormPayload {
 export interface JobItem {
   _id?: string;
   id?: string;
-  organizationUserId: string;
+  organizationUserId?: string;
   title: string;
   department?: string;
   description?: string;
@@ -56,6 +56,9 @@ export interface JobItem {
   closesAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  rejectionReason?: string | null;
+  reason?: string | null;
+  rejection_reason?: string | null;
 }
 
 export interface CreateJobApiResponse<T = JobItem> {

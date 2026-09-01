@@ -28,47 +28,31 @@ export default function CreateJob() {
   const { isPublishing, error, submitJob } = useCreateJob();
   const [currentStep, setCurrentStep] = useState(1);
   const [publishedToast, setPublishedToast] = useState(false);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   // Step 1: Job Details
-  const [jobTitle, setJobTitle] = useState("Senior Care Assistant");
-  const [department, setDepartment] = useState("Residential Care");
-  const [selectedJobType, setSelectedJobType] = useState("Full-time");
-  const [jobDescription, setJobDescription] = useState(
-    "We are seeking a compassionate, skilled, and dedicated Senior Care Assistant to lead our care delivery team. The ideal candidate will possess great empathy and leadership skills."
-  );
+  const [jobTitle, setJobTitle] = useState("");
+  const [department, setDepartment] = useState("");
+  const [selectedJobType, setSelectedJobType] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
 
   // Step 2: Requirements
-  const [essentialRequirements, setEssentialRequirements] = useState(
-    "• NVQ Level 2/3 in Health & Social Care\n• Minimum 1 year care experience\n• Valid DBS (enhanced) check\n• Good communication skills"
-  );
-  const [desiredSkills, setDesiredSkills] = useState<string[]>([
-    "Dementia Care",
-    "Medication Administration",
-    "Palliative Care",
-  ]);
-  const [minExperience, setMinExperience] = useState("1-2 years");
+  const [essentialRequirements, setEssentialRequirements] = useState("");
+  const [desiredSkills, setDesiredSkills] = useState<string[]>([]);
+  const [minExperience, setMinExperience] = useState("No requirement");
   const [pinRequired, setPinRequired] = useState("Not required");
 
   // Step 3: Salary & Benefits
-  const [salaryFrom, setSalaryFrom] = useState("£24,000");
-  const [salaryTo, setSalaryTo] = useState("£28,000");
-  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([
-    "Paid Training & Qualifications",
-    "Company Pension Scheme",
-    "Employee Assistance Programme",
-  ]);
-  const [closingDate, setClosingDate] = useState("2027-01-31");
+  const [salaryFrom, setSalaryFrom] = useState("");
+  const [salaryTo, setSalaryTo] = useState("");
+  const [selectedBenefits, setSelectedBenefits] = useState<string[]>([]);
+  const [closingDate, setClosingDate] = useState("");
 
   // Step 4: Location & Hours
-  const [workLocations, setWorkLocations] = useState<string[]>([
-    "Care Home / Residential",
-  ]);
-  const [address, setAddress] = useState("123 Care Lane, Manchester, M1 2AB");
-  const [workingPatterns, setWorkingPatterns] = useState<string[]>([
-    "Day Shifts",
-    "Weekend Rotation",
-  ]);
-  const [hoursPerWeek, setHoursPerWeek] = useState("37.5");
+  const [workLocations, setWorkLocations] = useState<string[]>([]);
+  const [address, setAddress] = useState("");
+  const [workingPatterns, setWorkingPatterns] = useState<string[]>([]);
+  const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [contractType, setContractType] = useState("Permanent");
 
   // Step 5: Options
@@ -100,6 +84,8 @@ export default function CreateJob() {
   };
 
   const handlePublish = async () => {
+    setErrorToast(null);
+
     const jobTypeMap: Record<string, any> = {
       "Full-time": "full_time",
       "Part-time": "part_time",
@@ -107,20 +93,31 @@ export default function CreateJob() {
       "Temporary": "temporary",
       "Bank / Flexible": "temporary",
       "Night Shift": "full_time",
+      "Hybrid": "contract",
     };
 
-    const numSalaryFrom = parseInt(salaryFrom.replace(/[^0-9]/g, ""), 10) || 24000;
-    const numSalaryTo = parseInt(salaryTo.replace(/[^0-9]/g, ""), 10) || 28000;
+    const numSalaryFrom = salaryFrom ? parseInt(salaryFrom.replace(/[^0-9]/g, ""), 10) || 0 : 0;
+    const numSalaryTo = salaryTo ? parseInt(salaryTo.replace(/[^0-9]/g, ""), 10) || 0 : 0;
 
     const parsedRequirements = essentialRequirements
       .split("\n")
       .map((r) => r.replace(/^[•\-\*]\s*/, "").trim())
       .filter(Boolean);
 
+    let closesAtIso: string | undefined = undefined;
+    if (closingDate) {
+      try {
+        const d = new Date(closingDate);
+        if (!isNaN(d.getTime())) {
+          closesAtIso = d.toISOString();
+        }
+      } catch (e) {}
+    }
+
     const payload = {
-      title: jobTitle || "Senior Care Assistant",
+      title: jobTitle.trim(),
       department,
-      jobType: jobTypeMap[selectedJobType] || "full_time",
+      jobType: jobTypeMap[selectedJobType] || (selectedJobType ? "full_time" : undefined),
       description: jobDescription,
       requirements: parsedRequirements,
       requiredSkills: desiredSkills,
@@ -130,7 +127,7 @@ export default function CreateJob() {
       salaryMax: numSalaryTo,
       salaryCurrency: "GBP",
       benefits: selectedBenefits,
-      closesAt: closingDate ? new Date(closingDate).toISOString() : new Date("2027-01-31").toISOString(),
+      closesAt: closesAtIso,
       workLocations,
       location: address,
       address,
@@ -147,6 +144,8 @@ export default function CreateJob() {
       setTimeout(() => {
         router.push("/care-company/dashboard-overview");
       }, 1500);
+    } else {
+      setErrorToast(result.message || "Failed to publish job");
     }
   };
 
@@ -159,6 +158,21 @@ export default function CreateJob() {
           <span className="font-semibold text-sm">
             Job listing created and published successfully!
           </span>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-rose-600 px-5 py-3 text-white shadow-xl">
+          <span className="font-semibold text-sm">
+            {errorToast}
+          </span>
+          <button
+            onClick={() => setErrorToast(null)}
+            className="ml-2 font-bold hover:opacity-75 cursor-pointer text-base leading-none"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -867,25 +881,25 @@ export default function CreateJob() {
                   {/* Job Summary Card */}
                   <div className="w-full p-6 rounded-xl border border-[#2b6ea6]/30 bg-white shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-4">
                     <h3 className="text-xl font-bold text-[#2b6ea6]">
-                      {jobTitle || "Senior Care Assistant"}
+                      {jobTitle || "Untitled Job"}
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 text-sm">
                       <div className="space-y-2">
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Type: </span>
-                          <span className="font-bold text-slate-800">{selectedJobType}</span>
+                          <span className="font-bold text-slate-800">{selectedJobType || "Not specified"}</span>
                         </p>
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Salary: </span>
                           <span className="font-bold text-slate-800">
-                            {salaryFrom} – {salaryTo}
+                            {salaryFrom || salaryTo ? `${salaryFrom} – ${salaryTo}` : "Not specified"}
                           </span>
                         </p>
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Closes: </span>
                           <span className="font-bold text-slate-800">
-                            {closingDate === "01/31/2027" ? "31 Jan 2027" : closingDate}
+                            {closingDate || "Not specified"}
                           </span>
                         </p>
                       </div>
@@ -893,17 +907,17 @@ export default function CreateJob() {
                       <div className="space-y-2">
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Location: </span>
-                          <span className="font-bold text-slate-800">{address}</span>
+                          <span className="font-bold text-slate-800">{address || "Not specified"}</span>
                         </p>
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Department: </span>
                           <span className="font-bold text-slate-800">
-                            {department || "Residential Care"}
+                            {department || "Not specified"}
                           </span>
                         </p>
                         <p className="text-slate-700">
                           <span className="text-gray-500 font-medium">Contract: </span>
-                          <span className="font-bold text-slate-800">{contractType}</span>
+                          <span className="font-bold text-slate-800">{contractType || "Not specified"}</span>
                         </p>
                       </div>
                     </div>

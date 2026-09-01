@@ -19,6 +19,7 @@ const publicRoutes = new Set([
   "/care-company/edit-profile",
   "/care-company/save-carers",
   "/care-company/create-job",
+  "/care-company/job-posts",
   "/care-company/applicants",
   "/care-company/contact-requests",
   "/care-company/membership",

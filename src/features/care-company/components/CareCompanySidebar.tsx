@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Bookmark,
+  Briefcase,
   Building2,
   ContactRound,
   FilePlus2,
@@ -21,6 +22,7 @@ const navigation = [
   { label: "Dashboard Overview", href: "/care-company/dashboard-overview", icon: LayoutDashboard },
   { label: "Company Profile", href: "/care-company/company-profile", icon: Building2 },
   { label: "Saved Carers", href: "/care-company/save-carers", icon: Bookmark },
+  { label: "My Job Posts", href: "/care-company/job-posts", icon: Briefcase },
   { label: "Create Job", href: "/care-company/create-job", icon: FilePlus2 },
   { label: "Applicants", href: "/care-company/applicants", icon: UsersRound },
   { label: "Contact Requests", href: "/care-company/contact-requests", icon: ContactRound },
