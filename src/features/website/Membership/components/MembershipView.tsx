@@ -16,7 +16,6 @@ import membershipApi from "../api/membershipApi";
 import { PackageItem, PlanCardProps } from "../types/membership.types";
 
 export const MembershipView = () => {
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [backendPackages, setBackendPackages] = useState<PackageItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -51,119 +50,71 @@ export const MembershipView = () => {
   }, []);
 
   // Map backend packages to UI presentation plans
-  const plans = useMemo<PlanCardProps[]>(() => {
+  const plans = useMemo<any[]>(() => {
     if (backendPackages && backendPackages.length > 0) {
-      return backendPackages.map((pkg) => {
+      const mapped = backendPackages.map((pkg: any) => {
+        const title = pkg.title || pkg.name || "Membership Plan";
         const isFree = pkg.price === 0;
         const isEnterprise = pkg.price >= 100;
-        const isPopular = !isFree && !isEnterprise;
+        const isPopular =
+          typeof pkg.isPopular === "boolean"
+            ? pkg.isPopular
+            : !isFree && !isEnterprise;
 
-        const priceMonthly = pkg.price;
-        const priceYearly = isFree ? 0 : Math.round(pkg.price * 0.6); // 40% discount on annual
+        const price = pkg.price;
+        const period = pkg.duration ? `/${pkg.duration}` : "/month";
 
         let icon = Zap;
         let accent = "text-slate-500";
         let bgBtn = "bg-slate-800 hover:bg-slate-900 text-white";
-        let btnText = "Get Started Free";
+        let btnText = isFree ? "Get Started Free" : "Upgrade Now";
 
         if (isPopular) {
           icon = Sparkles;
           accent = "text-[#2D6A9F]";
           bgBtn = "bg-[#2D6A9F] hover:bg-[#20527F] text-white shadow-md hover:shadow-lg";
-          btnText = "Start Premium Trial";
         } else if (isEnterprise) {
           icon = Building2;
           accent = "text-indigo-600";
           bgBtn = "bg-slate-800 hover:bg-slate-900 text-white";
-          btnText = "Contact Sales";
+        }
+
+        let features: string[] = [];
+        if (Array.isArray(pkg.features) && pkg.features.length > 0) {
+          features = pkg.features;
+        } else if (typeof pkg.content === "string" && pkg.content.trim()) {
+          features = pkg.content
+            .split(/\r?\n|,/)
+            .map((f: string) => f.trim())
+            .filter(Boolean);
         }
 
         return {
-          id: pkg._id || pkg.id || pkg.name.toLowerCase().replace(/\s+/g, "-"),
-          name: pkg.name,
-          priceMonthly,
-          priceYearly,
-          description: pkg.description || "Cancel anytime · Full access",
+          id: pkg._id || pkg.id || title.toLowerCase().replace(/\s+/g, "-"),
+          name: title,
+          price,
+          period,
+          duration: pkg.duration,
+          description: "",
           buttonText: btnText,
           icon,
           accent,
           isPopular,
           bgBtn,
-          features: pkg.features || [
-            "Directory Listing",
-            "Job Postings",
-            "Profile Customization",
-            "Standard Support",
-          ],
+          features,
         };
       });
+
+      let sorted = [...mapped];
+      const popularIndex = sorted.findIndex((p) => p.isPopular);
+      if (popularIndex !== -1 && sorted.length >= 2) {
+        const [popularPlan] = sorted.splice(popularIndex, 1);
+        sorted.splice(1, 0, popularPlan);
+      }
+      return sorted;
     }
 
-    // Fallback plans if empty
-    return [
-      {
-        id: "free",
-        name: "Free Starter",
-        priceMonthly: 0,
-        priceYearly: 0,
-        description: "Cancel anytime",
-        buttonText: "Get Started Free",
-        icon: Zap,
-        accent: "text-slate-500",
-        bgBtn: "bg-slate-800 hover:bg-slate-900 text-white",
-        features: [
-          "Basic Directory Listing",
-          "Up to 2 Job Posts/Month",
-          "Standard Profile Page",
-          "Community Access",
-          "Email Support",
-          "Basic Analytics",
-        ],
-      },
-      {
-        id: "premium",
-        name: "Premium Growth",
-        priceMonthly: 49,
-        priceYearly: 29,
-        description: "Cancel anytime",
-        buttonText: "Start Premium Trial",
-        icon: Sparkles,
-        accent: "text-[#2D6A9F]",
-        isPopular: true,
-        bgBtn: "bg-[#2D6A9F] hover:bg-[#20527F] text-white shadow-md hover:shadow-lg",
-        features: [
-          "Enhanced Directory Listing",
-          "Unlimited Job Posts",
-          "Premium Profile Badge",
-          "Featured Placement (3 days/month)",
-          "Priority Support",
-          "Advanced Analytics",
-          "Candidate Search Access",
-          "Branded Profile Page",
-          "Messaging System",
-        ],
-      },
-      {
-        id: "enterprise",
-        name: "Enterprise Scale",
-        priceMonthly: 149,
-        priceYearly: 89,
-        description: "Cancel anytime",
-        buttonText: "Contact Sales",
-        icon: Building2,
-        accent: "text-indigo-600",
-        bgBtn: "bg-slate-800 hover:bg-slate-900 text-white",
-        features: [
-          "Top-tier Directory Placement",
-          "Unlimited Everything",
-          "Enterprise Verification Badge",
-          "Homepage Featured Slot",
-          "Dedicated Account Manager",
-          "Full CRM & Pipeline Tools",
-          "24/7 Phone Support",
-        ],
-      },
-    ];
+    return [];
   }, [backendPackages]);
 
   const comparisonFeatures = [
@@ -210,35 +161,7 @@ export const MembershipView = () => {
             Start free and upgrade as you grow. Connect with thousands of clients, care staff, and suppliers across the UK.
           </p>
 
-          {/* Pricing Cycle Switcher */}
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center shadow-inner relative">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                  billingCycle === "monthly"
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                  billingCycle === "yearly"
-                    ? "bg-white text-slate-800 shadow-sm"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                Yearly
-              </button>
-            </div>
 
-            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-emerald-200">
-              Save 40%
-            </span>
-          </div>
         </div>
       </div>
 
@@ -260,12 +183,19 @@ export const MembershipView = () => {
               </div>
             ))}
           </div>
+        ) : plans.length === 0 ? (
+          <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center shadow-sm max-w-xl mx-auto">
+            <h3 className="text-xl font-bold text-slate-800">
+              No Membership Plans Available
+            </h3>
+            <p className="text-sm text-slate-500 mt-2">
+              There are currently no membership plans listed. Please check back later.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
             {plans.map((plan) => {
               const Icon = plan.icon;
-              const price =
-                billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
 
               return (
                 <div
@@ -291,9 +221,11 @@ export const MembershipView = () => {
                         <h3 className="text-xl font-bold text-slate-800">
                           {plan.name}
                         </h3>
-                        <p className="text-xs text-slate-400 font-semibold">
-                          {plan.description}
-                        </p>
+                        {plan.description && (
+                          <p className="text-xs text-slate-400 font-semibold">
+                            {plan.description}
+                          </p>
+                        )}
                       </div>
                       <div
                         className={`p-2.5 rounded-2xl bg-slate-50 group-hover:bg-slate-100 transition-colors ${plan.accent}`}
@@ -305,27 +237,29 @@ export const MembershipView = () => {
                     {/* Price Block */}
                     <div className="flex items-baseline gap-1 mb-8">
                       <span className="text-5xl font-extrabold text-slate-800 tracking-tight">
-                        £{price}
+                        £{plan.price}
                       </span>
                       <span className="text-sm font-semibold text-slate-400">
-                        /mo{billingCycle === "yearly" && " (billed annually)"}
+                        {plan.period}
                       </span>
                     </div>
 
                     {/* Features List */}
-                    <div className="flex flex-col gap-3.5 mb-8 border-t border-slate-100 pt-6">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        Included Features
-                      </span>
-                      {plan.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-start gap-3 text-sm">
-                          <Check className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <span className="text-slate-600 font-medium">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    {plan.features && plan.features.length > 0 && (
+                      <div className="flex flex-col gap-3.5 mb-8 border-t border-slate-100 pt-6">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                          Included Features
+                        </span>
+                        {plan.features.map((feature: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-3 text-sm">
+                            <Check className="size-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <span className="text-slate-600 font-medium">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Button */}
@@ -442,23 +376,25 @@ export const MembershipView = () => {
                   </h3>
                   <div className="flex items-baseline gap-1 mt-2">
                     <span className="text-3xl font-extrabold text-slate-800">
-                      £{billingCycle === "monthly" ? selectedPlan.priceMonthly : selectedPlan.priceYearly}
+                      £{selectedPlan?.price}
                     </span>
                     <span className="text-xs text-slate-500 font-medium">
-                      / month ({billingCycle === "yearly" ? "Billed Annually" : "Billed Monthly"})
+                      {selectedPlan?.period}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <span className="text-xs font-bold text-slate-700">What is included:</span>
-                  {selectedPlan.features.slice(0, 5).map((f, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
-                      <Check className="size-3.5 text-emerald-600" />
-                      <span>{f}</span>
-                    </div>
-                  ))}
-                </div>
+                {selectedPlan?.features && selectedPlan.features.length > 0 && (
+                  <div className="flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <span className="text-xs font-bold text-slate-700">What is included:</span>
+                    {selectedPlan.features.slice(0, 5).map((f: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                        <Check className="size-3.5 text-emerald-600" />
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
@@ -486,7 +422,7 @@ export const MembershipView = () => {
                     Plan Selected!
                   </h4>
                   <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                    You have chosen the <strong>{selectedPlan.name}</strong> ({billingCycle}). Your entitlements and dashboard access have been configured.
+                    You have chosen the <strong>{selectedPlan?.name}</strong> plan. Your entitlements and dashboard access have been configured.
                   </p>
                 </div>
                 <button

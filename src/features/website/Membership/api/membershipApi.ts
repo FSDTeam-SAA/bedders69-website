@@ -9,21 +9,17 @@ export const membershipApi = {
   /**
    * Fetch active membership packages
    */
-  async getMembershipPackages(
-    params: PackageSearchParams = { type: "membership", limit: 20, page: 1 }
-  ): Promise<PackageItem[]> {
-    const response = await api.get<any>("/packages/get-packages", {
-      params: {
-        type: "membership",
-        ...params,
-      },
-    });
+  async getMembershipPackages(): Promise<any[]> {
+    const response = await api.get<any>("/membership-plans");
 
-    if (response.data && response.data.data) {
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
       if (Array.isArray(response.data.data)) {
         return response.data.data;
       }
-      if (response.data.data.data && Array.isArray(response.data.data.data)) {
+      if (response.data.data && Array.isArray(response.data.data.data)) {
         return response.data.data.data;
       }
     }

@@ -8,7 +8,7 @@ const backendUrl =
 export async function GET() {
   try {
     const response = await fetch(
-      `${backendUrl}/packages/get-packages?type=membership&limit=20`,
+      `${backendUrl}/membership-plans`,
       {
         headers: {
           "Content-Type": "application/json",

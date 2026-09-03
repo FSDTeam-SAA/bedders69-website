@@ -85,6 +85,15 @@ export default function Membership() {
                   Loading membership packages...
                 </p>
               </div>
+            ) : plans.length === 0 ? (
+              <div className="w-full min-h-[300px] flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-sky-950/10 p-12 text-center">
+                <p className="text-slate-700 font-semibold text-base">
+                  No membership plans available
+                </p>
+                <p className="text-slate-500 text-xs">
+                  Please check back later or contact admin to create plans.
+                </p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 {plans.map((plan) => {
@@ -105,9 +114,11 @@ export default function Membership() {
                       <h2 className="text-gray-900 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
                         {plan.name}
                       </h2>
-                      <p className="text-slate-600 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
-                        {plan.subtext}
-                      </p>
+                      {plan.subtext && (
+                        <p className="text-slate-600 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
+                          {plan.subtext}
+                        </p>
+                      )}
                     </div>
 
                     {/* Price */}
@@ -121,21 +132,23 @@ export default function Membership() {
                     </div>
 
                     {/* Features List */}
-                    <div className="w-full flex flex-col justify-start items-start gap-4 py-2">
-                      {plan.features.map((feature, idx) => (
-                        <div
-                          key={idx}
-                          className="w-full inline-flex justify-start items-center gap-2"
-                        >
-                          <div className="size-5 bg-green-700 rounded-full flex justify-center items-center shrink-0">
-                            <Check className="size-3 text-white stroke-[3]" />
+                    {plan.features && plan.features.length > 0 && (
+                      <div className="w-full flex flex-col justify-start items-start gap-4 py-2">
+                        {plan.features.map((feature, idx) => (
+                          <div
+                            key={idx}
+                            className="w-full inline-flex justify-start items-center gap-2"
+                          >
+                            <div className="size-5 bg-green-700 rounded-full flex justify-center items-center shrink-0">
+                              <Check className="size-3 text-white stroke-[3]" />
+                            </div>
+                            <span className="flex-1 text-gray-900 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
+                              {feature}
+                            </span>
                           </div>
-                          <span className="flex-1 text-gray-900 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Action Button */}
                     <div className="w-full pt-2">

@@ -15,30 +15,31 @@ export interface MembershipPlan {
   usageLimit?: number;
 }
 
-export interface PackageApiItem {
+export interface MembershipPlanApiItem {
   _id: string;
-  name: string;
-  description?: string;
-  type: string;
+  title: string;
   price: number;
-  features: string[];
-  durationDays: number;
-  usageLimit: number;
-  isActive: boolean;
+  date?: string;
+  content?: string;
+  duration?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Legacy / fallback fields
+  name?: string;
+  description?: string;
+  features?: string[];
 }
 
 export interface PackagesApiResponse {
   statusCode?: number;
   success?: boolean;
   message: string;
-  data: {
+  data: MembershipPlanApiItem[] | {
     meta?: {
       page: number;
       limit: number;
       total: number;
     };
-    data: PackageApiItem[];
+    data: MembershipPlanApiItem[];
   };
 }
