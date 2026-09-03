@@ -9,8 +9,8 @@ export const membershipApi = {
   /**
    * Fetch active membership packages
    */
-  async getMembershipPackages(): Promise<any[]> {
-    const response = await api.get<any>("/membership-plans");
+  async getMembershipPackages(params?: PackageSearchParams): Promise<any[]> {
+    const response = await api.get<any>("/membership-plans", { params });
 
     if (response.data) {
       if (Array.isArray(response.data)) {

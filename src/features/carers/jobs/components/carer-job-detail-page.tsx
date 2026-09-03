@@ -4,7 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, MapPin } from "lucide-react";
 
 type Job = {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
   description?: string;
   city?: string;
@@ -54,6 +55,11 @@ export function CarerJobDetailPage({ slug: jobId }: { slug: string }) {
   const [isApplying, setIsApplying] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => {
+    if (!jobId || jobId === "undefined") {
+      setError("Invalid job ID.");
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const [jobResponse, profileResponse] = await Promise.all([
@@ -110,7 +116,7 @@ export function CarerJobDetailPage({ slug: jobId }: { slug: string }) {
       const response = await fetch("/api/care/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: job.id, ...form }),
+        body: JSON.stringify({ jobId: job._id || job.id, ...form }),
       });
       const body = await response.json();
       if (!response.ok)
