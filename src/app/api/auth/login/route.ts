@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080/api/v1";
 const dashboardPath: Record<string, string> = {
-  admin: "http://localhost:3000/admin",
-  supplier: "http://localhost:3000/supplier",
-  service_provider: "http://localhost:3000/service",
-  care_company: "/care-company",
-  agency: "/recruitment-agency",
+  admin: "http://localhost:3001",
+  supplier: "/marketplace",
+  service_provider: "/services",
+  care_company: "/care-company/dashboard-overview",
+  agency: "/recruitment-agency/overview",
   carer: "/care",
   family: "/",
 };

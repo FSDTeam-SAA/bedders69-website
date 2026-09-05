@@ -2,11 +2,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bookmark, MapPin } from "lucide-react";
+import { ApplyModal } from "@/features/carers/jobs/components/ApplyModal";
+
 type Job = { _id?: string; id?: string; title: string; city?: string; location?: string };
 type Saved = { jobId: Job };
+
 export function CarerSavedJobsPage() {
   const [jobs, setJobs] = useState<Saved[]>([]);
   const [msg, setMsg] = useState("Loading saved jobs…");
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
   useEffect(() => {
     fetch("/api/care/saved-jobs")
       .then(async (r) => {
@@ -17,6 +22,7 @@ export function CarerSavedJobsPage() {
       })
       .catch((e) => setMsg(e.message || "Unable to load saved jobs"));
   }, []);
+
   async function remove(id: string) {
     const r = await fetch("/api/care/saved-jobs", {
       method: "DELETE",
@@ -26,15 +32,7 @@ export function CarerSavedJobsPage() {
     if (!r.ok) return setMsg("Unable to remove saved job");
     setJobs((v) => v.filter((x) => (x.jobId._id || x.jobId.id) !== id));
   }
-  async function apply(id: string) {
-    const r = await fetch("/api/care/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: id }),
-    });
-    const b = await r.json();
-    setMsg(r.ok ? "Application submitted successfully" : b.message || "Unable to apply");
-  }
+
   return (
     <div className="min-h-screen bg-white px-6 py-6 sm:px-8 xl:px-10">
       <h2 className="mb-5 text-2xl font-semibold">Saved Jobs</h2>
@@ -58,13 +56,13 @@ export function CarerSavedJobsPage() {
                 <button
                   onClick={() => remove(id)}
                   aria-label="Remove saved job"
-                  className="rounded-full bg-cyan-700/10 p-3"
+                  className="rounded-full bg-cyan-700/10 p-3 hover:bg-cyan-700/20 transition cursor-pointer"
                 >
                   <Bookmark className="fill-cyan-700 text-cyan-700" />
                 </button>
                 <button
-                  onClick={() => apply(id)}
-                  className="rounded-lg bg-cyan-700 px-4 text-white"
+                  onClick={() => setSelectedJob(job)}
+                  className="rounded-lg bg-cyan-700 hover:bg-cyan-800 px-4 py-2.5 text-white font-semibold transition cursor-pointer"
                 >
                   Apply now
                 </button>
@@ -73,6 +71,16 @@ export function CarerSavedJobsPage() {
           );
         })}
       </div>
+
+      <ApplyModal
+        isOpen={Boolean(selectedJob)}
+        onClose={() => setSelectedJob(null)}
+        job={selectedJob}
+        onSuccess={() => {
+          setMsg("Application submitted successfully!");
+          setTimeout(() => setMsg(""), 4000);
+        }}
+      />
     </div>
   );
 }

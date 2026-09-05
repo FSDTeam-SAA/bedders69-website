@@ -1,16 +1,43 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, ShoppingCart, X } from "lucide-react";
+import { Menu, ShoppingCart, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 
-const Navbar = () => {
+export const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { totalItemsCount } = useCart();
+
+  const [authStatus, setAuthStatus] = useState<{
+    authenticated: boolean;
+    role: string | null;
+    dashboardPath: string;
+  }>({
+    authenticated: false,
+    role: null,
+    dashboardPath: "/",
+  });
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setAuthStatus(data);
+      }
+    } catch {
+      // Ignore auth check error
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,6 +50,18 @@ const Navbar = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setAuthStatus({ authenticated: false, role: null, dashboardPath: "/" });
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   const navItems = [
     { href: "/", label: "Home", active: pathname === "/" },
@@ -63,7 +102,7 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex">
+        <div className="hidden items-center gap-3 sm:flex">
           <Link
             href="/cart"
             title="View Shopping Cart"
@@ -80,13 +119,42 @@ const Navbar = () => {
             )}
           </Link>
 
-          <Link href="/login" className="hidden rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-slate-50 md:flex">
-            <span className="text-base font-semibold leading-5 text-cyan-700">Sign In</span>
-          </Link>
+          {authStatus.authenticated ? (
+            <>
+              <Link
+                href={authStatus.dashboardPath}
+                className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
+              >
+                <LayoutDashboard className="size-4 text-white" />
+                <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                type="button"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-slate-600 transition-colors duration-200 hover:bg-red-50 hover:text-red-600"
+                title="Sign Out"
+              >
+                <LogOut className="size-4" />
+                <span className="text-sm font-semibold">Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="flex items-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-slate-50"
+              >
+                <span className="text-base font-semibold leading-5 text-cyan-700">Sign In</span>
+              </Link>
 
-          <Link href="/select-type" className="rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow md:px-6">
-            <span className="text-base font-semibold leading-5 text-neutral-100">Join Free</span>
-          </Link>
+              <Link
+                href="/select-type"
+                className="rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow md:px-6"
+              >
+                <span className="text-base font-semibold leading-5 text-neutral-100">Join Free</span>
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -132,12 +200,41 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
-            <Link href="/login" className="rounded-lg border border-cyan-700 px-4 py-3 text-center text-base font-semibold text-cyan-700">
-              Sign In
-            </Link>
-            <Link href="/select-type" className="rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white">
-              Join Free
-            </Link>
+
+            {authStatus.authenticated ? (
+              <>
+                <Link
+                  href={authStatus.dashboardPath}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
+                >
+                  <LayoutDashboard className="size-5" />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  type="button"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-base font-semibold text-red-600"
+                >
+                  <LogOut className="size-5" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="rounded-lg border border-cyan-700 px-4 py-3 text-center text-base font-semibold text-cyan-700"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/select-type"
+                  className="rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
+                >
+                  Join Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       ) : null}
