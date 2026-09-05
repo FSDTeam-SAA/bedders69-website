@@ -11,6 +11,12 @@ import {
   ShieldCheck,
   UserRoundSearch,
   Loader2,
+  Check,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Clock,
+  Phone,
 } from "lucide-react";
 
 function getStatusTone(status?: string) {
@@ -20,7 +26,7 @@ function getStatusTone(status?: string) {
   if (s === "shortlisted") return "bg-fuchsia-600/10 text-fuchsia-600";
   if (s === "interview") return "bg-teal-400/10 text-teal-600";
   if (s === "offered" || s === "accepted") return "bg-blue-600/10 text-blue-600";
-  if (s === "rejected" || s === "withdrawn") return "bg-red-600/10 text-red-600";
+  if (s === "rejected" || s === "declined" || s === "withdrawn") return "bg-red-600/10 text-red-600";
   return "bg-slate-200 text-slate-700";
 }
 
@@ -47,42 +53,83 @@ export function CarersPage() {
   const [applications, setApplications] = useState<Array<Record<string, any>>>([]);
   const [totalApplications, setTotalApplications] = useState(0);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [profileRes, appsRes] = await Promise.all([
-          fetch("/api/care/profile", { cache: "no-store" }),
-          fetch("/api/care/my-applications?limit=20&sortBy=createdAt&sortOrder=desc", { cache: "no-store" }),
-        ]);
+  const [contactRequests, setContactRequests] = useState<Array<Record<string, any>>>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-        if (profileRes.ok) {
-          const pBody = await profileRes.json();
-          setProfile(pBody.data ?? pBody);
-        }
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
-        if (appsRes.ok) {
-          const aBody = await appsRes.json();
-          const appList = aBody.data || [];
-          setApplications(appList);
-          setTotalApplications(aBody.meta?.total || appList.length);
-        }
-      } catch (e) {
-        console.error("Unable to load overview data", e);
-      } finally {
-        setLoading(false);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [profileRes, appsRes, requestsRes] = await Promise.all([
+        fetch("/api/care/profile", { cache: "no-store" }),
+        fetch("/api/care/my-applications?limit=20&sortBy=createdAt&sortOrder=desc", { cache: "no-store" }),
+        fetch("/api/care/contact-requests", { cache: "no-store" }),
+      ]);
+
+      if (profileRes.ok) {
+        const pBody = await profileRes.json();
+        setProfile(pBody.data ?? pBody);
       }
-    }
 
+      if (appsRes.ok) {
+        const aBody = await appsRes.json();
+        const appList = aBody.data || [];
+        setApplications(appList);
+        setTotalApplications(aBody.meta?.total || appList.length);
+      }
+
+      if (requestsRes.ok) {
+        const rBody = await requestsRes.json();
+        setContactRequests(rBody.data || []);
+      }
+    } catch (e) {
+      console.error("Unable to load overview data", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
+
+  const handleStatusChange = async (id: string, newStatus: "Accepted" | "Rejected") => {
+    try {
+      setUpdatingId(id);
+      const res = await fetch(`/api/care/contact-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update status");
+      }
+      setContactRequests((prev) =>
+        prev.map((req) =>
+          (req._id === id || req.id === id) ? { ...req, status: newStatus } : req
+        )
+      );
+      triggerToast(
+        `Contact request from agency has been ${newStatus === "Accepted" ? "accepted" : "declined"}.`
+      );
+    } catch (err: any) {
+      alert(err?.message || "Failed to update request status");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const appliedJobsCount = String(totalApplications).padStart(2, "0");
   const profileViewsCount = String(profile?.profileViews || 0).padStart(2, "0");
   const interviewsCount = String(
     applications.filter((a) => String(a.status).toLowerCase() === "interview").length
   ).padStart(2, "0");
-  const totalQuoteCount = "12";
+  const inquiriesCount = String(contactRequests.length).padStart(2, "0");
 
   const stats = [
     {
@@ -101,9 +148,9 @@ export function CarersPage() {
       icon: CalendarClock,
     },
     {
-      label: "Total Quote",
-      value: totalQuoteCount,
-      icon: UserRoundSearch,
+      label: "Agency Inquiries",
+      value: inquiriesCount,
+      icon: MessageSquare,
     },
   ];
 
@@ -160,7 +207,15 @@ export function CarersPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-6 py-6 sm:px-8 xl:px-10">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-emerald-600 px-5 py-3 text-white shadow-xl animate-fade-in">
+          <Check className="h-5 w-5 shrink-0" />
+          <span className="font-semibold text-sm">{toastMessage}</span>
+        </div>
+      )}
+
+      <div className="px-6 py-6 sm:px-8 xl:px-10 space-y-6">
         <section className="grid gap-4 xl:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
@@ -184,7 +239,109 @@ export function CarersPage() {
           })}
         </section>
 
-        <section className="mt-6 grid gap-4 2xl:grid-cols-2">
+        {/* Agency Inquiries & Contact Requests Section */}
+        <section className="space-y-4">
+          <h2 className="text-3xl font-semibold leading-10 text-slate-800">
+            Agency Inquiries & Contact Requests
+          </h2>
+
+          <div className="overflow-hidden rounded-2xl bg-[#eef6ff] border border-cyan-700/10">
+            {contactRequests.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 font-medium">
+                No agency contact requests received yet.
+              </div>
+            ) : (
+              contactRequests.map((req, index) => {
+                const id = req._id || req.id;
+                const status = req.status || "Pending";
+                const isPending = status.toLowerCase() === "pending";
+                const isUpdating = updatingId === id;
+
+                return (
+                  <div key={id || index}>
+                    <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-xl font-bold text-slate-800">
+                            {req.name || "Care Agency"}
+                          </h3>
+                          <span className="px-3 py-0.5 rounded-full bg-cyan-700/10 text-cyan-800 text-xs font-semibold">
+                            {req.category || "Recruitment Agency"}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-slate-600 leading-relaxed max-w-4xl">
+                          "{req.message || "Agency requested to connect with you."}"
+                        </p>
+
+                        <div className="flex items-center gap-4 text-xs text-slate-500 pt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="size-3.5" />
+                            {req.time || "Recently"}
+                          </span>
+                          {req.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="size-3.5" />
+                              {req.phone}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status & Actions */}
+                      <div className="flex items-center gap-3 shrink-0 sm:self-center">
+                        <span
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${getStatusTone(
+                            status
+                          )}`}
+                        >
+                          {status}
+                        </span>
+
+                        {isPending && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={() => handleStatusChange(id, "Accepted")}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                            >
+                              {isUpdating ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="size-3.5" />
+                              )}
+                              <span>Accept</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={() => handleStatusChange(id, "Rejected")}
+                              className="px-4 py-2 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                            >
+                              {isUpdating ? (
+                                <Loader2 className="size-3.5 animate-spin" />
+                              ) : (
+                                <XCircle className="size-3.5" />
+                              )}
+                              <span>Decline</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {index < contactRequests.length - 1 && (
+                      <div className="h-px w-full bg-slate-200/80" />
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section className="grid gap-4 2xl:grid-cols-2">
           <div className="space-y-6">
             <h2 className="text-3xl font-semibold leading-10 text-slate-800">
               Application Tracker
@@ -280,3 +437,4 @@ export function CarersPage() {
     </div>
   );
 }
+

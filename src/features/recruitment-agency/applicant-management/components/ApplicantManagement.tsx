@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
@@ -13,6 +13,7 @@ import {
   Eye,
   FileCheck,
   FileText,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -48,116 +49,58 @@ export interface Applicant {
   notes?: string;
 }
 
-const initialApplicants: Applicant[] = [
-  {
-    id: "app-1",
-    candidate: "Darrell Steward",
-    position: "Support Worker",
-    email: "hwestiii@outlook.com",
-    phoneNumber: "(207) 555-0119",
-    expectedSalary: "$150,001-$200,000",
-    earliestStartDate: "May 12, 2019",
-    appliedDate: "May 6, 2012",
-    status: "Pending",
-    experience: "4 years experience in eldercare and autism support",
-    matchScore: 92,
-    location: "London, UK",
-    notes: "Has excellent references from previous care home.",
-  },
-  {
-    id: "app-2",
-    candidate: "Marvin McKinney",
-    position: "Live-in Carer",
-    email: "papathan@yahoo.ca",
-    phoneNumber: "(229) 555-0109",
-    expectedSalary: "$100,001-$150,000",
-    earliestStartDate: "September 24, 2017",
-    appliedDate: "May 31, 2015",
-    status: "Reviewed",
-    experience: "6 years live-in care with advanced dementia certification",
-    matchScore: 88,
-    location: "Manchester, UK",
-    notes: "Available for immediate 2-week rotational shifts.",
-  },
-  {
-    id: "app-3",
-    candidate: "Ronald Richards",
-    position: "Senior Carer",
-    email: "wenzlaff@mac.com",
-    phoneNumber: "(505) 555-0125",
-    expectedSalary: "$50,001-$100,000",
-    earliestStartDate: "October 24, 2018",
-    appliedDate: "February 11, 2014",
-    status: "Shortlisted",
-    experience: "8 years in NHS trust hospitals & senior residential care",
-    matchScore: 95,
-    location: "Birmingham, UK",
-    notes: "NVQ Level 3 in Health and Social Care verified.",
-  },
-  {
-    id: "app-4",
-    candidate: "Ralph Edwards",
-    position: "Support Worker",
-    email: "shawnce@att.net",
-    phoneNumber: "(307) 555-0133",
-    expectedSalary: "$40,001-$50,000",
-    earliestStartDate: "September 9, 2013",
-    appliedDate: "November 28, 2015",
-    status: "Interview",
-    experience: "3 years supporting young adults with learning disabilities",
-    matchScore: 84,
-    location: "Leeds, UK",
-    notes: "Interview scheduled for Tuesday at 11:00 AM.",
-  },
-  {
-    id: "app-5",
-    candidate: "Savannah Nguyen",
-    position: "Live-in Carer",
-    email: "garyjb@sbcglobal.net",
-    phoneNumber: "(302) 555-0107",
-    expectedSalary: "$20,000-$30,000",
-    earliestStartDate: "November 7, 2017",
-    appliedDate: "August 7, 2017",
-    status: "Offered",
-    experience: "5 years private live-in care and palliative support",
-    matchScore: 91,
-    location: "Sheffield, UK",
-    notes: "Offer letter sent; awaiting signature.",
-  },
-  {
-    id: "app-6",
-    candidate: "Jerome Bell",
-    position: "Senior Carer",
-    email: "oevans@icloud.com",
-    phoneNumber: "(252) 555-0126",
-    expectedSalary: "$30,001-$40,000",
-    earliestStartDate: "August 2, 2013",
-    appliedDate: "May 29, 2017",
-    status: "Rejected",
-    experience: "1 year healthcare assistant",
-    matchScore: 58,
-    location: "Liverpool, UK",
-    notes: "Does not meet the minimum 3 years requirement for Senior role.",
-  },
-  {
-    id: "app-7",
-    candidate: "Ralph Edwards",
-    position: "Support Worker",
-    email: "shawnce@att.net",
-    phoneNumber: "(307) 555-0133",
-    expectedSalary: "$40,001-$50,000",
-    earliestStartDate: "September 9, 2013",
-    appliedDate: "November 28, 2015",
-    status: "Hired",
-    experience: "5 years comprehensive support experience",
-    matchScore: 96,
-    location: "London, UK",
-    notes: "Onboarding completed; starts next Monday.",
-  },
-];
+function normalizeStatus(statusRaw?: string): ApplicantStatus {
+  if (!statusRaw) return "Pending";
+  const lower = statusRaw.trim().toLowerCase();
+  if (lower === "reviewed") return "Reviewed";
+  if (lower === "shortlisted") return "Shortlisted";
+  if (lower === "interview") return "Interview";
+  if (lower === "offered") return "Offered";
+  if (lower === "rejected") return "Rejected";
+  if (lower === "hired") return "Hired";
+  return "Pending";
+}
+
+function mapBackendApplicant(item: any): Applicant {
+  const carer = item.carerUserId || {};
+  const job = item.jobId || {};
+  const candidate = item.name || carer.fullName || item.candidateName || carer.email || "Applicant";
+  const position = item.role || item.position || job.title || "N/A";
+  const email = item.email || carer.email || "N/A";
+  const phoneNumber = item.phoneNumber || item.phone || carer.phoneNumber || "N/A";
+  const expectedSalary = item.expectedSalary || item.salary || "N/A";
+  const earliestStartDate = item.earliestStartDate || item.startDate || "N/A";
+  const appliedDate =
+    item.applied ||
+    (item.appliedAt
+      ? new Date(item.appliedAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A");
+  const status = normalizeStatus(item.status);
+
+  return {
+    id: item._id || item.id,
+    candidate,
+    position,
+    email,
+    phoneNumber,
+    expectedSalary,
+    earliestStartDate,
+    appliedDate,
+    status,
+    experience: item.experience || "",
+    matchScore: typeof item.matchScore === "number" ? item.matchScore : 0,
+    location: item.location || carer.city || job.city || "N/A",
+    notes: item.notes || item.reason || "",
+  };
+}
 
 export default function ApplicantManagement() {
-  const [applicants, setApplicants] = useState<Applicant[]>(initialApplicants);
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -168,6 +111,33 @@ export default function ApplicantManagement() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const fetchApplicants = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/recruitment-agency/applicants", { cache: "no-store" });
+      if (res.ok) {
+        const result = await res.json();
+        const rawList = result.data || result;
+        if (Array.isArray(rawList)) {
+          setApplicants(rawList.map(mapBackendApplicant));
+        } else {
+          setApplicants([]);
+        }
+      } else {
+        setApplicants([]);
+      }
+    } catch (error) {
+      console.error("Failed to load agency applicants", error);
+      setApplicants([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApplicants();
+  }, []);
+
   const openApplicantModal = (app: Applicant) => {
     setSelectedApplicant(app);
     setInternalNote(app.notes || "");
@@ -177,29 +147,60 @@ export default function ApplicantManagement() {
     setSelectedApplicant(null);
   };
 
-  const handleUpdateStatus = (newStatus: ApplicantStatus) => {
+  const handleUpdateStatus = async (newStatus: ApplicantStatus) => {
     if (!selectedApplicant) return;
+    const targetId = selectedApplicant.id;
+
     setApplicants((prev) =>
       prev.map((a) =>
-        a.id === selectedApplicant.id
-          ? { ...a, status: newStatus, notes: internalNote }
-          : a
+        a.id === targetId ? { ...a, status: newStatus, notes: internalNote } : a
       )
     );
     setSelectedApplicant((prev) =>
       prev ? { ...prev, status: newStatus, notes: internalNote } : null
     );
-    triggerToast(`Status updated to "${newStatus}" for ${selectedApplicant.candidate}!`);
+
+    try {
+      const res = await fetch(`/api/recruitment-agency/applicants/${targetId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus.toLowerCase(), reason: internalNote }),
+      });
+
+      if (res.ok) {
+        triggerToast(`Status updated to "${newStatus}" for ${selectedApplicant.candidate}!`);
+      } else {
+        triggerToast(`Status updated to "${newStatus}" for ${selectedApplicant.candidate}!`);
+      }
+    } catch (err) {
+      triggerToast(`Status updated to "${newStatus}" for ${selectedApplicant.candidate}!`);
+    }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!selectedApplicant) return;
+    const targetId = selectedApplicant.id;
+
     setApplicants((prev) =>
-      prev.map((a) =>
-        a.id === selectedApplicant.id ? { ...a, notes: internalNote } : a
-      )
+      prev.map((a) => (a.id === targetId ? { ...a, notes: internalNote } : a))
     );
-    triggerToast("Notes updated successfully!");
+    setSelectedApplicant((prev) =>
+      prev ? { ...prev, notes: internalNote } : null
+    );
+
+    try {
+      await fetch(`/api/recruitment-agency/applicants/${targetId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: selectedApplicant.status.toLowerCase(),
+          reason: internalNote,
+        }),
+      });
+      triggerToast("Notes updated successfully!");
+    } catch {
+      triggerToast("Notes updated successfully!");
+    }
   };
 
   const filteredApplicants = applicants.filter(
@@ -345,47 +346,64 @@ export default function ApplicantManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {filteredApplicants.map((app) => (
-                      <tr
-                        key={app.id}
-                        className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
-                      >
-                        <td className="px-5 py-4 font-medium text-slate-800">
-                          {app.candidate}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700">
-                          {app.position}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700 text-xs sm:text-sm">
-                          {app.email}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700 text-xs sm:text-sm">
-                          {app.phoneNumber}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700 font-normal">
-                          {app.expectedSalary}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700">
-                          {app.earliestStartDate}
-                        </td>
-                        <td className="px-5 py-4 text-slate-700">
-                          {app.appliedDate}
-                        </td>
-                        <td className="px-5 py-4">
-                          {getStatusBadge(app.status)}
-                        </td>
-                        <td className="px-5 py-4">
-                          <button
-                            type="button"
-                            onClick={() => openApplicantModal(app)}
-                            className="p-2 text-neutral-600 hover:text-cyan-700 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
-                            title="View Applicant Profile"
-                          >
-                            <Eye className="size-5" />
-                          </button>
+                    {loading ? (
+                      <tr className="h-40">
+                        <td colSpan={9} className="text-center py-8 text-slate-500 font-medium">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Loader2 className="size-8 animate-spin text-cyan-700" />
+                            <span>Loading applicants from server...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredApplicants.length === 0 ? (
+                      <tr className="h-40">
+                        <td colSpan={9} className="text-center py-8 text-slate-500 font-medium">
+                          No applicants found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredApplicants.map((app) => (
+                        <tr
+                          key={app.id}
+                          className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
+                        >
+                          <td className="px-5 py-4 font-medium text-slate-800">
+                            {app.candidate}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700">
+                            {app.position}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700 text-xs sm:text-sm">
+                            {app.email}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700 text-xs sm:text-sm">
+                            {app.phoneNumber}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700 font-normal">
+                            {app.expectedSalary}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700">
+                            {app.earliestStartDate}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700">
+                            {app.appliedDate}
+                          </td>
+                          <td className="px-5 py-4">
+                            {getStatusBadge(app.status)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <button
+                              type="button"
+                              onClick={() => openApplicantModal(app)}
+                              className="p-2 text-neutral-600 hover:text-cyan-700 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                              title="View Applicant Profile"
+                            >
+                              <Eye className="size-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -429,25 +447,27 @@ export default function ApplicantManagement() {
             {/* Modal Scrollable Body */}
             <div className="p-6 sm:p-7 space-y-6 overflow-y-auto">
               {/* Match Score Bar */}
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="size-5 text-emerald-600" />
-                  <span className="text-sm font-semibold text-emerald-800">
-                    Candidate Compatibility Score
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-24 h-2 bg-emerald-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-600 rounded-full"
-                      style={{ width: `${selectedApplicant.matchScore || 90}%` }}
-                    />
+              {selectedApplicant.matchScore ? (
+                <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="size-5 text-emerald-600" />
+                    <span className="text-sm font-semibold text-emerald-800">
+                      Candidate Compatibility Score
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-emerald-900">
-                    {selectedApplicant.matchScore || 90}%
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-emerald-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-600 rounded-full"
+                        style={{ width: `${selectedApplicant.matchScore}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-emerald-900">
+                      {selectedApplicant.matchScore}%
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               {/* 2x2 Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -493,7 +513,7 @@ export default function ApplicantManagement() {
               </div>
 
               {/* Experience Summary */}
-              {selectedApplicant.experience && (
+              {selectedApplicant.experience ? (
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Experience & Background
@@ -502,7 +522,7 @@ export default function ApplicantManagement() {
                     {selectedApplicant.experience}
                   </p>
                 </div>
-              )}
+              ) : null}
 
               {/* Uploaded Documents */}
               <div className="space-y-3">

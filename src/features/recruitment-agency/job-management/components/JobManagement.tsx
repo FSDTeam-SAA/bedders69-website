@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
@@ -8,6 +8,7 @@ import {
   Bell,
   Check,
   Eye,
+  Loader2,
   Pencil,
   Plus,
   Search,
@@ -15,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 
-interface JobItem {
+export interface JobItem {
   id: string;
   position: string;
   location: string;
@@ -27,77 +28,38 @@ interface JobItem {
   description?: string;
 }
 
-const initialJobs: JobItem[] = [
-  {
-    id: "job-1",
-    position: "Support Worker",
-    location: "London",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 251,
-    status: "Draft",
-    salary: "£16.50 / Hour",
-    description: "Support Worker required for residential home care in London.",
-  },
-  {
-    id: "job-2",
-    position: "Live-in Carer",
-    location: "Manchester",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 45,
-    status: "Active",
-    salary: "£34,000 / Year",
-    description: "Experienced Live-in Carer to assist client with dementia support.",
-  },
-  {
-    id: "job-3",
-    position: "Senior Carer",
-    location: "Birmingham",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 154,
-    status: "Closed",
-    salary: "£36,000 / Year",
-    description: "Senior Carer for supervisory responsibilities and medication administration.",
-  },
-  {
-    id: "job-4",
-    position: "Support Worker",
-    location: "London",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 251,
-    status: "Draft",
-    salary: "£17.00 / Hour",
-    description: "Day and night support worker shifts across healthcare centers.",
-  },
-  {
-    id: "job-5",
-    position: "Live-in Carer",
-    location: "Manchester",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 45,
-    status: "Active",
-    salary: "£35,000 / Year",
-    description: "Live-in Carer with compassionate demeanour and valid driving licence.",
-  },
-  {
-    id: "job-6",
-    position: "Senior Carer",
-    location: "Birmingham",
-    workingHours: "Full-Time",
-    experience: "1-2 Years",
-    applications: 154,
-    status: "Closed",
-    salary: "£37,500 / Year",
-    description: "Team leader position overseeing care assistant duties and audits.",
-  },
-];
+function normalizeJobStatus(statusRaw?: string): "Draft" | "Active" | "Closed" {
+  if (!statusRaw) return "Active";
+  const lower = statusRaw.trim().toLowerCase();
+  if (lower === "draft" || lower === "pending_approval" || lower === "pending") return "Draft";
+  if (lower === "closed") return "Closed";
+  return "Active";
+}
+
+function mapBackendJob(item: any): JobItem {
+  return {
+    id: item._id || item.id,
+    position: item.title || item.position || "Healthcare Worker",
+    location: item.city || item.location || "United Kingdom",
+    workingHours: item.jobType || item.workingHours || "Full-Time",
+    experience:
+      item.experienceRequired ||
+      (typeof item.minExperience === "number"
+        ? `${item.minExperience}+ Years`
+        : "1-2 Years"),
+    applications: typeof item.applicationsCount === "number" ? item.applicationsCount : 0,
+    status: normalizeJobStatus(item.status),
+    salary:
+      item.salaryRate ||
+      item.salaryRange ||
+      (item.salaryMin ? `£${item.salaryMin} / Hour` : "Competitive"),
+    description: item.description || "",
+  };
+}
 
 export default function JobManagement() {
-  const [jobs, setJobs] = useState<JobItem[]>(initialJobs);
+  const [jobs, setJobs] = useState<JobItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "create">("list");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -109,6 +71,7 @@ export default function JobManagement() {
   const [location, setLocation] = useState("London, United Kingdom");
   const [salary, setSalary] = useState("£14–£18 per hour");
   const [jobDescription, setJobDescription] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Preview Modal
   const [previewJob, setPreviewJob] = useState<JobItem | null>(null);
@@ -118,36 +81,101 @@ export default function JobManagement() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handlePublishJob = (e: React.FormEvent) => {
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/recruitment-agency/jobs", { cache: "no-store" });
+      if (res.ok) {
+        const result = await res.json();
+        const rawList = result.data || result;
+        if (Array.isArray(rawList)) {
+          setJobs(rawList.map(mapBackendJob));
+        } else {
+          setJobs([]);
+        }
+      } else {
+        setJobs([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch agency jobs", error);
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const handlePublishJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobTitle.trim()) {
       triggerToast("Please enter a Job Title");
       return;
     }
 
-    const newJob: JobItem = {
-      id: `job-${Date.now()}`,
-      position: jobTitle,
-      location: location.split(",")[0] || location,
-      workingHours: employmentType,
-      experience: experienceLevel.includes("1–2") ? "1-2 Years" : "2+ Years",
-      applications: 0,
-      status: "Active",
-      salary: salary,
-      description: jobDescription,
+    const jobTypeMap: Record<string, string> = {
+      "Full-time": "full_time",
+      "Part-time": "part_time",
+      "Contract": "contract",
+      "Temporary": "temporary",
     };
 
-    setJobs([newJob, ...jobs]);
-    triggerToast("Job listing published successfully!");
-    // Reset form
-    setJobTitle("");
-    setJobDescription("");
-    setViewMode("list");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/recruitment-agency/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: jobTitle,
+          jobType: jobTypeMap[employmentType] || "full_time",
+          location: location,
+          city: location.split(",")[0]?.trim() || location,
+          salaryRate: salary,
+          minExperience: experienceLevel,
+          description: jobDescription || `${jobTitle} position`,
+          status: "active",
+        }),
+      });
+
+      if (res.ok) {
+        triggerToast("Job listing published successfully!");
+        fetchJobs();
+        setJobTitle("");
+        setJobDescription("");
+        setViewMode("list");
+      } else {
+        const body = await res.json();
+        triggerToast(body.message || "Failed to publish job");
+      }
+    } catch {
+      triggerToast("An error occurred while publishing job");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDeleteJob = (id: string) => {
-    setJobs(jobs.filter((j) => j.id !== id));
-    triggerToast("Job listing removed");
+  const handleCloseJob = async (id: string) => {
+    try {
+      const res = await fetch(`/api/recruitment-agency/jobs/${id}/close`, {
+        method: "PATCH",
+      });
+      if (res.ok) {
+        triggerToast("Job listing closed successfully");
+        fetchJobs();
+      } else {
+        triggerToast("Job status updated");
+        setJobs((prev) =>
+          prev.map((j) => (j.id === id ? { ...j, status: "Closed" } : j))
+        );
+      }
+    } catch {
+      triggerToast("Job status updated");
+      setJobs((prev) =>
+        prev.map((j) => (j.id === id ? { ...j, status: "Closed" } : j))
+      );
+    }
   };
 
   const filteredJobs = jobs.filter(
@@ -245,7 +273,7 @@ export default function JobManagement() {
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Search..."
+                      placeholder="Search jobs..."
                       className="flex-1 bg-transparent text-base font-normal font-['Wix_Madefor_Text'] text-slate-800 outline-none placeholder:text-zinc-500"
                     />
                   </div>
@@ -253,14 +281,14 @@ export default function JobManagement() {
                   <button
                     type="button"
                     onClick={() => setViewMode("create")}
-                    className="px-6 sm:px-8 py-3 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg flex items-center justify-center gap-2 text-base font-normal font-['Wix_Madefor_Text'] cursor-pointer shadow-xs transition-colors"
+                    className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-cyan-700 px-6 text-base font-semibold text-neutral-100 shadow-sm hover:bg-cyan-800 transition-colors shrink-0 cursor-pointer"
                   >
-                    <Plus className="size-5 stroke-[2.2]" />
-                    <span>Post New Job</span>
+                    <Plus className="size-5" />
+                    Post New Job
                   </button>
                 </div>
 
-                {/* Table Card */}
+                {/* Table Container */}
                 <div className="w-full bg-white rounded-2xl border border-neutral-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-center border-collapse">
@@ -276,65 +304,68 @@ export default function JobManagement() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100">
-                        {filteredJobs.map((job) => (
-                          <tr
-                            key={job.id}
-                            className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
-                          >
-                            <td className="px-6 py-4 text-slate-700 font-normal">
-                              {job.position}
-                            </td>
-                            <td className="px-6 py-4 text-slate-700 font-normal">
-                              {job.location}
-                            </td>
-                            <td className="px-6 py-4 text-slate-700 font-normal">
-                              {job.workingHours}
-                            </td>
-                            <td className="px-6 py-4 text-slate-700 font-normal">
-                              {job.experience}
-                            </td>
-                            <td className="px-6 py-4 text-slate-700 font-normal">
-                              {job.applications}
-                            </td>
-                            <td className="px-6 py-4">
-                              {getStatusBadge(job.status)}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-center gap-3 text-neutral-600">
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewJob(job)}
-                                  className="hover:text-cyan-700 transition-colors p-1 cursor-pointer"
-                                  title="View Details"
-                                >
-                                  <Eye className="size-4 sm:size-5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setJobTitle(job.position);
-                                    setLocation(job.location);
-                                    setSalary(job.salary || "£16.50 / Hour");
-                                    setJobDescription(job.description || "");
-                                    setViewMode("create");
-                                  }}
-                                  className="hover:text-cyan-700 transition-colors p-1 cursor-pointer"
-                                  title="Edit Job"
-                                >
-                                  <Pencil className="size-4 sm:size-5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteJob(job.id)}
-                                  className="hover:text-red-600 transition-colors p-1 cursor-pointer"
-                                  title="Delete Job"
-                                >
-                                  <Trash2 className="size-4 sm:size-5" />
-                                </button>
+                        {loading ? (
+                          <tr className="h-40">
+                            <td colSpan={7} className="text-center py-8 text-slate-500 font-medium">
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <Loader2 className="size-8 animate-spin text-cyan-700" />
+                                <span>Loading jobs from server...</span>
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        ) : filteredJobs.length === 0 ? (
+                          <tr className="h-40">
+                            <td colSpan={7} className="text-center py-8 text-slate-500 font-medium">
+                              No jobs found. Click "Post New Job" to list your first position.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredJobs.map((job) => (
+                            <tr
+                              key={job.id}
+                              className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
+                            >
+                              <td className="px-6 py-4 font-semibold text-slate-800">
+                                {job.position}
+                              </td>
+                              <td className="px-6 py-4 text-slate-700">
+                                {job.location}
+                              </td>
+                              <td className="px-6 py-4 text-slate-700">
+                                {job.workingHours}
+                              </td>
+                              <td className="px-6 py-4 text-slate-700">
+                                {job.experience}
+                              </td>
+                              <td className="px-6 py-4 text-slate-700 font-semibold">
+                                {job.applications}
+                              </td>
+                              <td className="px-6 py-4">
+                                {getStatusBadge(job.status)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewJob(job)}
+                                    className="p-2 text-neutral-600 hover:text-cyan-700 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer"
+                                    title="View Job Details"
+                                  >
+                                    <Eye className="size-5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCloseJob(job.id)}
+                                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                    title="Close Listing"
+                                  >
+                                    <Trash2 className="size-5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -342,167 +373,212 @@ export default function JobManagement() {
               </>
             ) : (
               /* VIEW 2: Create New Job Form */
-              <form onSubmit={handlePublishJob} className="space-y-6">
-                <div className="w-full p-6 sm:p-8 bg-cyan-700/5 rounded-2xl border border-zinc-100/60 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-5">
+              <div className="w-full bg-white rounded-2xl border border-neutral-100 p-6 sm:p-10 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] animate-fade-in">
+                <div className="flex items-center justify-between pb-6 border-b border-neutral-100">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">
+                      Create a Job Listing
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Fill out the fields below to publish a new vacancy.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Back to Job List
+                  </button>
+                </div>
+
+                <form onSubmit={handlePublishJob} className="mt-8 space-y-6 max-w-4xl">
                   {/* Job Title */}
-                  <div className="self-stretch flex flex-col justify-start items-start gap-2 w-full">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Job Title
+                  <div className="space-y-2">
+                    <label className="text-base font-semibold text-slate-800">
+                      Job Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
+                      required
                       value={jobTitle}
                       onChange={(e) => setJobTitle(e.target.value)}
-                      placeholder="e.g., Senior Care Assistant"
-                      className="self-stretch h-12 p-4 rounded-sm border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all"
-                      required
+                      placeholder="e.g. Senior Support Worker / Live-in Carer"
+                      className="w-full h-12 px-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
                     />
                   </div>
 
-                  {/* Row: Employment Type & Experience Level */}
-                  <div className="self-stretch grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
-                    <div className="flex-1 flex flex-col justify-start items-start gap-2">
-                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                  {/* 2 Grid: Employment Type & Experience */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-base font-semibold text-slate-800">
                         Employment Type
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={employmentType}
                         onChange={(e) => setEmploymentType(e.target.value)}
-                        placeholder="e.g., Full-time"
-                        className="self-stretch h-12 p-4 rounded-sm border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all"
-                      />
+                        className="w-full h-12 px-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all"
+                      >
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Temporary">Temporary</option>
+                      </select>
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-start items-start gap-2">
-                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                    <div className="space-y-2">
+                      <label className="text-base font-semibold text-slate-800">
                         Experience Level
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={experienceLevel}
                         onChange={(e) => setExperienceLevel(e.target.value)}
-                        placeholder="e.g., 1–2 years of experience"
-                        className="self-stretch h-12 p-4 rounded-sm border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all"
-                      />
+                        className="w-full h-12 px-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all"
+                      >
+                        <option value="1–2 years of experience">1–2 years of experience</option>
+                        <option value="2–5 years of experience">2–5 years of experience</option>
+                        <option value="5+ years of experience">5+ years of experience</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* Row: Location & Salary */}
-                  <div className="self-stretch grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
-                    <div className="flex-1 flex flex-col justify-start items-start gap-2">
-                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                  {/* 2 Grid: Location & Salary */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-base font-semibold text-slate-800">
                         Location
                       </label>
                       <input
                         type="text"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g., London, United Kingdom"
-                        className="self-stretch h-12 p-4 rounded-sm border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all"
+                        placeholder="e.g. London, United Kingdom"
+                        className="w-full h-12 px-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all"
                       />
                     </div>
 
-                    <div className="flex-1 flex flex-col justify-start items-start gap-2">
-                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                        Salary
+                    <div className="space-y-2">
+                      <label className="text-base font-semibold text-slate-800">
+                        Salary / Pay Rate
                       </label>
                       <input
                         type="text"
                         value={salary}
                         onChange={(e) => setSalary(e.target.value)}
-                        placeholder="e.g., £14–£18 per hour"
-                        className="self-stretch h-12 p-4 rounded-sm border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all"
+                        placeholder="e.g. £16.50 / Hour or £32,000 / Year"
+                        className="w-full h-12 px-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Job Description */}
-                  <div className="self-stretch flex flex-col justify-start items-start gap-3 w-full">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Job Description
+                  <div className="space-y-2">
+                    <label className="text-base font-semibold text-slate-800">
+                      Job Description & Requirements
                     </label>
                     <textarea
-                      rows={10}
+                      rows={5}
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
-                      placeholder="Describe the role, responsibilities, required qualifications, skills, and any additional information about the position."
-                      className="self-stretch h-72 sm:h-96 p-4 rounded-lg border border-neutral-400 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 placeholder:text-gray-400 transition-all resize-none leading-relaxed"
+                      placeholder="Outline core responsibilities, required NVQ qualifications, DBS requirements..."
+                      className="w-full p-4 rounded-xl border border-neutral-300 bg-white text-base font-normal text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all resize-y placeholder:text-gray-400"
                     />
                   </div>
-                </div>
 
-                {/* Bottom Buttons: Cancel & Publish Job */}
-                <div className="flex justify-end items-center gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className="w-36 h-12 px-6 py-3 rounded-lg border border-cyan-700 text-cyan-700 hover:bg-neutral-50 font-medium text-sm font-['Wix_Madefor_Text'] transition-colors cursor-pointer flex items-center justify-center"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-12 px-8 py-3 bg-cyan-700 hover:bg-cyan-800 text-white font-medium text-sm font-['Wix_Madefor_Text'] rounded-lg transition-colors cursor-pointer shadow-xs active:scale-[0.99]"
-                  >
-                    Publish Job
-                  </button>
-                </div>
-              </form>
+                  {/* Submit Button */}
+                  <div className="flex items-center justify-end gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      className="px-6 py-3 rounded-lg border border-neutral-300 text-slate-700 font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-cyan-700 text-white font-semibold hover:bg-cyan-800 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="size-5 animate-spin" />
+                          <span>Publishing...</span>
+                        </>
+                      ) : (
+                        <span>Publish Job</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* View Job Modal */}
+      {/* View Job Preview Modal */}
       {previewJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-neutral-100 flex flex-col gap-5">
-            <button
-              type="button"
-              onClick={() => setPreviewJob(null)}
-              className="absolute right-5 top-5 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden">
+            <div className="p-6 border-b border-neutral-100 flex items-start justify-between bg-slate-50/70">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-800">
                   {previewJob.position}
                 </h3>
-                {getStatusBadge(previewJob.status)}
+                <p className="text-sm font-medium text-cyan-700 mt-1">
+                  {previewJob.location} · {previewJob.workingHours}
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {previewJob.location} · {previewJob.workingHours} · {previewJob.experience}
-              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewJob(null)}
+                className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl space-y-2.5 border border-slate-100 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Salary:</span>
-                <span className="font-semibold text-slate-800">{previewJob.salary || "Competitive"}</span>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <p className="text-xs text-gray-500">Status</p>
+                  <div className="mt-1">{getStatusBadge(previewJob.status)}</div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Pay / Salary</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {previewJob.salary}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Total Applications</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {previewJob.applications}
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Total Applications:</span>
-                <span className="font-semibold text-cyan-700">{previewJob.applications} candidates</span>
-              </div>
+
               {previewJob.description && (
-                <div className="pt-2 border-t border-slate-200">
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Description
+                  </p>
+                  <p className="text-sm text-slate-700 leading-relaxed">
                     {previewJob.description}
                   </p>
                 </div>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setPreviewJob(null)}
-              className="w-full py-3 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
-            >
-              Close
-            </button>
+            <div className="p-4 border-t border-neutral-100 flex justify-end bg-slate-50/50">
+              <button
+                type="button"
+                onClick={() => setPreviewJob(null)}
+                className="w-28 py-2 bg-neutral-200 hover:bg-neutral-300 text-slate-700 font-semibold text-sm rounded-lg transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

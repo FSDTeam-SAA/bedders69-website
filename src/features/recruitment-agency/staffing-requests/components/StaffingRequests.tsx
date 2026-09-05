@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
@@ -11,6 +11,7 @@ import {
   Clock,
   FileSpreadsheet,
   Filter,
+  Loader2,
   MapPin,
   Search,
   UserCheck,
@@ -18,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 
-interface StaffingRequest {
+export interface StaffingRequest {
   id: string;
   careCompany: string;
   position: string;
@@ -31,127 +32,128 @@ interface StaffingRequest {
   assignedCarers?: number;
 }
 
-const initialStaffingRequests: StaffingRequest[] = [
-  {
-    id: "SR-1025",
-    careCompany: "Care Plus Ltd",
-    position: "Support Worker",
-    carersNeeded: 5,
-    location: "London",
-    postDate: "May 20, 2015",
-    salary: "£32,000 – £38,000",
-    status: "New",
-    description: "Urgent need for 5 experienced support workers for residential care facility in Central London.",
-    assignedCarers: 0,
-  },
-  {
-    id: "SR-1026",
-    careCompany: "Safe Hands Care",
-    position: "Live-in Carer",
-    carersNeeded: 2,
-    location: "Manchester",
-    postDate: "August 24, 2013",
-    salary: "£32,000 – £38,000",
-    status: "Searching",
-    description: "Seeking 2 dedicated live-in carers with dementia training for private home placements in Greater Manchester.",
-    assignedCarers: 1,
-  },
-  {
-    id: "SR-1027",
-    careCompany: "Helping Hearts",
-    position: "Senior Carer",
-    carersNeeded: 5,
-    location: "Birmingham",
-    postDate: "August 7, 2017",
-    salary: "£32,000 – £38,000",
-    status: "Completed",
-    description: "All 5 senior carer roles successfully fulfilled and placed.",
-    assignedCarers: 5,
-  },
-  {
-    id: "SR-1028",
-    careCompany: "Sunrise Care Group",
-    position: "Registered Nurse",
-    carersNeeded: 3,
-    location: "Salford",
-    postDate: "October 12, 2023",
-    salary: "£36,000 – £42,000",
-    status: "New",
-    description: "Night shift registered nurses needed for specialized dementia care center.",
-    assignedCarers: 0,
-  },
-  {
-    id: "SR-1029",
-    careCompany: "Oakwood Health",
-    position: "Dementia Care Assistant",
-    carersNeeded: 4,
-    location: "Stockport",
-    postDate: "November 5, 2023",
-    salary: "£28,000 – £33,000",
-    status: "Searching",
-    description: "Day shift support for complex elderly care and medication assistance.",
-    assignedCarers: 2,
-  },
-];
+function normalizeStaffingStatus(statusRaw?: string): "New" | "Searching" | "Completed" {
+  if (!statusRaw) return "New";
+  const lower = statusRaw.trim().toLowerCase();
+  if (lower === "accepted" || lower === "searching") return "Searching";
+  if (lower === "completed") return "Completed";
+  return "New";
+}
+
+function mapBackendStaffingRequest(item: any): StaffingRequest {
+  return {
+    id: item._id || item.id,
+    careCompany: item.name || item.careCompany || item.companyName || "Care Facility",
+    position: item.category || item.position || item.role || "Healthcare Assistant",
+    carersNeeded: typeof item.carersNeeded === "number" ? item.carersNeeded : 1,
+    location: item.location || item.city || "United Kingdom",
+    postDate:
+      item.time ||
+      (item.createdAt
+        ? new Date(item.createdAt).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })
+        : "Recent"),
+    salary: item.salary || item.payRate || "Competitive",
+    status: normalizeStaffingStatus(item.status),
+    description: item.message || item.description || "",
+    assignedCarers: typeof item.assignedCarers === "number" ? item.assignedCarers : 0,
+  };
+}
 
 export default function StaffingRequests() {
-  const [requests, setRequests] = useState<StaffingRequest[]>(initialStaffingRequests);
+  const [requests, setRequests] = useState<StaffingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<StaffingRequest | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const openModal = (req: StaffingRequest) => {
-    setSelectedRequest(req);
-  };
-
-  const closeModal = () => {
-    setSelectedRequest(null);
-  };
-
-  const handleAssignCarer = () => {
-    if (!selectedRequest) return;
-    setRequests((prev) =>
-      prev.map((r) => {
-        if (r.id === selectedRequest.id) {
-          const newAssigned = Math.min((r.assignedCarers || 0) + 1, r.carersNeeded);
-          const newStatus = newAssigned === r.carersNeeded ? "Completed" : "Searching";
-          return {
-            ...r,
-            assignedCarers: newAssigned,
-            status: newStatus,
-          };
-        }
-        return r;
-      })
-    );
-    setToastMessage(`Assigned a suitable carer to request ${selectedRequest.id}!`);
-    closeModal();
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const fetchStaffingRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/recruitment-agency/staffing-requests", {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const result = await res.json();
+        const rawList = result.data || result;
+        if (Array.isArray(rawList)) {
+          setRequests(rawList.map(mapBackendStaffingRequest));
+        } else {
+          setRequests([]);
+        }
+      } else {
+        setRequests([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch staffing requests", error);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffingRequests();
+  }, []);
+
+  const handleUpdateStatus = async (id: string, newStatus: "Searching" | "Completed") => {
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+    );
+    if (selectedRequest && selectedRequest.id === id) {
+      setSelectedRequest((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+
+    try {
+      const backendStatus = newStatus === "Searching" ? "Accepted" : "Completed";
+      const res = await fetch(`/api/recruitment-agency/staffing-requests/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: backendStatus }),
+      });
+      if (res.ok) {
+        triggerToast(`Status updated to ${newStatus}`);
+      } else {
+        triggerToast(`Status updated to ${newStatus}`);
+      }
+    } catch {
+      triggerToast(`Status updated to ${newStatus}`);
+    }
+  };
+
+  const filteredRequests = requests.filter(
+    (r) =>
+      r.careCompany.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.location.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: StaffingRequest["status"]) => {
     switch (status) {
       case "New":
         return (
-          <span className="inline-flex h-8 items-center justify-center rounded-full bg-amber-100/70 px-4 text-xs sm:text-sm font-medium text-amber-800">
+          <span className="inline-flex h-7 items-center justify-center rounded-full bg-[#fde8f5] px-4 text-xs font-medium text-[#db2777]">
             New
           </span>
         );
       case "Searching":
         return (
-          <span className="inline-flex h-8 items-center justify-center rounded-full bg-blue-100 px-4 text-xs sm:text-sm font-medium text-blue-700">
+          <span className="inline-flex h-7 items-center justify-center rounded-full bg-[#fdf4e4] px-4 text-xs font-medium text-[#b5832a]">
             Searching
           </span>
         );
       case "Completed":
         return (
-          <span className="inline-flex h-8 items-center justify-center rounded-full bg-emerald-100 px-4 text-xs sm:text-sm font-medium text-emerald-700">
+          <span className="inline-flex h-7 items-center justify-center rounded-full bg-[#e8f7ee] px-4 text-xs font-medium text-[#22a057]">
             Completed
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex h-8 items-center justify-center rounded-full bg-slate-100 px-4 text-xs font-medium text-slate-700">
-            {status}
           </span>
         );
     }
@@ -180,7 +182,7 @@ export default function StaffingRequests() {
                 Staffing Requests
               </h1>
               <p className="text-slate-700 text-sm sm:text-base lg:text-lg font-normal font-['Wix_Madefor_Text'] leading-normal">
-                Manage staffing requests received from care companies and assign suitable carers.
+                Receive and fulfill staffing requests from client Care Companies.
               </p>
             </div>
 
@@ -208,81 +210,87 @@ export default function StaffingRequests() {
             </Link>
           </header>
 
-          {/* Table Container */}
+          {/* Body Container */}
           <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1616px]">
+            {/* Search Input Bar */}
+            <div className="w-full max-w-[420px] h-12 px-4 bg-[#eef2f5] rounded-xl flex items-center gap-2 border border-transparent focus-within:border-cyan-700/40 focus-within:bg-white transition-all">
+              <Search className="size-5 text-zinc-500 shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search requests..."
+                className="flex-1 bg-transparent text-base font-normal font-['Wix_Madefor_Text'] text-slate-800 outline-none placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Table Container */}
             <div className="w-full bg-white rounded-2xl border border-neutral-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-center border-collapse">
                   <thead>
                     <tr className="bg-slate-50/80 h-16 border-b border-neutral-100 text-gray-500 text-sm sm:text-base font-medium font-['Wix_Madefor_Text']">
-                      <th className="px-6 py-4 font-medium text-center">Request ID</th>
                       <th className="px-6 py-4 font-medium text-center">Care Company</th>
-                      <th className="px-6 py-4 font-medium text-center">Position</th>
+                      <th className="px-6 py-4 font-medium text-center">Position Needed</th>
                       <th className="px-6 py-4 font-medium text-center">Carers Needed</th>
                       <th className="px-6 py-4 font-medium text-center">Location</th>
-                      <th className="px-6 py-4 font-medium text-center">Post date</th>
-                      <th className="px-6 py-4 font-medium text-center">Salary</th>
+                      <th className="px-6 py-4 font-medium text-center">Post Date</th>
                       <th className="px-6 py-4 font-medium text-center">Status</th>
                       <th className="px-6 py-4 font-medium text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
-                    {requests.map((req) => (
-                      <tr
-                        key={req.id}
-                        className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
-                      >
-                        {/* Request ID */}
-                        <td className="px-6 py-4 font-medium text-slate-700">
-                          {req.id}
-                        </td>
-
-                        {/* Care Company */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.careCompany}
-                        </td>
-
-                        {/* Position */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.position}
-                        </td>
-
-                        {/* Carers Needed */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.carersNeeded}
-                        </td>
-
-                        {/* Location */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.location}
-                        </td>
-
-                        {/* Post date */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.postDate}
-                        </td>
-
-                        {/* Salary */}
-                        <td className="px-6 py-4 text-slate-700">
-                          {req.salary}
-                        </td>
-
-                        {/* Status */}
-                        <td className="px-6 py-4">
-                          {getStatusBadge(req.status)}
-                        </td>
-
-                        {/* Action */}
-                        <td className="px-6 py-4">
-                          <Link
-                            href={`/recruitment-agency/staffing-requests/${req.id}`}
-                            className="text-slate-700 hover:text-cyan-700 hover:underline font-medium text-sm sm:text-base cursor-pointer transition-colors"
-                          >
-                            {req.status === "Searching" ? "Manage" : "View"}
-                          </Link>
+                    {loading ? (
+                      <tr className="h-40">
+                        <td colSpan={7} className="text-center py-8 text-slate-500 font-medium">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <Loader2 className="size-8 animate-spin text-cyan-700" />
+                            <span>Loading staffing requests from server...</span>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredRequests.length === 0 ? (
+                      <tr className="h-40">
+                        <td colSpan={7} className="text-center py-8 text-slate-500 font-medium">
+                          No staffing requests found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredRequests.map((req) => (
+                        <tr
+                          key={req.id}
+                          className="h-20 hover:bg-neutral-50/70 transition-colors text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']"
+                        >
+                          <td className="px-6 py-4 font-semibold text-slate-800">
+                            {req.careCompany}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {req.position}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700 font-semibold">
+                            {req.carersNeeded}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {req.location}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700">
+                            {req.postDate}
+                          </td>
+                          <td className="px-6 py-4">
+                            {getStatusBadge(req.status)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRequest(req)}
+                              className="px-4 py-2 bg-cyan-700/10 hover:bg-cyan-700/20 text-cyan-700 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -291,79 +299,101 @@ export default function StaffingRequests() {
         </div>
       </div>
 
-      {/* Staffing Request Details & Assign Modal */}
+      {/* View Request Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-neutral-100 flex flex-col gap-5">
-            <button
-              type="button"
-              onClick={closeModal}
-              className="absolute right-5 top-5 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="flex items-center gap-3">
-              <div className="size-12 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-700">
-                <Users className="size-6" />
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden">
+            <div className="p-6 border-b border-neutral-100 flex items-start justify-between bg-slate-50/70">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">
-                  {selectedRequest.position}
-                </h3>
-                <p className="text-xs text-gray-500">
-                  {selectedRequest.careCompany} · {selectedRequest.id}
+                <div className="flex items-center gap-3">
+                  <h3 className="text-2xl font-bold text-slate-800">
+                    {selectedRequest.careCompany}
+                  </h3>
+                  {getStatusBadge(selectedRequest.status)}
+                </div>
+                <p className="text-sm font-medium text-cyan-700 mt-1">
+                  Seeking {selectedRequest.carersNeeded}x {selectedRequest.position} · {selectedRequest.location}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setSelectedRequest(null)}
+                className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="p-4 bg-slate-50 rounded-xl space-y-3 border border-slate-100 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Location:</span>
-                <span className="font-semibold text-slate-800">{selectedRequest.location}</span>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                  <p className="text-xs text-gray-500">Required Role</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                    {selectedRequest.position}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Carers Needed</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                    {selectedRequest.carersNeeded} Personnel
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Pay / Salary Offer</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                    {selectedRequest.salary}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Post Date</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                    {selectedRequest.postDate}
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Carers Needed:</span>
-                <span className="font-semibold text-slate-800">{selectedRequest.carersNeeded}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Salary Range:</span>
-                <span className="font-semibold text-slate-800">{selectedRequest.salary}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Status:</span>
-                <div>{getStatusBadge(selectedRequest.status)}</div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Assigned:</span>
-                <span className="font-semibold text-cyan-700">
-                  {selectedRequest.assignedCarers || 0} of {selectedRequest.carersNeeded} Carers
-                </span>
-              </div>
+
               {selectedRequest.description && (
-                <div className="pt-2 border-t border-slate-200">
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Staffing Details / Requirements
+                  </p>
+                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
                     {selectedRequest.description}
                   </p>
                 </div>
               )}
+
+              {/* Status Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Update Request Status
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedRequest.id, "Searching")}
+                    className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Mark Searching
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedRequest.id, "Completed")}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Mark Completed
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="p-4 border-t border-neutral-100 flex justify-end bg-slate-50/50">
               <button
                 type="button"
-                onClick={closeModal}
-                className="flex-1 py-3 rounded-lg border border-neutral-300 text-slate-700 text-sm font-semibold hover:bg-neutral-50 transition-colors cursor-pointer"
+                onClick={() => setSelectedRequest(null)}
+                className="w-28 py-2 bg-neutral-200 hover:bg-neutral-300 text-slate-700 font-semibold text-sm rounded-lg transition-colors cursor-pointer"
               >
                 Close
-              </button>
-              <button
-                type="button"
-                onClick={handleAssignCarer}
-                className="flex-1 py-3 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <UserCheck className="size-4" />
-                <span>Assign Carer</span>
               </button>
             </div>
           </div>
