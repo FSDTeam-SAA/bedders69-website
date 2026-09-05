@@ -25,6 +25,9 @@ import jobsApi from "@/features/website/Jobs/api/jobsApi";
 import { JobItem } from "@/features/website/Jobs/types/jobs.types";
 import { companies as fallbackCompanies } from "@/Data/data";
 
+import contactRequestsApi from "@/features/care-company/contact-requests/api/contactRequestsApi";
+import { X } from "lucide-react";
+
 export const ServiceDetailView = () => {
   const params = useParams();
   const router = useRouter();
@@ -35,6 +38,27 @@ export const ServiceDetailView = () => {
   const [company, setCompany] = useState<CareCompanyItem | null>(null);
   const [allJobs, setAllJobs] = useState<JobItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  const handleSendConnectionRequest = async () => {
+    if (!company) return;
+    setIsSubmitting(true);
+    try {
+      await contactRequestsApi.createContactRequest({
+        targetUserId: company.id,
+      });
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 4000);
+    } catch (err: any) {
+      console.warn("Connection request error:", err?.message);
+      // Redirect unauthenticated user to login
+      router.push("/login");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -526,6 +550,22 @@ export const ServiceDetailView = () => {
                 </button>
               )}
 
+              <button
+                type="button"
+                onClick={handleSendConnectionRequest}
+                disabled={isSubmitting}
+                className="w-full bg-cyan-700 hover:bg-cyan-800 disabled:bg-slate-300 text-white py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-98"
+              >
+                {isSubmitting ? (
+                  <span>Sending Request...</span>
+                ) : (
+                  <>
+                    <MessageSquare className="size-4" />
+                    Send Connection Request
+                  </>
+                )}
+              </button>
+
               {company.email && (
                 <a
                   href={`mailto:${company.email}?subject=Inquiry for ${companyName}`}
@@ -562,6 +602,19 @@ export const ServiceDetailView = () => {
           </div>
         </div>
       </section>
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#E8F8F0] border border-emerald-200 text-emerald-800 rounded-2xl p-4 shadow-xl flex items-center gap-3.5 max-w-sm font-['Wix_Madefor_Text']">
+          <CheckCircle2 className="size-6 text-emerald-600 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Connection Request Sent!</span>
+            <span className="text-xs text-emerald-600/95 font-medium mt-0.5">
+              Your connection request has been delivered to the company dashboard.
+            </span>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

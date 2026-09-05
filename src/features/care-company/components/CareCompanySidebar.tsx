@@ -26,7 +26,7 @@ const navigation = [
   { label: "Create Job", href: "/care-company/create-job", icon: FilePlus2 },
   { label: "Applicants", href: "/care-company/applicants", icon: UsersRound },
   { label: "Contact Requests", href: "/care-company/contact-requests", icon: ContactRound },
-  { label: "Membership", href: "/care-company/membership", icon: Medal },
+  // { label: "Membership", href: "/care-company/membership", icon: Medal },
   { label: "Settings", href: "/care-company/settings", icon: Settings },
 ];
 

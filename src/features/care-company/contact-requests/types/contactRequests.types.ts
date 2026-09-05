@@ -9,6 +9,7 @@ export interface ContactRequest {
   message: string;
   time: string;
   phone: string;
+  targetUserId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

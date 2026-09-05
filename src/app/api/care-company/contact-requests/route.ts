@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     if (!token) {
       return NextResponse.json(
-        { message: "Unauthorized. Please log in." },
+        { message: "Unauthorized. Please log in first." },
         { status: 401 }
       );
     }
