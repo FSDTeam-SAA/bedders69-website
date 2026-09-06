@@ -1,30 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
 import {
-  Bell,
-  Camera,
+  AlertCircle,
   Check,
   ChevronDown,
   FileText,
+  Loader2,
   Pencil,
   Plus,
+  Save,
   ShieldCheck,
   UploadCloud,
   X,
 } from "lucide-react";
 
 export default function AgencyProfile() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Business Information States
   const [agencyName, setAgencyName] = useState("CareRecruitPro");
   const [companyRegNumber, setCompanyRegNumber] = useState("CRN-8849204");
   const [website, setWebsite] = useState("https://www.carerecruitpro.co.uk");
   const [companyDescription, setCompanyDescription] = useState(
-    "Leading healthcare & care recruitment agency providing qualified and vetted care assistants, nurses, and support workers across Greater Manchester and surrounding regions."
+    "Leading healthcare & care recruitment agency providing qualified and vetted care assistants, nurses, and support workers."
   );
 
   // Contact Information States
@@ -35,7 +39,7 @@ export default function AgencyProfile() {
     "100 King Street, Manchester, M2 4WU, United Kingdom"
   );
 
-  // Specialisations
+  // Specialisations & Documents
   const [specialisations, setSpecialisations] = useState<string[]>([
     "Live-in Care",
     "Dementia Care",
@@ -45,10 +49,155 @@ export default function AgencyProfile() {
   ]);
   const [newTagInput, setNewTagInput] = useState("");
   const [showAddTag, setShowAddTag] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<Array<{ name: string; url?: string }>>([]);
+
+  // Images
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [bannerUrl, setBannerUrl] = useState<string>("/images/agency_banner.jpg");
 
   // Edit toggles
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
+
+  // Hidden File Inputs
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const docRegInputRef = useRef<HTMLInputElement>(null);
+  const docCompInputRef = useRef<HTMLInputElement>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // 1. Fetch Profile Data on Mount
+  useEffect(() => {
+    async function loadAgencyProfile() {
+      setIsLoading(true);
+      setErrorMessage(null);
+      try {
+        const res = await fetch("/api/recruitment-agency/agency-profile", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.name) setAgencyName(data.name);
+            if (data.registerNumber) setCompanyRegNumber(data.registerNumber);
+            if (data.website) setWebsite(data.website);
+            if (data.discription || data.description) setCompanyDescription(data.discription || data.description);
+            if (data.email) setEmail(data.email);
+            if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
+            if (data.alternatageEmail || data.alternateEmail) setAltEmail(data.alternatageEmail || data.alternateEmail);
+            if (data.address) setAddress(data.address);
+            if (Array.isArray(data.specialisations) && data.specialisations.length > 0) {
+              setSpecialisations(data.specialisations);
+            }
+            if (Array.isArray(data.documents) && data.documents.length > 0) {
+              setUploadedDocs(
+                data.documents.map((d: any) =>
+                  typeof d === "string" ? { name: d.split("/").pop() || "Uploaded Document", url: d } : d
+                )
+              );
+            }
+            if (data.logoUrl || data.logo || data.profilePicture) {
+              setLogoUrl(data.logoUrl || data.logo || data.profilePicture);
+            }
+            if (data.bannerUrl || data.banner) {
+              setBannerUrl(data.bannerUrl || data.banner);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load agency profile:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadAgencyProfile();
+  }, []);
+
+  // 2. Save Profile Function
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    const payload = {
+      name: agencyName,
+      registerNumber: companyRegNumber,
+      website: website,
+      discription: companyDescription,
+      email: email,
+      phoneNumber: phoneNumber,
+      alternatageEmail: altEmail,
+      address: address,
+      specialisations: specialisations,
+    };
+
+    try {
+      const res = await fetch("/api/recruitment-agency/agency-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      setIsSaving(false);
+
+      if (!res.ok) {
+        setErrorMessage(data.message || "Failed to update profile.");
+        return;
+      }
+
+      triggerToast("Agency profile saved successfully!");
+      setIsEditingBusiness(false);
+      setIsEditingContact(false);
+    } catch {
+      setIsSaving(false);
+      setErrorMessage("Unable to save profile. Please check connection.");
+    }
+  };
+
+  // Image Upload Handlers
+  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const result = event.target.result as string;
+          setLogoUrl(result);
+          triggerToast("Profile picture updated!");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBannerFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const result = event.target.result as string;
+          setBannerUrl(result);
+          triggerToast("Banner photo updated!");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDocFileSelect = (e: React.ChangeEvent<HTMLInputElement>, docTitle: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedDocs((prev) => [
+        ...prev.filter((d) => d.name !== file.name),
+        { name: `${docTitle}: ${file.name}` },
+      ]);
+      triggerToast(`${docTitle} document uploaded successfully!`);
+    }
+  };
 
   const handleAddTag = () => {
     if (newTagInput.trim() && !specialisations.includes(newTagInput.trim())) {
@@ -63,13 +212,38 @@ export default function AgencyProfile() {
     setSpecialisations(specialisations.filter((t) => t !== tag));
   };
 
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
+      {/* Hidden File Inputs */}
+      <input
+        type="file"
+        ref={logoInputRef}
+        onChange={handleLogoFileSelect}
+        accept="image/*"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={bannerInputRef}
+        onChange={handleBannerFileSelect}
+        accept="image/*"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={docRegInputRef}
+        onChange={(e) => handleDocFileSelect(e, "Business Registration")}
+        accept="application/pdf,image/*"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={docCompInputRef}
+        onChange={(e) => handleDocFileSelect(e, "Company Document")}
+        accept="application/pdf,image/*"
+        className="hidden"
+      />
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-emerald-600 px-5 py-3 text-white shadow-xl animate-fade-in">
@@ -98,16 +272,20 @@ export default function AgencyProfile() {
             {/* Profile Badge */}
             <div className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm border border-slate-100 shrink-0 ml-4">
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="CareRecruitPro"
-                  fill
-                  className="object-contain p-1"
-                />
+                {logoUrl ? (
+                  <img src={logoUrl} alt={agencyName} className="h-full w-full object-cover" />
+                ) : (
+                  <Image
+                    src="/images/logo.png"
+                    alt="CareRecruitPro"
+                    fill
+                    className="object-contain p-1"
+                  />
+                )}
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  CareRecruitPro
+                  {agencyName || "CareRecruitPro"}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Agency
@@ -118,12 +296,20 @@ export default function AgencyProfile() {
 
           {/* Main Content Area */}
           <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1616px]">
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="w-full flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                <AlertCircle className="size-5 shrink-0 text-red-600" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Hero Profile Banner Card */}
             <div className="w-full bg-white rounded-2xl border border-neutral-200/80 shadow-[0px_2px_4px_rgba(0,0,0,0.03)] overflow-hidden">
               {/* Banner Image */}
               <div className="relative w-full h-48 sm:h-64 bg-slate-200">
                 <Image
-                  src="/images/agency_banner.jpg"
+                  src={bannerUrl}
                   alt="Agency Team Banner"
                   fill
                   className="object-cover"
@@ -132,7 +318,7 @@ export default function AgencyProfile() {
                 {/* Edit Banner Button */}
                 <button
                   type="button"
-                  onClick={() => triggerToast("Upload banner image triggered")}
+                  onClick={() => bannerInputRef.current?.click()}
                   className="absolute top-4 right-4 size-9 bg-indigo-900/85 hover:bg-indigo-900 text-white rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors"
                   title="Change Banner Photo"
                 >
@@ -145,14 +331,18 @@ export default function AgencyProfile() {
                 <div className="relative -mt-16 sm:-mt-20 shrink-0">
                   {/* Avatar Circle */}
                   <div className="size-28 sm:size-36 rounded-full bg-white p-1.5 shadow-xl border-2 border-cyan-700/20 flex items-center justify-center overflow-hidden">
-                    <div className="size-full rounded-full bg-gradient-to-br from-cyan-600 to-teal-700 flex flex-col items-center justify-center text-white">
-                      <ShieldCheck className="size-12 sm:size-16 stroke-[1.8]" />
-                    </div>
+                    {logoUrl ? (
+                      <img src={logoUrl} alt={agencyName} className="size-full rounded-full object-cover" />
+                    ) : (
+                      <div className="size-full rounded-full bg-gradient-to-br from-cyan-600 to-teal-700 flex flex-col items-center justify-center text-white">
+                        <ShieldCheck className="size-12 sm:size-16 stroke-[1.8]" />
+                      </div>
+                    )}
                   </div>
                   {/* Edit Avatar Badge */}
                   <button
                     type="button"
-                    onClick={() => triggerToast("Upload logo photo triggered")}
+                    onClick={() => logoInputRef.current?.click()}
                     className="absolute bottom-1 right-1 size-8 bg-indigo-900 hover:bg-indigo-950 text-white rounded-full flex items-center justify-center shadow-md cursor-pointer transition-colors"
                     title="Change Agency Logo"
                   >
@@ -162,312 +352,343 @@ export default function AgencyProfile() {
 
                 <div className="flex-1 pb-1">
                   <h2 className="text-neutral-900 text-2xl sm:text-3xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    CareRecruitPro
+                    {agencyName || "CareRecruitPro"}
                   </h2>
                   <p className="text-zinc-500 text-base sm:text-lg font-normal font-['Wix_Madefor_Text'] mt-0.5">
-                    Agency
+                    Recruitment Agency Profile
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* 1. Business Information Card */}
-            <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
-              <div className="w-full flex items-center justify-between">
-                <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
-                  Business Information
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditingBusiness(!isEditingBusiness);
-                    if (isEditingBusiness) triggerToast("Business Information saved!");
-                  }}
-                  className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
-                  title="Edit Business Information"
-                >
-                  <Pencil className="size-5" />
-                </button>
+            {/* Loading Indicator */}
+            {isLoading ? (
+              <div className="flex w-full items-center justify-center p-12 bg-white rounded-xl border border-zinc-100">
+                <Loader2 className="size-8 text-cyan-700 animate-spin" />
+                <span className="ml-3 text-base text-slate-600">Loading agency profile data...</span>
               </div>
-
-              <div className="space-y-4">
-                {/* Agency Name */}
-                <div className="space-y-2">
-                  <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                    Agency Name
-                  </label>
-                  <input
-                    type="text"
-                    value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
-                    placeholder="Enter agency name"
-                    className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                  />
-                </div>
-
-                {/* Registration Number & Website */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Company Registration Number
-                    </label>
-                    <input
-                      type="text"
-                      value={companyRegNumber}
-                      onChange={(e) => setCompanyRegNumber(e.target.value)}
-                      placeholder="Enter company registration number"
-                      className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Website
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                        placeholder="https://www.youragency.com"
-                        className="w-full h-12 p-4 pr-10 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                      />
-                      <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Company Description */}
-                <div className="space-y-2">
-                  <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                    Company Description
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={companyDescription}
-                    onChange={(e) => setCompanyDescription(e.target.value)}
-                    placeholder="Write details about the company..."
-                    className="w-full h-28 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400 resize-none leading-relaxed"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Contact Information Card */}
-            <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
-              <div className="w-full flex items-center justify-between">
-                <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
-                  Contact Information
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditingContact(!isEditingContact);
-                    if (isEditingContact) triggerToast("Contact Information saved!");
-                  }}
-                  className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
-                  title="Edit Contact Information"
-                >
-                  <Pencil className="size-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Email & Phone Number */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="Enter your phone number"
-                      className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Alternative Email Address (Optional) */}
-                <div className="space-y-2">
-                  <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                    Alternative Email Address (Optional)
-                  </label>
-                  <input
-                    type="email"
-                    value={altEmail}
-                    onChange={(e) => setAltEmail(e.target.value)}
-                    placeholder="Enter your alternate email address"
-                    className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
-                  />
-                </div>
-
-                {/* Address */}
-                <div className="space-y-2">
-                  <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
-                    Address
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Enter your full address"
-                    className="w-full h-28 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400 resize-none leading-relaxed"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Specialisations Card */}
-            <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
-              <div className="w-full flex items-center justify-between">
-                <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
-                  Specialisations
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddTag(!showAddTag)}
-                    className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
-                    title="Add Specialisation"
-                  >
-                    <Plus className="size-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => triggerToast("Specialisations updated!")}
-                    className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
-                    title="Edit Specialisations"
-                  >
-                    <Pencil className="size-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Add Tag Row */}
-              {showAddTag && (
-                <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-cyan-700/30">
-                  <input
-                    type="text"
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    placeholder="e.g. Respite Care"
-                    className="flex-1 px-3 py-1.5 text-sm outline-none text-slate-800"
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="px-3 py-1.5 bg-cyan-700 text-white rounded text-xs font-semibold hover:bg-cyan-800 cursor-pointer"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
-
-              {/* Specialisation Pills */}
-              <div className="flex flex-wrap items-center gap-3">
-                {specialisations.map((spec) => (
-                  <div
-                    key={spec}
-                    className="px-4 py-2 rounded-lg border border-neutral-300 bg-white flex items-center gap-2 group hover:border-cyan-700 transition-colors"
-                  >
-                    <span className="text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']">
-                      {spec}
-                    </span>
+            ) : (
+              <>
+                {/* 1. Business Information Card */}
+                <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
+                  <div className="w-full flex items-center justify-between">
+                    <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
+                      Business Information
+                    </h3>
                     <button
                       type="button"
-                      onClick={() => handleRemoveTag(spec)}
-                      className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
-                      title="Remove"
+                      onClick={() => {
+                        setIsEditingBusiness(!isEditingBusiness);
+                        if (isEditingBusiness) handleSaveProfile();
+                      }}
+                      className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
+                      title="Edit Business Information"
                     >
-                      <X className="size-3.5" />
+                      <Pencil className="size-5" />
                     </button>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* 4. Documents Card */}
-            <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
-              <div className="w-full flex items-center justify-between">
-                <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
-                  Documents
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => triggerToast("Documents section ready")}
-                  className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
-                  title="Edit Documents"
-                >
-                  <Pencil className="size-5" />
-                </button>
-              </div>
+                  <div className="space-y-4">
+                    {/* Agency Name */}
+                    <div className="space-y-2">
+                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                        Agency Name
+                      </label>
+                      <input
+                        type="text"
+                        value={agencyName}
+                        onChange={(e) => setAgencyName(e.target.value)}
+                        placeholder="Enter agency name"
+                        className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                      />
+                    </div>
 
-              <div className="space-y-4">
-                {/* Document 1: Business Registration */}
-                <div className="p-5 sm:p-6 bg-white rounded-lg border border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-cyan-700/50">
-                  <div className="flex items-start gap-4">
-                    <FileText className="size-8 text-black shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <div className="flex flex-col gap-1">
-                      <h4 className="text-zinc-900 text-lg sm:text-xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                        Business Registration
-                      </h4>
-                      <p className="text-zinc-600 text-sm sm:text-base font-normal font-['Wix_Madefor_Text'] leading-snug">
-                        Upload your official business registration document.
-                      </p>
+                    {/* Registration Number & Website */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                          Company Registration Number
+                        </label>
+                        <input
+                          type="text"
+                          value={companyRegNumber}
+                          onChange={(e) => setCompanyRegNumber(e.target.value)}
+                          placeholder="Enter company registration number"
+                          className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                          Website
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            placeholder="https://www.youragency.com"
+                            className="w-full h-12 p-4 pr-10 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                          />
+                          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Company Description */}
+                    <div className="space-y-2">
+                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                        Company Description
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={companyDescription}
+                        onChange={(e) => setCompanyDescription(e.target.value)}
+                        placeholder="Write details about the company..."
+                        className="w-full h-28 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Contact Information Card */}
+                <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
+                  <div className="w-full flex items-center justify-between">
+                    <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
+                      Contact Information
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingContact(!isEditingContact);
+                        if (isEditingContact) handleSaveProfile();
+                      }}
+                      className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
+                      title="Edit Contact Information"
+                    >
+                      <Pencil className="size-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Email & Phone Number */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="Enter your phone number"
+                          className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Alternative Email Address */}
+                    <div className="space-y-2">
+                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                        Alternative Email Address (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={altEmail}
+                        onChange={(e) => setAltEmail(e.target.value)}
+                        placeholder="Enter your alternate email address"
+                        className="w-full h-12 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400"
+                      />
+                    </div>
+
+                    {/* Address */}
+                    <div className="space-y-2">
+                      <label className="text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
+                        Address
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter your full address"
+                        className="w-full h-28 p-4 rounded-lg border border-neutral-300 bg-white text-base text-slate-800 outline-none focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700 transition-all placeholder:text-gray-400 resize-none leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Specialisations Card */}
+                <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
+                  <div className="w-full flex items-center justify-between">
+                    <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
+                      Specialisations
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddTag(!showAddTag)}
+                        className="p-1.5 rounded-lg text-slate-700 hover:text-cyan-700 hover:bg-white/60 transition-colors cursor-pointer"
+                        title="Add Specialisation"
+                      >
+                        <Plus className="size-5" />
+                      </button>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => triggerToast("Upload Business Registration document initiated")}
-                    className="px-4 py-2 bg-yellow-600/10 hover:bg-yellow-600/20 rounded-full border border-yellow-600/20 flex items-center gap-1.5 text-yellow-700 text-sm font-medium transition-colors cursor-pointer shrink-0"
-                  >
-                    <UploadCloud className="size-4" />
-                    <span>Upload</span>
-                  </button>
+                  {/* Add Tag Row */}
+                  {showAddTag && (
+                    <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-cyan-700/30">
+                      <input
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        placeholder="e.g. Respite Care"
+                        className="flex-1 px-3 py-1.5 text-sm outline-none text-slate-800"
+                        onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddTag}
+                        className="px-3 py-1.5 bg-cyan-700 text-white rounded text-xs font-semibold hover:bg-cyan-800 cursor-pointer"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Specialisation Pills */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {specialisations.map((spec) => (
+                      <div
+                        key={spec}
+                        className="px-4 py-2 rounded-lg border border-neutral-300 bg-white flex items-center gap-2 group hover:border-cyan-700 transition-colors"
+                      >
+                        <span className="text-gray-700 text-sm sm:text-base font-normal font-['Wix_Madefor_Text']">
+                          {spec}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(spec)}
+                          className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                          title="Remove"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Document 2: Company Documents */}
-                <div className="p-5 sm:p-6 bg-white rounded-lg border border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-cyan-700/50">
-                  <div className="flex items-start gap-4">
-                    <FileText className="size-8 text-black shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <div className="flex flex-col gap-1">
-                      <h4 className="text-zinc-900 text-lg sm:text-xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                        Company Documents
-                      </h4>
-                      <p className="text-zinc-600 text-sm sm:text-base font-normal font-['Wix_Madefor_Text'] leading-snug">
-                        Upload any additional documents required to verify your business.
-                      </p>
-                    </div>
+                {/* 4. Documents Card */}
+                <div className="w-full p-6 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col gap-5">
+                  <div className="w-full flex items-center justify-between">
+                    <h3 className="text-slate-800 text-xl font-semibold font-['Wix_Madefor_Text'] leading-6">
+                      Documents
+                    </h3>
                   </div>
 
+                  <div className="space-y-4">
+                    {/* Document 1: Business Registration */}
+                    <div className="p-5 sm:p-6 bg-white rounded-lg border border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-cyan-700/50">
+                      <div className="flex items-start gap-4">
+                        <FileText className="size-8 text-black shrink-0 mt-0.5" strokeWidth={1.5} />
+                        <div className="flex flex-col gap-1">
+                          <h4 className="text-zinc-900 text-lg sm:text-xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                            Business Registration
+                          </h4>
+                          <p className="text-zinc-600 text-sm sm:text-base font-normal font-['Wix_Madefor_Text'] leading-snug">
+                            Upload your official business registration document.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => docRegInputRef.current?.click()}
+                        className="px-4 py-2 bg-yellow-600/10 hover:bg-yellow-600/20 rounded-full border border-yellow-600/20 flex items-center gap-1.5 text-yellow-700 text-sm font-medium transition-colors cursor-pointer shrink-0"
+                      >
+                        <UploadCloud className="size-4" />
+                        <span>Upload</span>
+                      </button>
+                    </div>
+
+                    {/* Document 2: Company Documents */}
+                    <div className="p-5 sm:p-6 bg-white rounded-lg border border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-cyan-700/50">
+                      <div className="flex items-start gap-4">
+                        <FileText className="size-8 text-black shrink-0 mt-0.5" strokeWidth={1.5} />
+                        <div className="flex flex-col gap-1">
+                          <h4 className="text-zinc-900 text-lg sm:text-xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                            Company Documents
+                          </h4>
+                          <p className="text-zinc-600 text-sm sm:text-base font-normal font-['Wix_Madefor_Text'] leading-snug">
+                            Upload any additional documents required to verify your business.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => docCompInputRef.current?.click()}
+                        className="px-4 py-2 bg-yellow-600/10 hover:bg-yellow-600/20 rounded-full border border-yellow-600/20 flex items-center gap-1.5 text-yellow-700 text-sm font-medium transition-colors cursor-pointer shrink-0"
+                      >
+                        <UploadCloud className="size-4" />
+                        <span>Upload</span>
+                      </button>
+                    </div>
+
+                    {/* Uploaded Files List */}
+                    {uploadedDocs.length > 0 && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        <span className="text-sm font-semibold text-slate-700">Uploaded Documents:</span>
+                        {uploadedDocs.map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 text-sm text-slate-800">
+                            <span className="font-medium truncate">{doc.name}</span>
+                            <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                              <Check className="size-3.5" /> Attached
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Bottom Action Save Button */}
+                <div className="w-full flex justify-end items-center pt-4">
                   <button
                     type="button"
-                    onClick={() => triggerToast("Upload Company Documents initiated")}
-                    className="px-4 py-2 bg-yellow-600/10 hover:bg-yellow-600/20 rounded-full border border-yellow-600/20 flex items-center gap-1.5 text-yellow-700 text-sm font-medium transition-colors cursor-pointer shrink-0"
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="h-12 px-8 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg flex items-center gap-2 text-base font-medium transition-all shadow-md active:scale-[0.99] disabled:opacity-60 cursor-pointer"
                   >
-                    <UploadCloud className="size-4" />
-                    <span>Upload</span>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="size-5 animate-spin" />
+                        <span>Saving Profile Changes...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="size-5" />
+                        <span>Save All Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
