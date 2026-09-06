@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const roleHome: Record<string, string> = {
-  care_company: "/care-company/dashboard-overview",
-  agency: "/recruitment-agency/overview",
-  carer: "/care",
-  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001",
-  supplier: "/marketplace",
-  service_provider: "/services",
-  family: "/",
-};
+import { getDashboardPath } from "../login/route";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -23,6 +14,6 @@ export async function GET() {
   return NextResponse.json({
     authenticated: true,
     role,
-    dashboardPath: roleHome[role] || "/",
+    dashboardPath: getDashboardPath(role),
   });
 }

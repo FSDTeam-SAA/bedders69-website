@@ -1,15 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const roleHome: Record<string, string> = {
-  care_company: "/care-company/dashboard-overview",
-  agency: "/recruitment-agency/overview",
-  carer: "/care",
-  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001",
-  supplier: "/marketplace",
-  service_provider: "/services",
-  family: "/",
-  user: "/",
-};
+function resolveDashboardPath(role?: string | null): string {
+  if (!role) return "/";
+  const r = role.toLowerCase().trim().replace(/-/g, "_");
+  switch (r) {
+    case "care_company":
+      return "/care-company/dashboard-overview";
+    case "agency":
+    case "recruitment_agency":
+      return "/recruitment-agency/overview";
+    case "carer":
+      return "/care";
+    case "supplier":
+      return "/marketplace";
+    case "service_provider":
+      return "/services";
+    case "admin":
+      return process.env.NEXT_PUBLIC_ADMIN_URL || "/";
+    default:
+      return "/";
+  }
+}
+
+function normalizeRole(role?: string | null): string {
+  if (!role) return "";
+  return role.toLowerCase().trim().replace(/-/g, "_");
+}
 
 const routeRoleRequirements: Array<[string, string]> = [
   ["/care-company", "care_company"],
@@ -20,8 +36,9 @@ const routeRoleRequirements: Array<[string, string]> = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const role = request.cookies.get("bedders_role")?.value;
+  const rawRole = request.cookies.get("bedders_role")?.value;
   const token = request.cookies.get("bedders_access_token")?.value;
+  const role = normalizeRole(rawRole);
 
   // Check if pathname falls under any role-protected prefix
   const routeReq = routeRoleRequirements.find(([prefix]) => pathname.startsWith(prefix));
@@ -35,8 +52,8 @@ export function middleware(request: NextRequest) {
     }
 
     // Authenticated user with invalid/unauthorized role -> redirect to their role dashboard
-    if (role && role !== requiredRole) {
-      const target = roleHome[role] || "/";
+    if (role && role !== requiredRole && !(requiredRole === "agency" && role === "recruitment_agency")) {
+      const target = resolveDashboardPath(role);
       if (target.startsWith("http")) {
         return NextResponse.redirect(target);
       }
@@ -45,20 +62,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Already logged in user accessing login page or home page:
-  // Dashboard roles -> redirect straight to dashboard
-  // Family/user role -> stay on website home
+  // Already logged in user accessing login page
   if (token && role) {
-    const destination = roleHome[role] || "/";
+    const destination = resolveDashboardPath(role);
 
     if (pathname === "/login") {
-      if (destination.startsWith("http")) {
-        return NextResponse.redirect(destination);
-      }
-      return NextResponse.redirect(new URL(destination, request.url));
-    }
-
-    if (pathname === "/" && destination !== "/") {
       if (destination.startsWith("http")) {
         return NextResponse.redirect(destination);
       }

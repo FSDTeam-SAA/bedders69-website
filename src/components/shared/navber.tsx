@@ -28,11 +28,33 @@ export const Navbar = () => {
       const res = await fetch("/api/auth/me", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setAuthStatus(data);
+        if (data.authenticated) {
+          setAuthStatus(data);
+          return;
+        }
       }
     } catch {
       // Ignore auth check error
     }
+
+    // Fallback: check client cookie if /api/auth/me didn't return authenticated
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
+      if (match && match[1]) {
+        const role = decodeURIComponent(match[1]);
+        let path = "/";
+        const r = role.toLowerCase().trim().replace(/-/g, "_");
+        if (r === "care_company") path = "/care-company/dashboard-overview";
+        else if (r === "agency" || r === "recruitment_agency") path = "/recruitment-agency/overview";
+        else if (r === "carer") path = "/care";
+        else if (r === "supplier") path = "/marketplace";
+        else if (r === "service_provider") path = "/services";
+        setAuthStatus({ authenticated: true, role, dashboardPath: path });
+        return;
+      }
+    }
+
+    setAuthStatus({ authenticated: false, role: null, dashboardPath: "/" });
   };
 
   useEffect(() => {
@@ -54,12 +76,15 @@ export const Navbar = () => {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      if (typeof document !== "undefined") {
+        document.cookie = "bedders_role=; path=/; max-age=0";
+        document.cookie = "bedders_access_token=; path=/; max-age=0";
+      }
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
       setAuthStatus({ authenticated: false, role: null, dashboardPath: "/" });
-      router.push("/login");
-      router.refresh();
+      window.location.href = "/login";
     }
   };
 

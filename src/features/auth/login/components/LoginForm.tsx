@@ -34,10 +34,13 @@ export const LoginForm = () => {
         return;
       }
 
-      const destination = body.dashboardPath || "/";
-      window.location.href = destination;
-    } catch (err: any) {
+      if (body.role) {
+        document.cookie = `bedders_role=${body.role}; path=/; max-age=604800; SameSite=Lax`;
+      }
 
+      const destination = body.dashboardPath || "/";
+      window.location.replace(destination);
+    } catch (err: any) {
       setLoading(false);
       setError("An unexpected error occurred. Please try again.");
     }
