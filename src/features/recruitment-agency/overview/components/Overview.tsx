@@ -11,12 +11,29 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 const timeFilters = ["1M", "3M", "6M", "1Y"];
 
 export default function Overview() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState("1Y");
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [stats, setStats] = useState({
     totalRequests: 0,
@@ -208,8 +225,10 @@ export default function Overview() {
                   </div>
                 </div>
 
-                {/* SVG Area Line Chart with Axis & Grid */}
+                {/* Recharts Area Line Chart */}
                 {(() => {
+                  if (!isMounted) return null;
+
                   const monthsAll = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                   const defaultBase = [320, 650, 1500, 1800, 2250, 2700, 3100, 3650, 4100, 4400, 4750, 5200];
 
@@ -240,124 +259,58 @@ export default function Overview() {
                     activeValues = activeValues.slice(6, 12);
                   }
 
-                  const maxVal = Math.max(...activeValues, 1000);
-                  const yLabels = [
-                    Math.round(maxVal),
-                    Math.round(maxVal * 0.75),
-                    Math.round(maxVal * 0.5),
-                    Math.round(maxVal * 0.25),
-                    Math.round(maxVal * 0.1),
-                    0,
-                  ];
-
-                  const points = activeValues.map((val, idx) => {
-                    const x = activeValues.length > 1 ? (idx / (activeValues.length - 1)) * 600 : 300;
-                    const y = 220 - (val / maxVal) * 180;
-                    return { x, y, val, label: activeMonths[idx] };
-                  });
-
-                  // Build SVG path
-                  const strokePath = points.reduce((acc, p, i) => {
-                    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
-                    const prev = points[i - 1];
-                    const cx1 = (prev.x + p.x) / 2;
-                    const cy1 = prev.y;
-                    const cx2 = (prev.x + p.x) / 2;
-                    const cy2 = p.y;
-                    return `${acc} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
-                  }, "");
-
-                  const fillPath = `${strokePath} L 600 240 L 0 240 Z`;
-
-                  // Highlight peak or middle point for tooltip
-                  const highlightIdx = Math.floor(points.length / 2);
-                  const highlightPoint = points[highlightIdx] || points[0];
+                  const chartData = activeMonths.map((name, idx) => ({
+                    name,
+                    value: activeValues[idx] ?? 0,
+                  }));
 
                   return (
-                    <div className="w-full flex flex-col gap-2">
-                      <div className="w-full flex items-stretch gap-3">
-                        {/* Y-Axis labels */}
-                        <div className="h-64 sm:h-72 flex flex-col justify-between items-end text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] pr-1 select-none">
-                          {yLabels.map((lbl, idx) => (
-                            <span key={idx}>{lbl}</span>
-                          ))}
-                        </div>
-
-                        {/* Chart Container */}
-                        <div className="flex-1 h-64 sm:h-72 relative flex flex-col justify-between">
-                          {/* Grid Lines */}
-                          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                            <div className="w-full border-b border-neutral-300/80" />
-                            <div className="w-full border-b border-neutral-300/80" />
-                            <div className="w-full border-b border-neutral-300/80" />
-                            <div className="w-full border-b border-neutral-300/80" />
-                            <div className="w-full border-b border-neutral-300/80" />
-                            <div className="w-full border-b border-neutral-300/80" />
-                          </div>
-
-                          {/* SVG Wave Line & Gradient Area */}
-                          <svg
-                            className="w-full h-full absolute inset-0 overflow-visible"
-                            viewBox="0 0 600 240"
-                            preserveAspectRatio="none"
-                          >
-                            <defs>
-                              <linearGradient
-                                id="pipelineGradient"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                              >
-                                <stop offset="0%" stopColor="#0e7490" stopOpacity="0.25" />
-                                <stop offset="100%" stopColor="#0e7490" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-
-                            {/* Area Fill */}
-                            <path d={fillPath} fill="url(#pipelineGradient)" />
-
-                            {/* Stroke Line */}
-                            <path
-                              d={strokePath}
-                              fill="none"
-                              stroke="#0e7490"
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-
-                          {/* Tooltip / Marker */}
-                          {highlightPoint && (
-                            <div
-                              className="absolute flex flex-col items-center pointer-events-none transition-all duration-300"
-                              style={{
-                                left: `${(highlightPoint.x / 600) * 100}%`,
-                                top: `${(highlightPoint.y / 240) * 100}%`,
-                                bottom: 0,
-                              }}
-                            >
-                              <div className="px-2.5 py-1 bg-white rounded-md shadow-md border border-neutral-200 flex flex-col items-center -translate-y-full mb-1">
-                                <span className="text-gray-500 text-[9px] leading-tight">
-                                  {highlightPoint.label}
-                                </span>
-                                <span className="text-zinc-800 text-xs font-bold leading-tight">
-                                  {highlightPoint.val}
-                                </span>
-                              </div>
-                              <div className="size-2 rounded-full bg-cyan-700 ring-4 ring-cyan-700/20" />
-                              <div className="flex-1 w-px border-r border-dashed border-neutral-400" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* X-Axis labels */}
-                      <div className="w-full flex justify-between items-center pl-10 pr-2 pt-1 text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] select-none">
-                        {activeMonths.map((m, idx) => (
-                          <span key={idx}>{m}</span>
-                        ))}
-                      </div>
+                    <div className="w-full h-72 sm:h-80 pt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="pipelineColor" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#0e7490" stopOpacity={0.4} />
+                              <stop offset="95%" stopColor="#0e7490" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#64748b", fontSize: 12 }}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#64748b", fontSize: 12 }}
+                          />
+                          <RechartsTooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const item = payload[0];
+                                return (
+                                  <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg border border-slate-800 text-xs font-semibold">
+                                    <p className="text-slate-300 text-[11px] mb-0.5">{item.payload.name}</p>
+                                    <p className="text-white text-sm font-bold">{item.value} Placements</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#0e7490"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#pipelineColor)"
+                            activeDot={{ r: 6, fill: "#0e7490", stroke: "#ffffff", strokeWidth: 2 }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
                   );
                 })()}
@@ -370,6 +323,8 @@ export default function Overview() {
                 </h2>
 
                 {(() => {
+                  if (!isMounted) return null;
+
                   const defaultPositions = [
                     { title: "Support Worker", count: 890 },
                     { title: "Live-in Carer", count: 720 },
@@ -378,66 +333,62 @@ export default function Overview() {
                     { title: "Healthcare Assistant", count: 313 },
                   ];
                   const positions = stats.mostApplied.length > 0 ? stats.mostApplied : defaultPositions;
-                  const total = positions.reduce((acc, curr) => acc + curr.count, 0) || 1;
-                  const circleColors = ["#22c55e", "#f97316", "#d946ef", "#0e7490", "#1e293b"];
-                  const circum = 440; // 2 * PI * 70
-
-                  let accumulatedDash = 0;
+                  const pieColors = ["#22c55e", "#f97316", "#d946ef", "#0e7490", "#1e293b"];
+                  const pieData = positions.map((item, idx) => ({
+                    name: item.title,
+                    value: item.count,
+                    color: pieColors[idx % pieColors.length],
+                  }));
 
                   return (
                     <>
-                      {/* SVG Donut Chart */}
-                      <div className="relative size-60 sm:size-64 flex items-center justify-center">
-                        <svg className="size-full -rotate-90" viewBox="0 0 200 200">
-                          {/* Background circle */}
-                          <circle
-                            cx="100"
-                            cy="100"
-                            r="70"
-                            fill="transparent"
-                            stroke="#f1f5f9"
-                            strokeWidth="28"
-                          />
-
-                          {positions.map((item, idx) => {
-                            const segmentLen = (item.count / total) * circum;
-                            const dashArray = `${segmentLen.toFixed(1)} ${circum}`;
-                            const dashOffset = -accumulatedDash;
-                            accumulatedDash += segmentLen;
-                            const color = circleColors[idx % circleColors.length];
-
-                            return (
-                              <circle
-                                key={idx}
-                                cx="100"
-                                cy="100"
-                                r="70"
-                                fill="transparent"
-                                stroke={color}
-                                strokeWidth="28"
-                                strokeDasharray={dashArray}
-                                strokeDashoffset={dashOffset}
-                              />
-                            );
-                          })}
-                        </svg>
+                      {/* Recharts Donut PieChart */}
+                      <div className="w-full h-64 flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={pieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {pieData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0];
+                                  return (
+                                    <div className="bg-slate-900 text-white px-3 py-2 rounded-lg shadow-lg border border-slate-800 text-xs font-semibold">
+                                      <p className="text-slate-300 text-[11px] mb-0.5">{data.name}</p>
+                                      <p className="text-white text-sm font-bold">{data.value} Applicants</p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
                       </div>
 
                       {/* Legend with Color Dots and Counts */}
                       <div className="w-full flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs">
-                        {positions.map((item, idx) => {
-                          const color = circleColors[idx % circleColors.length];
-                          return (
-                            <div key={idx} className="inline-flex items-center gap-1.5">
-                              <span
-                                className="size-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: color }}
-                              />
-                              <span className="text-slate-800 font-normal">{item.title}</span>
-                              <span className="text-slate-800 font-semibold">{item.count}</span>
-                            </div>
-                          );
-                        })}
+                        {pieData.map((item, idx) => (
+                          <div key={idx} className="inline-flex items-center gap-1.5">
+                            <span
+                              className="size-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: item.color }}
+                            />
+                            <span className="text-slate-800 font-normal">{item.name}</span>
+                            <span className="text-slate-800 font-semibold">{item.value}</span>
+                          </div>
+                        ))}
                       </div>
                     </>
                   );
