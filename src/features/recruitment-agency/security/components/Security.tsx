@@ -1,21 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
 import {
-  Bell,
   Check,
   Eye,
   EyeOff,
   X,
+  AlertCircle,
 } from "lucide-react";
 
 export default function Security() {
-  const [currentPassword, setCurrentPassword] = useState("********");
-  const [newPassword, setNewPassword] = useState("********");
-  const [confirmPassword, setConfirmPassword] = useState("********");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -23,26 +23,107 @@ export default function Security() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSave = (e: React.FormEvent) => {
+  const rules = useMemo(() => {
+    const p = newPassword;
+    return [
+      {
+        id: "min-length",
+        label: "Minimum 8–12 characters (recommend 12+ for stronger security).",
+        valid: p.length >= 8,
+      },
+      {
+        id: "uppercase",
+        label: "At least one uppercase letter must.",
+        valid: /[A-Z]/.test(p),
+      },
+      {
+        id: "lowercase",
+        label: "At least one lowercase letter must.",
+        valid: /[a-z]/.test(p),
+      },
+      {
+        id: "number",
+        label: "At least one number must (0–9).",
+        valid: /\d/.test(p),
+      },
+      {
+        id: "special",
+        label: "At least special character (! @ # $ % ^ & * etc.).",
+        valid: /[!@#$%^&*(),.?":{}|<>_\-+=/\\[\];']/.test(p),
+      },
+      {
+        id: "nospaces",
+        label: "No spaces allowed.",
+        valid: p.length > 0 && !/\s/.test(p),
+      },
+    ];
+  }, [newPassword]);
+
+  const confirmHasError = confirmPassword.length > 0 && confirmPassword !== newPassword;
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+    setToastMessage(null);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setErrorMessage("Please complete all password fields.");
+      return;
+    }
+
+    if (confirmHasError) {
+      setErrorMessage("New passwords do not match.");
+      return;
+    }
+
+    const invalidRules = rules.filter((r) => !r.valid);
+    if (invalidRules.length > 0) {
+      setErrorMessage("Your new password does not meet all security requirements.");
+      return;
+    }
+
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          oldPassword: currentPassword,
+          newPassword: newPassword,
+        }),
+      });
+
+      const data = await res.json();
       setIsSaving(false);
+
+      if (!res.ok) {
+        setErrorMessage(data.message || "Failed to update password. Please check your current password.");
+        return;
+      }
+
       setToastMessage("Password updated successfully!");
-      setTimeout(() => setToastMessage(null), 3000);
-    }, 600);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setToastMessage(null), 4000);
+    } catch {
+      setIsSaving(false);
+      setErrorMessage("Unable to connect to the server. Please try again.");
+    }
   };
 
   const handleCancel = () => {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    setErrorMessage(null);
   };
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
-      {/* Toast Notification */}
+      {/* Success Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-emerald-600 px-5 py-3 text-white shadow-xl animate-fade-in">
           <Check className="h-5 w-5" />
@@ -99,6 +180,14 @@ export default function Security() {
                 Changes Password
               </div>
 
+              {/* Error Message Alert */}
+              {errorMessage && (
+                <div className="w-full flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                  <AlertCircle className="size-5 shrink-0 text-red-600" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               <form onSubmit={handleSave} className="self-stretch flex flex-col justify-start items-start gap-6">
                 {/* Row 1: Current Password & New Password */}
                 <div className="self-stretch grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
@@ -113,6 +202,7 @@ export default function Security() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Current password"
+                        required
                         className="flex-1 bg-transparent text-slate-800 text-base font-normal font-['Wix_Madefor_Text'] leading-5 outline-none placeholder:text-gray-400"
                       />
                       <button
@@ -141,6 +231,7 @@ export default function Security() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="New password"
+                        required
                         className="flex-1 bg-transparent text-slate-800 text-base font-normal font-['Wix_Madefor_Text'] leading-5 outline-none placeholder:text-gray-400"
                       />
                       <button
@@ -164,12 +255,15 @@ export default function Security() {
                   <label className="self-stretch justify-start text-slate-800 text-base font-medium font-['Wix_Madefor_Text'] leading-5">
                     Confirm New Password
                   </label>
-                  <div className="self-stretch h-12 px-4 rounded-sm border border-red-500 bg-white inline-flex justify-between items-center focus-within:border-red-600 focus-within:ring-1 focus-within:ring-red-500">
+                  <div className={`self-stretch h-12 px-4 rounded-sm border bg-white inline-flex justify-between items-center ${
+                    confirmHasError ? "border-red-500 focus-within:border-red-600 focus-within:ring-1 focus-within:ring-red-500" : "border-neutral-300 focus-within:border-cyan-700 focus-within:ring-1 focus-within:ring-cyan-700"
+                  }`}>
                     <input
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm new password"
+                      required
                       className="flex-1 bg-transparent text-slate-800 text-base font-normal font-['Wix_Madefor_Text'] leading-5 outline-none placeholder:text-gray-400"
                     />
                     <button
@@ -189,53 +283,20 @@ export default function Security() {
 
                 {/* Password Requirements Checklist */}
                 <div className="self-stretch flex flex-col justify-start items-start gap-2 pt-1">
-                  {/* Rule 1: Min 8-12 characters */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
-                      Minimum 8–12 characters (recommend 12+ for stronger security).
-                    </span>
-                  </div>
-
-                  {/* Rule 2: Uppercase letter */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
-                      At least one uppercase letter must.
-                    </span>
-                  </div>
-
-                  {/* Rule 3: Lowercase letter */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
-                      At least one lowercase letter must.
-                    </span>
-                  </div>
-
-                  {/* Rule 4: One number */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <Check className="size-4 text-green-700 stroke-[2.5]" />
-                    <span className="justify-start text-green-700 text-sm font-normal font-['Poppins'] leading-5">
-                      At least one number must (0–9).
-                    </span>
-                  </div>
-
-                  {/* Rule 5: Special character */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <X className="size-4 text-red-600 stroke-[2.5]" />
-                    <span className="justify-start text-red-600 text-sm font-normal font-['Poppins'] leading-5">
-                      At least special character (! @ # $ % ^ & * etc.).
-                    </span>
-                  </div>
-
-                  {/* Rule 6: No spaces */}
-                  <div className="self-stretch inline-flex justify-start items-center gap-2">
-                    <X className="size-4 text-red-600 stroke-[2.5]" />
-                    <span className="justify-start text-red-600 text-sm font-normal font-['Poppins'] leading-5">
-                      No spaces allowed.
-                    </span>
-                  </div>
+                  {rules.map((rule) => (
+                    <div key={rule.id} className="self-stretch inline-flex justify-start items-center gap-2">
+                      {rule.valid ? (
+                        <Check className="size-4 text-green-700 stroke-[2.5]" />
+                      ) : (
+                        <X className="size-4 text-red-600 stroke-[2.5]" />
+                      )}
+                      <span className={`justify-start text-sm font-normal font-['Poppins'] leading-5 ${
+                        rule.valid ? "text-green-700" : "text-red-600"
+                      }`}>
+                        {rule.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Bottom Action Buttons */}
