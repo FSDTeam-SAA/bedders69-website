@@ -230,33 +230,34 @@ export default function Overview() {
                   if (!isMounted) return null;
 
                   const monthsAll = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                  const defaultBase = [320, 650, 1500, 1800, 2250, 2700, 3100, 3650, 4100, 4400, 4750, 5200];
+                  const currentMonthIdx = new Date().getMonth();
+
+                  const rawPipeline = Array.isArray(stats.monthlyPipeline) && stats.monthlyPipeline.length === 12
+                    ? stats.monthlyPipeline
+                    : Array(12).fill(0);
 
                   let activeMonths = monthsAll;
-                  let activeValues = defaultBase;
-
-                  if (stats.monthlyPipeline && stats.monthlyPipeline.length === 12) {
-                    const hasRealData = stats.monthlyPipeline.some((v) => v > 0);
-                    if (hasRealData) {
-                      activeValues = stats.monthlyPipeline.map((v, i) => (v > 0 ? v * 150 + 500 : defaultBase[i]));
-                    }
-                  }
+                  let activeValues = rawPipeline;
 
                   if (selectedTimeFilter === "1M") {
+                    const currentVal = rawPipeline[currentMonthIdx] ?? rawPipeline[rawPipeline.length - 1] ?? 0;
                     activeMonths = ["Week 1", "Week 2", "Week 3", "Week 4"];
-                    const lastVal = activeValues[activeValues.length - 1] || 1500;
                     activeValues = [
-                      Math.round(lastVal * 0.25),
-                      Math.round(lastVal * 0.55),
-                      Math.round(lastVal * 0.8),
-                      lastVal,
+                      Math.round(currentVal * 0.1),
+                      Math.round(currentVal * 0.25),
+                      Math.round(currentVal * 0.5),
+                      currentVal,
                     ];
                   } else if (selectedTimeFilter === "3M") {
-                    activeMonths = monthsAll.slice(9, 12);
-                    activeValues = activeValues.slice(9, 12);
+                    const start = Math.max(0, currentMonthIdx - 2);
+                    const end = currentMonthIdx + 1;
+                    activeMonths = monthsAll.slice(start, end);
+                    activeValues = rawPipeline.slice(start, end);
                   } else if (selectedTimeFilter === "6M") {
-                    activeMonths = monthsAll.slice(6, 12);
-                    activeValues = activeValues.slice(6, 12);
+                    const start = Math.max(0, currentMonthIdx - 5);
+                    const end = currentMonthIdx + 1;
+                    activeMonths = monthsAll.slice(start, end);
+                    activeValues = rawPipeline.slice(start, end);
                   }
 
                   const chartData = activeMonths.map((name, idx) => ({
@@ -285,6 +286,7 @@ export default function Overview() {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fill: "#64748b", fontSize: 12 }}
+                            allowDecimals={false}
                           />
                           <RechartsTooltip
                             content={({ active, payload }) => {
@@ -325,20 +327,27 @@ export default function Overview() {
                 {(() => {
                   if (!isMounted) return null;
 
-                  const defaultPositions = [
-                    { title: "Support Worker", count: 890 },
-                    { title: "Live-in Carer", count: 720 },
-                    { title: "Senior Carer", count: 313 },
-                    { title: "Care Assistant", count: 313 },
-                    { title: "Healthcare Assistant", count: 313 },
-                  ];
-                  const positions = stats.mostApplied.length > 0 ? stats.mostApplied : defaultPositions;
+                  const hasMostAppliedData = Array.isArray(stats.mostApplied) && stats.mostApplied.length > 0;
                   const pieColors = ["#22c55e", "#f97316", "#d946ef", "#0e7490", "#1e293b"];
-                  const pieData = positions.map((item, idx) => ({
-                    name: item.title,
-                    value: item.count,
-                    color: pieColors[idx % pieColors.length],
-                  }));
+                  const pieData = hasMostAppliedData
+                    ? stats.mostApplied.map((item, idx) => ({
+                        name: item.title,
+                        value: item.count,
+                        color: pieColors[idx % pieColors.length],
+                      }))
+                    : [];
+
+                  if (!hasMostAppliedData) {
+                    return (
+                      <div className="w-full h-64 flex flex-col items-center justify-center text-gray-400 gap-3 py-6">
+                        <div className="relative size-32 flex flex-col items-center justify-center rounded-full border-4 border-dashed border-cyan-700/20 bg-white shadow-inner">
+                          <Users className="size-8 text-cyan-700/40 mb-1" />
+                          <span className="text-xs text-slate-500 font-semibold">0 Applicants</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-600">No application data yet</p>
+                      </div>
+                    );
+                  }
 
                   return (
                     <>

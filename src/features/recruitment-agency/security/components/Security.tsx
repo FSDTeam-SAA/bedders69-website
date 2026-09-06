@@ -58,7 +58,7 @@ export default function Security() {
         label: "No spaces allowed.",
         valid: p.length > 0 && !/\s/.test(p),
       },
-    ];
+    ];  
   }, [newPassword]);
 
   const confirmHasError = confirmPassword.length > 0 && confirmPassword !== newPassword;
