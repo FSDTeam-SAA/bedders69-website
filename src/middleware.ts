@@ -73,8 +73,12 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/care",
     "/care/:path*",
+    "/care-company",
     "/care-company/:path*",
+    "/recruitment-agency",
     "/recruitment-agency/:path*",
   ],
 };
+
