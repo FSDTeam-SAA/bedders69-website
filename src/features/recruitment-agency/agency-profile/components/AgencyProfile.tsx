@@ -164,36 +164,62 @@ export default function AgencyProfile() {
     }
   };
 
+  // Image Compression Helper
+  const compressImage = (file: File, maxWidth = 1200, quality = 0.85): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          } else {
+            resolve((e.target?.result as string) || "");
+          }
+        };
+        img.onerror = () => resolve((e.target?.result as string) || "");
+        img.src = (e.target?.result as string) || "";
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Image Upload Handlers
-  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const result = event.target.result as string;
-          setLogoUrl(result);
-          triggerToast("Profile picture updated!");
-          handleSaveProfile({ logo: result });
-        }
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file, 600, 0.85);
+      if (compressed) {
+        setLogoUrl(compressed);
+        triggerToast("Profile picture updated!");
+        handleSaveProfile({ logo: compressed });
+      }
     }
   };
 
-  const handleBannerFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const result = event.target.result as string;
-          setBannerUrl(result);
-          triggerToast("Banner photo updated!");
-          handleSaveProfile({ banner: result });
-        }
-      };
-      reader.readAsDataURL(file);
+      const compressed = await compressImage(file, 1200, 0.85);
+      if (compressed) {
+        setBannerUrl(compressed);
+        triggerToast("Banner photo updated!");
+        handleSaveProfile({ banner: compressed });
+      }
     }
   };
 
