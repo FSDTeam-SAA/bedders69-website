@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
@@ -8,6 +8,7 @@ import {
   Briefcase,
   CheckCircle2,
   ClipboardList,
+  Loader2,
   Users,
 } from "lucide-react";
 
@@ -15,6 +16,46 @@ const timeFilters = ["1M", "3M", "6M", "1Y"];
 
 export default function Overview() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState("1Y");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [stats, setStats] = useState({
+    totalRequests: 0,
+    completedRequests: 0,
+    totalJobPosts: 0,
+    totalApplicants: 0,
+    mostApplied: [] as Array<{ title: string; count: number }>,
+    agencyName: "CareRecruitPro",
+    logoUrl: "",
+  });
+
+  useEffect(() => {
+    async function loadOverviewStats() {
+      setIsLoading(true);
+      try {
+        const res = await fetch("/api/recruitment-agency/overview", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setStats({
+              totalRequests: data.totalRequests ?? 0,
+              completedRequests: data.completedRequests ?? 0,
+              totalJobPosts: data.totalJobPosts ?? 0,
+              totalApplicants: data.totalApplicants ?? 0,
+              mostApplied: Array.isArray(data.mostApplied) ? data.mostApplied : [],
+              agencyName: data.agencyName || "CareRecruitPro",
+              logoUrl: data.logoUrl || "",
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load agency overview stats:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadOverviewStats();
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
@@ -41,16 +82,20 @@ export default function Overview() {
               className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
             >
               <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="CareRecruitPro"
-                  fill
-                  className="object-contain p-1"
-                />
+                {stats.logoUrl ? (
+                  <img src={stats.logoUrl} alt={stats.agencyName} className="h-full w-full object-cover" />
+                ) : (
+                  <Image
+                    src="/images/logo.png"
+                    alt="CareRecruitPro"
+                    fill
+                    className="object-contain p-1"
+                  />
+                )}
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  CareRecruitPro
+                  {stats.agencyName}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Agency
@@ -61,68 +106,75 @@ export default function Overview() {
 
           {/* Main Dashboard Grid Area */}
           <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1616px]">
-            {/* Top 4 Stat Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {/* Card 1: Total Requests */}
-              <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
-                <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
-                  <ClipboardList className="size-8 text-slate-800" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 flex flex-col justify-start items-start gap-1">
-                  <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
-                    Total Requests
-                  </span>
-                  <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    46
-                  </span>
-                </div>
+            {isLoading ? (
+              <div className="flex w-full items-center justify-center p-12 bg-white rounded-xl border border-zinc-100">
+                <Loader2 className="size-8 text-cyan-700 animate-spin" />
+                <span className="ml-3 text-base text-slate-600">Loading overview dashboard metrics...</span>
               </div>
+            ) : (
+              <>
+                {/* Top 4 Stat Metric Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {/* Card 1: Total Requests */}
+                  <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
+                    <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
+                      <ClipboardList className="size-8 text-slate-800" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-start items-start gap-1">
+                      <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
+                        Total Requests
+                      </span>
+                      <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                        {stats.totalRequests}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Card 2: Total Applicant */}
-              <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
-                <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
-                  <Users className="size-8 text-slate-800" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 flex flex-col justify-start items-start gap-1">
-                  <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
-                    Total Applicant
-                  </span>
-                  <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    5645
-                  </span>
-                </div>
-              </div>
+                  {/* Card 2: Total Applicant */}
+                  <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
+                    <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
+                      <Users className="size-8 text-slate-800" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-start items-start gap-1">
+                      <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
+                        Total Applicant
+                      </span>
+                      <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                        {stats.totalApplicants}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Card 3: Total Job Post */}
-              <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
-                <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
-                  <Briefcase className="size-8 text-slate-800" strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 flex flex-col justify-start items-start gap-1">
-                  <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
-                    Total Job Post
-                  </span>
-                  <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    120
-                  </span>
-                </div>
-              </div>
+                  {/* Card 3: Total Job Post */}
+                  <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
+                    <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
+                      <Briefcase className="size-8 text-slate-800" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-start items-start gap-1">
+                      <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
+                        Total Job Post
+                      </span>
+                      <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                        {stats.totalJobPosts}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Card 4: Completed Request */}
-              <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
-                <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
-                  <CheckCircle2 className="size-8 text-slate-800" strokeWidth={1.8} />
+                  {/* Card 4: Completed Request */}
+                  <div className="p-5 bg-cyan-700/5 rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex items-center gap-5 transition-transform hover:-translate-y-0.5">
+                    <div className="size-14 p-3 bg-cyan-700/10 rounded-full flex justify-center items-center shrink-0">
+                      <CheckCircle2 className="size-8 text-slate-800" strokeWidth={1.8} />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-start items-start gap-1">
+                      <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
+                        Completed Request
+                      </span>
+                      <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
+                        {stats.completedRequests}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col justify-start items-start gap-1">
-                  <span className="text-slate-700 text-base sm:text-lg font-medium font-['Wix_Madefor_Text'] leading-6">
-                    Completed Request
-                  </span>
-                  <span className="text-black text-3xl sm:text-4xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    25
-                  </span>
-                </div>
-              </div>
-            </div>
 
             {/* Bottom Row: Placement Pipeline & Most Applied 5 Positions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
@@ -250,118 +302,86 @@ export default function Overview() {
                   Most Applied 5 Positions
                 </h2>
 
-                {/* SVG Donut Chart */}
-                <div className="relative size-60 sm:size-64 flex items-center justify-center">
-                  <svg className="size-full -rotate-90" viewBox="0 0 200 200">
-                    {/* Background circle */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#f1f5f9"
-                      strokeWidth="28"
-                    />
+                {(() => {
+                  const defaultPositions = [
+                    { title: "Support Worker", count: 890 },
+                    { title: "Live-in Carer", count: 720 },
+                    { title: "Senior Carer", count: 313 },
+                    { title: "Care Assistant", count: 313 },
+                    { title: "Healthcare Assistant", count: 313 },
+                  ];
+                  const positions = stats.mostApplied.length > 0 ? stats.mostApplied : defaultPositions;
+                  const total = positions.reduce((acc, curr) => acc + curr.count, 0) || 1;
+                  const circleColors = ["#22c55e", "#f97316", "#d946ef", "#0e7490", "#1e293b"];
+                  const circum = 440; // 2 * PI * 70
 
-                    {/* Segment 1: Support Worker (890 / 2549 ≈ 35%) -> Green */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#22c55e"
-                      strokeWidth="28"
-                      strokeDasharray="154 440"
-                      strokeDashoffset="0"
-                    />
+                  let accumulatedDash = 0;
 
-                    {/* Segment 2: Live-in Carer (720 / 2549 ≈ 28%) -> Amber/Orange */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#f97316"
-                      strokeWidth="28"
-                      strokeDasharray="123 440"
-                      strokeDashoffset="-154"
-                    />
+                  return (
+                    <>
+                      {/* SVG Donut Chart */}
+                      <div className="relative size-60 sm:size-64 flex items-center justify-center">
+                        <svg className="size-full -rotate-90" viewBox="0 0 200 200">
+                          {/* Background circle */}
+                          <circle
+                            cx="100"
+                            cy="100"
+                            r="70"
+                            fill="transparent"
+                            stroke="#f1f5f9"
+                            strokeWidth="28"
+                          />
 
-                    {/* Segment 3: Senior Carer (313 / 2549 ≈ 12%) -> Fuchsia/Pink */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#d946ef"
-                      strokeWidth="28"
-                      strokeDasharray="53 440"
-                      strokeDashoffset="-277"
-                    />
+                          {positions.map((item, idx) => {
+                            const segmentLen = (item.count / total) * circum;
+                            const dashArray = `${segmentLen.toFixed(1)} ${circum}`;
+                            const dashOffset = -accumulatedDash;
+                            accumulatedDash += segmentLen;
+                            const color = circleColors[idx % circleColors.length];
 
-                    {/* Segment 4: Support Worker (313 / 2549 ≈ 12%) -> Dark Slate */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#1e293b"
-                      strokeWidth="28"
-                      strokeDasharray="53 440"
-                      strokeDashoffset="-330"
-                    />
+                            return (
+                              <circle
+                                key={idx}
+                                cx="100"
+                                cy="100"
+                                r="70"
+                                fill="transparent"
+                                stroke={color}
+                                strokeWidth="28"
+                                strokeDasharray={dashArray}
+                                strokeDashoffset={dashOffset}
+                              />
+                            );
+                          })}
+                        </svg>
+                      </div>
 
-                    {/* Segment 5: Live-in Carer (313 / 2549 ≈ 12%) -> Cyan 700 */}
-                    <circle
-                      cx="100"
-                      cy="100"
-                      r="70"
-                      fill="transparent"
-                      stroke="#0e7490"
-                      strokeWidth="28"
-                      strokeDasharray="57 440"
-                      strokeDashoffset="-383"
-                    />
-                  </svg>
-                </div>
-
-                {/* Legend with Color Dots and Counts */}
-                <div className="w-full flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs">
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="size-2.5 bg-green-500 rounded-full shrink-0" />
-                    <span className="text-slate-800 font-normal">Support Worker</span>
-                    <span className="text-slate-800 font-semibold">890</span>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="size-2.5 bg-orange-500 rounded-full shrink-0" />
-                    <span className="text-slate-800 font-normal">Live-in Carer</span>
-                    <span className="text-slate-800 font-semibold">720</span>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="size-2.5 bg-fuchsia-500 rounded-full shrink-0" />
-                    <span className="text-slate-800 font-normal">Senior Carer</span>
-                    <span className="text-slate-800 font-semibold">313</span>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="size-2.5 bg-cyan-700 rounded-full shrink-0" />
-                    <span className="text-slate-800 font-normal">Support Worker</span>
-                    <span className="text-slate-800 font-semibold">313</span>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="size-2.5 bg-slate-800 rounded-full shrink-0" />
-                    <span className="text-slate-800 font-normal">Live-in Carer</span>
-                    <span className="text-slate-800 font-semibold">313</span>
-                  </div>
-                </div>
+                      {/* Legend with Color Dots and Counts */}
+                      <div className="w-full flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs">
+                        {positions.map((item, idx) => {
+                          const color = circleColors[idx % circleColors.length];
+                          return (
+                            <div key={idx} className="inline-flex items-center gap-1.5">
+                              <span
+                                className="size-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: color }}
+                              />
+                              <span className="text-slate-800 font-normal">{item.title}</span>
+                              <span className="text-slate-800 font-semibold">{item.count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
-    </main>
-  );
+    </div>
+  </div>
+</main>
+);
 }
