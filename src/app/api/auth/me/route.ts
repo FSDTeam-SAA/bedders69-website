@@ -5,7 +5,7 @@ const roleHome: Record<string, string> = {
   care_company: "/care-company/dashboard-overview",
   agency: "/recruitment-agency/overview",
   carer: "/care",
-  admin: "http://localhost:3001",
+  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001",
   supplier: "/marketplace",
   service_provider: "/services",
   family: "/",

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080/api/v1";
 const dashboardPath: Record<string, string> = {
-  admin: "http://localhost:3001",
+  admin: process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3001",
   supplier: "/marketplace",
   service_provider: "/services",
   care_company: "/care-company/dashboard-overview",
@@ -21,8 +21,12 @@ export async function POST(request: Request) {
   const token = data?.accessToken || data?.token || body?.accessToken || body?.token;
   const user = data?.user || body?.user || data;
   if (!token || !user) return NextResponse.json({ message: "Login response is incomplete" }, { status: 502 });
+
+  const proto = request.headers.get("x-forwarded-proto") || (request.url.startsWith("https://") ? "https" : "http");
+  const isSecure = process.env.NODE_ENV === "production" && proto === "https";
+
   const result = NextResponse.json({ role: user.role, dashboardPath: dashboardPath[user.role] || "/" });
-  result.cookies.set("bedders_access_token", token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 7 });
-  result.cookies.set("bedders_role", user.role, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 7 });
+  result.cookies.set("bedders_access_token", token, { httpOnly: true, sameSite: "lax", secure: isSecure, path: "/", maxAge: 60 * 60 * 24 * 7 });
+  result.cookies.set("bedders_role", user.role, { httpOnly: true, sameSite: "lax", secure: isSecure, path: "/", maxAge: 60 * 60 * 24 * 7 });
   return result;
 }

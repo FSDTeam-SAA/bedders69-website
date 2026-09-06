@@ -38,8 +38,7 @@ export const LoginForm = () => {
       if (destination.startsWith("http")) {
         window.location.assign(destination);
       } else {
-        router.push(destination);
-        router.refresh();
+        window.location.href = destination;
       }
     } catch (err: any) {
       setLoading(false);

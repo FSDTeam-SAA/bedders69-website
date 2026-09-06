@@ -86,8 +86,7 @@ export const ChoosePlanView = () => {
             if (destination.startsWith("http")) {
               window.location.assign(destination);
             } else {
-              router.push(destination);
-              router.refresh();
+              window.location.href = destination;
             }
           }, 1200);
           return;
