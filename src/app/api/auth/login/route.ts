@@ -22,11 +22,14 @@ export async function POST(request: Request) {
   const user = data?.user || body?.user || data;
   if (!token || !user) return NextResponse.json({ message: "Login response is incomplete" }, { status: 502 });
 
-  const proto = request.headers.get("x-forwarded-proto") || (request.url.startsWith("https://") ? "https" : "http");
-  const isSecure = process.env.NODE_ENV === "production" && proto === "https";
+  const reqUrl = request.url || "";
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const isHttps = reqUrl.startsWith("https://") || (forwardedProto === "https" && !reqUrl.startsWith("http://"));
+  const isSecure = process.env.NODE_ENV === "production" && isHttps;
 
   const result = NextResponse.json({ role: user.role, dashboardPath: dashboardPath[user.role] || "/" });
   result.cookies.set("bedders_access_token", token, { httpOnly: true, sameSite: "lax", secure: isSecure, path: "/", maxAge: 60 * 60 * 24 * 7 });
   result.cookies.set("bedders_role", user.role, { httpOnly: true, sameSite: "lax", secure: isSecure, path: "/", maxAge: 60 * 60 * 24 * 7 });
   return result;
+
 }
