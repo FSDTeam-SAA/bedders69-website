@@ -35,12 +35,9 @@ export const LoginForm = () => {
       }
 
       const destination = body.dashboardPath || "/";
-      if (destination.startsWith("http")) {
-        window.location.assign(destination);
-      } else {
-        window.location.href = destination;
-      }
+      window.location.href = destination;
     } catch (err: any) {
+
       setLoading(false);
       setError("An unexpected error occurred. Please try again.");
     }
