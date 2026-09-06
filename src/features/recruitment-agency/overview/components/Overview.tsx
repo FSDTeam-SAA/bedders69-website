@@ -24,6 +24,7 @@ export default function Overview() {
     totalJobPosts: 0,
     totalApplicants: 0,
     mostApplied: [] as Array<{ title: string; count: number }>,
+    monthlyPipeline: [] as number[],
     agencyName: "CareRecruitPro",
     logoUrl: "",
   });
@@ -42,6 +43,7 @@ export default function Overview() {
               totalJobPosts: data.totalJobPosts ?? 0,
               totalApplicants: data.totalApplicants ?? 0,
               mostApplied: Array.isArray(data.mostApplied) ? data.mostApplied : [],
+              monthlyPipeline: Array.isArray(data.monthlyPipeline) ? data.monthlyPipeline : [],
               agencyName: data.agencyName || "CareRecruitPro",
               logoUrl: data.logoUrl || "",
             });
@@ -207,93 +209,158 @@ export default function Overview() {
                 </div>
 
                 {/* SVG Area Line Chart with Axis & Grid */}
-                <div className="w-full flex flex-col gap-2">
-                  <div className="w-full flex items-stretch gap-3">
-                    {/* Y-Axis labels */}
-                    <div className="h-64 sm:h-72 flex flex-col justify-between items-end text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] pr-1 select-none">
-                      <span>5000</span>
-                      <span>3000</span>
-                      <span>2000</span>
-                      <span>1000</span>
-                      <span>500</span>
-                      <span>100</span>
-                    </div>
+                {(() => {
+                  const monthsAll = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                  const defaultBase = [320, 650, 1500, 1800, 2250, 2700, 3100, 3650, 4100, 4400, 4750, 5200];
 
-                    {/* Chart Container */}
-                    <div className="flex-1 h-64 sm:h-72 relative flex flex-col justify-between">
-                      {/* Grid Lines */}
-                      <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                        <div className="w-full border-b border-neutral-300/80" />
-                        <div className="w-full border-b border-neutral-300/80" />
-                        <div className="w-full border-b border-neutral-300/80" />
-                        <div className="w-full border-b border-neutral-300/80" />
-                        <div className="w-full border-b border-neutral-300/80" />
-                        <div className="w-full border-b border-neutral-300/80" />
-                      </div>
+                  let activeMonths = monthsAll;
+                  let activeValues = defaultBase;
 
-                      {/* SVG Wave Line & Gradient Area */}
-                      <svg
-                        className="w-full h-full absolute inset-0 overflow-visible"
-                        viewBox="0 0 600 240"
-                        preserveAspectRatio="none"
-                      >
-                        <defs>
-                          <linearGradient
-                            id="pipelineGradient"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop offset="0%" stopColor="#0e7490" stopOpacity="0.25" />
-                            <stop offset="100%" stopColor="#0e7490" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
+                  if (stats.monthlyPipeline && stats.monthlyPipeline.length === 12) {
+                    const hasRealData = stats.monthlyPipeline.some((v) => v > 0);
+                    if (hasRealData) {
+                      activeValues = stats.monthlyPipeline.map((v, i) => (v > 0 ? v * 150 + 500 : defaultBase[i]));
+                    }
+                  }
 
-                        {/* Area Fill */}
-                        <path
-                          d="M 0 160 Q 40 155, 75 140 T 150 145 T 225 125 T 300 115 T 375 110 T 450 85 T 525 65 T 600 75 L 600 240 L 0 240 Z"
-                          fill="url(#pipelineGradient)"
-                        />
+                  if (selectedTimeFilter === "1M") {
+                    activeMonths = ["Week 1", "Week 2", "Week 3", "Week 4"];
+                    const lastVal = activeValues[activeValues.length - 1] || 1500;
+                    activeValues = [
+                      Math.round(lastVal * 0.25),
+                      Math.round(lastVal * 0.55),
+                      Math.round(lastVal * 0.8),
+                      lastVal,
+                    ];
+                  } else if (selectedTimeFilter === "3M") {
+                    activeMonths = monthsAll.slice(9, 12);
+                    activeValues = activeValues.slice(9, 12);
+                  } else if (selectedTimeFilter === "6M") {
+                    activeMonths = monthsAll.slice(6, 12);
+                    activeValues = activeValues.slice(6, 12);
+                  }
 
-                        {/* Stroke Line */}
-                        <path
-                          d="M 0 160 Q 40 155, 75 140 T 150 145 T 225 125 T 300 115 T 375 110 T 450 85 T 525 65 T 600 75"
-                          fill="none"
-                          stroke="#0e7490"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
+                  const maxVal = Math.max(...activeValues, 1000);
+                  const yLabels = [
+                    Math.round(maxVal),
+                    Math.round(maxVal * 0.75),
+                    Math.round(maxVal * 0.5),
+                    Math.round(maxVal * 0.25),
+                    Math.round(maxVal * 0.1),
+                    0,
+                  ];
 
-                      {/* Tooltip / Marker at March (approx 12.5% across) */}
-                      <div className="absolute left-[13%] top-[38%] bottom-0 flex flex-col items-center pointer-events-none">
-                        <div className="px-2 py-1 bg-white rounded-md shadow-md border border-neutral-200 flex flex-col items-center -translate-y-full mb-1">
-                          <span className="text-gray-500 text-[9px] leading-tight">March</span>
-                          <span className="text-zinc-800 text-xs font-bold leading-tight">1500</span>
+                  const points = activeValues.map((val, idx) => {
+                    const x = activeValues.length > 1 ? (idx / (activeValues.length - 1)) * 600 : 300;
+                    const y = 220 - (val / maxVal) * 180;
+                    return { x, y, val, label: activeMonths[idx] };
+                  });
+
+                  // Build SVG path
+                  const strokePath = points.reduce((acc, p, i) => {
+                    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+                    const prev = points[i - 1];
+                    const cx1 = (prev.x + p.x) / 2;
+                    const cy1 = prev.y;
+                    const cx2 = (prev.x + p.x) / 2;
+                    const cy2 = p.y;
+                    return `${acc} C ${cx1.toFixed(1)} ${cy1.toFixed(1)}, ${cx2.toFixed(1)} ${cy2.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+                  }, "");
+
+                  const fillPath = `${strokePath} L 600 240 L 0 240 Z`;
+
+                  // Highlight peak or middle point for tooltip
+                  const highlightIdx = Math.floor(points.length / 2);
+                  const highlightPoint = points[highlightIdx] || points[0];
+
+                  return (
+                    <div className="w-full flex flex-col gap-2">
+                      <div className="w-full flex items-stretch gap-3">
+                        {/* Y-Axis labels */}
+                        <div className="h-64 sm:h-72 flex flex-col justify-between items-end text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] pr-1 select-none">
+                          {yLabels.map((lbl, idx) => (
+                            <span key={idx}>{lbl}</span>
+                          ))}
                         </div>
-                        <div className="size-2 rounded-full bg-cyan-700 ring-4 ring-cyan-700/20" />
-                        <div className="flex-1 w-px border-r border-dashed border-neutral-400" />
+
+                        {/* Chart Container */}
+                        <div className="flex-1 h-64 sm:h-72 relative flex flex-col justify-between">
+                          {/* Grid Lines */}
+                          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                            <div className="w-full border-b border-neutral-300/80" />
+                            <div className="w-full border-b border-neutral-300/80" />
+                            <div className="w-full border-b border-neutral-300/80" />
+                            <div className="w-full border-b border-neutral-300/80" />
+                            <div className="w-full border-b border-neutral-300/80" />
+                            <div className="w-full border-b border-neutral-300/80" />
+                          </div>
+
+                          {/* SVG Wave Line & Gradient Area */}
+                          <svg
+                            className="w-full h-full absolute inset-0 overflow-visible"
+                            viewBox="0 0 600 240"
+                            preserveAspectRatio="none"
+                          >
+                            <defs>
+                              <linearGradient
+                                id="pipelineGradient"
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                              >
+                                <stop offset="0%" stopColor="#0e7490" stopOpacity="0.25" />
+                                <stop offset="100%" stopColor="#0e7490" stopOpacity="0.0" />
+                              </linearGradient>
+                            </defs>
+
+                            {/* Area Fill */}
+                            <path d={fillPath} fill="url(#pipelineGradient)" />
+
+                            {/* Stroke Line */}
+                            <path
+                              d={strokePath}
+                              fill="none"
+                              stroke="#0e7490"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+
+                          {/* Tooltip / Marker */}
+                          {highlightPoint && (
+                            <div
+                              className="absolute flex flex-col items-center pointer-events-none transition-all duration-300"
+                              style={{
+                                left: `${(highlightPoint.x / 600) * 100}%`,
+                                top: `${(highlightPoint.y / 240) * 100}%`,
+                                bottom: 0,
+                              }}
+                            >
+                              <div className="px-2.5 py-1 bg-white rounded-md shadow-md border border-neutral-200 flex flex-col items-center -translate-y-full mb-1">
+                                <span className="text-gray-500 text-[9px] leading-tight">
+                                  {highlightPoint.label}
+                                </span>
+                                <span className="text-zinc-800 text-xs font-bold leading-tight">
+                                  {highlightPoint.val}
+                                </span>
+                              </div>
+                              <div className="size-2 rounded-full bg-cyan-700 ring-4 ring-cyan-700/20" />
+                              <div className="flex-1 w-px border-r border-dashed border-neutral-400" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* X-Axis labels */}
+                      <div className="w-full flex justify-between items-center pl-10 pr-2 pt-1 text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] select-none">
+                        {activeMonths.map((m, idx) => (
+                          <span key={idx}>{m}</span>
+                        ))}
                       </div>
                     </div>
-                  </div>
-
-                  {/* X-Axis labels */}
-                  <div className="w-full flex justify-between items-center pl-10 pr-2 pt-1 text-gray-500 text-xs font-normal font-['Wix_Madefor_Text'] select-none">
-                    <span>Jan</span>
-                    <span>Feb</span>
-                    <span>Mar</span>
-                    <span>Apr</span>
-                    <span>May</span>
-                    <span>Jun</span>
-                    <span>Jul</span>
-                    <span>Aug</span>
-                    <span>Sep</span>
-                    <span>Oct</span>
-                    <span>Nov</span>
-                    <span>Dec</span>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Most Applied 5 Positions Donut Chart Card (1 Column) */}

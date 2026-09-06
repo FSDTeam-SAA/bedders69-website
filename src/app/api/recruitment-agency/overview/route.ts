@@ -54,7 +54,7 @@ export async function GET() {
     // Aggregate top applied positions
     const titleCounts: Record<string, number> = {};
     applicantsList.forEach((app: any) => {
-      const title = app.jobId?.title || app.jobTitle || app.title || "Care Assistant";
+      const title = app.jobId?.title || app.jobTitle || app.title || app.role || "Care Assistant";
       titleCounts[title] = (titleCounts[title] || 0) + 1;
     });
 
@@ -63,12 +63,39 @@ export async function GET() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // Calculate monthly placement pipeline
+    const monthlyPipeline = Array(12).fill(0);
+    let totalActivity = 0;
+
+    applicantsList.forEach((app: any) => {
+      const dateStr = app.createdAt || app.appliedAt;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          monthlyPipeline[d.getMonth()] += 1;
+          totalActivity++;
+        }
+      }
+    });
+
+    requestsList.forEach((req: any) => {
+      const dateStr = req.createdAt || req.updatedAt;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          monthlyPipeline[d.getMonth()] += 1;
+          totalActivity++;
+        }
+      }
+    });
+
     return NextResponse.json({
       totalRequests,
       completedRequests,
       totalJobPosts,
       totalApplicants,
       mostApplied,
+      monthlyPipeline,
       agencyName: profile.name || "CareRecruitPro",
       logoUrl: profile.logoUrl || profile.logo || "",
     });
