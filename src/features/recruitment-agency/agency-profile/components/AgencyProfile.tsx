@@ -117,9 +117,13 @@ export default function AgencyProfile() {
   }, []);
 
   // 2. Save Profile Function
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (overrideImages?: { logo?: string; banner?: string } | React.MouseEvent) => {
     setIsSaving(true);
     setErrorMessage(null);
+
+    const images = (overrideImages && "logo" in overrideImages) ? overrideImages : undefined;
+    const currentLogo = images?.logo !== undefined ? images.logo : logoUrl;
+    const currentBanner = images?.banner !== undefined ? images.banner : bannerUrl;
 
     const payload = {
       name: agencyName,
@@ -131,6 +135,9 @@ export default function AgencyProfile() {
       alternatageEmail: altEmail,
       address: address,
       specialisations: specialisations,
+      logoUrl: currentLogo,
+      bannerUrl: currentBanner,
+      documents: uploadedDocs.map((d) => d.url || d.name),
     };
 
     try {
@@ -167,6 +174,7 @@ export default function AgencyProfile() {
           const result = event.target.result as string;
           setLogoUrl(result);
           triggerToast("Profile picture updated!");
+          handleSaveProfile({ logo: result });
         }
       };
       reader.readAsDataURL(file);
@@ -182,6 +190,7 @@ export default function AgencyProfile() {
           const result = event.target.result as string;
           setBannerUrl(result);
           triggerToast("Banner photo updated!");
+          handleSaveProfile({ banner: result });
         }
       };
       reader.readAsDataURL(file);
@@ -308,12 +317,10 @@ export default function AgencyProfile() {
             <div className="w-full bg-white rounded-2xl border border-neutral-200/80 shadow-[0px_2px_4px_rgba(0,0,0,0.03)] overflow-hidden">
               {/* Banner Image */}
               <div className="relative w-full h-48 sm:h-64 bg-slate-200">
-                <Image
-                  src={bannerUrl}
+                <img
+                  src={bannerUrl || "/images/agency_banner.jpg"}
                   alt="Agency Team Banner"
-                  fill
-                  className="object-cover"
-                  priority
+                  className="w-full h-full object-cover"
                 />
                 {/* Edit Banner Button */}
                 <button
