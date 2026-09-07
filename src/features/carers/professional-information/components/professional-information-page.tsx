@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { CalendarDays, ChevronDown, PencilLine, Plus, Loader2, CheckCircle2, AlertCircle, Save, X } from "lucide-react";
+import { CalendarDays, ChevronDown, PencilLine, Plus, Loader2, CheckCircle2, AlertCircle, Save, X, Search } from "lucide-react";
 
 type ProfessionalProfileData = {
   yearsOfExperience: string;
@@ -380,13 +380,48 @@ export function ProfessionalInformationPage() {
   };
 
   // Custom added items states
+  const [dynamicSkillOptions, setDynamicSkillOptions] = useState<string[]>(skillOptions);
   const [customSkills, setCustomSkills] = useState<string[]>([]);
   const [customSpecialisms, setCustomSpecialisms] = useState<string[]>([]);
   const [customWorkPreferences, setCustomWorkPreferences] = useState<string[]>([]);
 
+  useEffect(() => {
+    async function fetchCareSkills() {
+      try {
+        const res = await fetch("/api/care-skills", { cache: "no-store" }).catch(() => null);
+        if (res && res.ok) {
+          const json = await res.json();
+          const apiSkills = (json.data || []).map((s: { name: string }) => s.name);
+          if (apiSkills.length > 0) {
+            setDynamicSkillOptions(apiSkills);
+            return;
+          }
+        }
+
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+          process.env.NEXT_PUBLIC_BACKEND_URL ||
+          "http://localhost:8080/api/v1";
+        const directRes = await fetch(`${backendUrl}/care-skills?limit=100`);
+        if (directRes.ok) {
+          const json = await directRes.json();
+          const apiSkills = (json.data || []).map((s: { name: string }) => s.name);
+          if (apiSkills.length > 0) {
+            setDynamicSkillOptions(apiSkills);
+          }
+        }
+      } catch (e) {
+        // Fallback to default skillOptions
+      }
+    }
+    fetchCareSkills();
+  }, []);
+
   // Inline add input toggles & values
   const [showAddSkill, setShowAddSkill] = useState(false);
   const [newSkillInput, setNewSkillInput] = useState("");
+  const [isSkillDropdownOpen, setIsSkillDropdownOpen] = useState(false);
+  const skillDropdownRef = useRef<HTMLDivElement>(null);
 
   const [showAddSpecialism, setShowAddSpecialism] = useState(false);
   const [newSpecialismInput, setNewSpecialismInput] = useState("");
@@ -398,6 +433,16 @@ export function ProfessionalInformationPage() {
   const yearsExpRef = useRef<HTMLInputElement>(null);
   const employerNameRef = useRef<HTMLInputElement>(null);
   const availabilityRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (skillDropdownRef.current && !skillDropdownRef.current.contains(event.target as Node)) {
+        setIsSkillDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -417,7 +462,7 @@ export function ProfessionalInformationPage() {
         const fetchedWorkPreferences = Array.isArray(profile.workPreferences) ? profile.workPreferences : [];
 
         // Extract any custom skills/specialisms/preferences from backend that aren't in defaults
-        const extraSkills = fetchedSkills.filter((s: string) => !skillOptions.includes(s));
+        const extraSkills = fetchedSkills.filter((s: string) => !dynamicSkillOptions.includes(s));
         const extraSpecialisms = fetchedSpecialisms.filter((s: string) => !specialismOptions.includes(s));
         const extraPreferences = fetchedWorkPreferences.filter((s: string) => !workPreferenceOptions.includes(s));
 
@@ -452,7 +497,7 @@ export function ProfessionalInformationPage() {
     }
 
     fetchProfile();
-  }, []);
+  }, [dynamicSkillOptions]);
 
   const updateField = <K extends keyof ProfessionalProfileData>(
     field: K,
@@ -480,7 +525,7 @@ export function ProfessionalInformationPage() {
   const handleAddSkill = () => {
     const trimmed = newSkillInput.trim();
     if (!trimmed) return;
-    if (!customSkills.includes(trimmed) && !skillOptions.includes(trimmed)) {
+    if (!customSkills.includes(trimmed) && !dynamicSkillOptions.includes(trimmed)) {
       setCustomSkills((prev) => [...prev, trimmed]);
     }
     if (!formData.skills.includes(trimmed)) {
@@ -603,7 +648,7 @@ export function ProfessionalInformationPage() {
     );
   }
 
-  const allSkillOptions = [...skillOptions, ...customSkills.filter((s) => !skillOptions.includes(s))];
+  const allSkillOptions = [...dynamicSkillOptions, ...customSkills.filter((s) => !dynamicSkillOptions.includes(s))];
   const allSpecialismOptions = [...specialismOptions, ...customSpecialisms.filter((s) => !specialismOptions.includes(s))];
   const allWorkPreferenceOptions = [...workPreferenceOptions, ...customWorkPreferences.filter((s) => !workPreferenceOptions.includes(s))];
 
@@ -738,49 +783,140 @@ export function ProfessionalInformationPage() {
               setShowAddSkill(true);
             }}
           />
-          <div className="mt-5">
-            {showAddSkill && (
-              <div className="mb-4 flex items-center gap-3 rounded-xl border border-cyan-300 bg-cyan-50/70 p-3 shadow-xs">
-                <input
-                  type="text"
-                  value={newSkillInput}
-                  placeholder="Type new skill name (e.g. Tracheostomy Care)..."
-                  onChange={(e) => setNewSkillInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddSkill();
-                    }
-                  }}
-                  className="h-10 flex-1 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-cyan-700"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={handleAddSkill}
-                  className="h-10 rounded-lg bg-cyan-700 px-4 text-sm font-semibold text-white transition hover:bg-cyan-800"
-                >
-                  Add Skill
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddSkill(false);
-                    setNewSkillInput("");
-                  }}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-300 bg-white text-slate-500 transition hover:bg-gray-100"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+          <div className="mt-5 space-y-4">
+            {/* LinkedIn-style Search Bar with Dropdown Suggestions */}
+            {editableSections.skills && (
+              <div className="relative w-full" ref={skillDropdownRef}>
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={newSkillInput}
+                    placeholder="Search skills (e.g. Elderly Care, Dementia Care)..."
+                    onFocus={() => setIsSkillDropdownOpen(true)}
+                    onChange={(e) => {
+                      setNewSkillInput(e.target.value);
+                      setIsSkillDropdownOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newSkillInput.trim()) {
+                          handleAddSkill();
+                          setIsSkillDropdownOpen(false);
+                        }
+                      }
+                    }}
+                    className="h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                    autoFocus
+                  />
+                  {newSkillInput && (
+                    <button
+                      type="button"
+                      onClick={() => setNewSkillInput("")}
+                      className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* LinkedIn-style Autocomplete Dropdown */}
+                {isSkillDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl transition-all">
+                    {dynamicSkillOptions
+                      .filter(
+                        (s) =>
+                          !formData.skills.includes(s) &&
+                          (!newSkillInput.trim() ||
+                            s.toLowerCase().includes(newSkillInput.trim().toLowerCase()))
+                      )
+                      .map((adminSkill) => (
+                        <button
+                          key={adminSkill}
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              skills: [...prev.skills, adminSkill],
+                            }));
+                            setNewSkillInput("");
+                            setIsSkillDropdownOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-cyan-50 hover:text-cyan-800 cursor-pointer"
+                        >
+                          <Search className="h-3.5 w-3.5 text-cyan-600 shrink-0" />
+                          <span>{adminSkill}</span>
+                        </button>
+                      ))}
+
+                    {/* Option to add custom skill if typed string does not match any existing admin skill */}
+                    {newSkillInput.trim() &&
+                      !formData.skills.includes(newSkillInput.trim()) &&
+                      !dynamicSkillOptions.some(
+                        (s) => s.toLowerCase() === newSkillInput.trim().toLowerCase()
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleAddSkill();
+                            setIsSkillDropdownOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-cyan-700 transition hover:bg-cyan-50 border-t border-slate-100 cursor-pointer"
+                        >
+                          <Plus className="h-4 w-4 text-cyan-700 shrink-0" />
+                          <span>Add &quot;{newSkillInput.trim()}&quot;</span>
+                        </button>
+                      )}
+
+                    {dynamicSkillOptions.filter(
+                      (s) =>
+                        !formData.skills.includes(s) &&
+                        (!newSkillInput.trim() ||
+                          s.toLowerCase().includes(newSkillInput.trim().toLowerCase()))
+                    ).length === 0 &&
+                      !newSkillInput.trim() && (
+                        <div className="px-3 py-3 text-center text-xs text-slate-400 italic">
+                          Start typing to search available care skills...
+                        </div>
+                      )}
+                  </div>
+                )}
               </div>
             )}
-            <PillGroup
-              options={allSkillOptions}
-              values={formData.skills}
-              disabled={!editableSections.skills}
-              onToggle={(value) => toggleMultiValue("skills", value)}
-            />
+
+            {/* Carer's Selected Skills List Only */}
+            {formData.skills.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2.5">
+                {formData.skills.map((skill) => (
+                  <div
+                    key={skill}
+                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-700 bg-cyan-700 px-4 py-2 text-sm font-medium text-white shadow-xs"
+                  >
+                    <span>{skill}</span>
+                    {editableSections.skills && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            skills: prev.skills.filter((s) => s !== skill),
+                          }))
+                        }
+                        className="ml-1 rounded-full p-0.5 hover:bg-cyan-800 text-white/80 hover:text-white transition cursor-pointer"
+                        aria-label={`Remove ${skill}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">
+                No skills added yet. Click &quot;Edit&quot; or &quot;+&quot; to search and select skills.
+              </p>
+            )}
           </div>
         </section>
 

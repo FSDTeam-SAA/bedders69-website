@@ -5,6 +5,7 @@ import { Counter } from "../../counter/components/counter";
 
 import OurServices from "./ourServices/ourServices";
 import Banner from "./Banner/banner";
+import AdBannersSlider from "./AdBanners/AdBannersSlider";
 import FeaturedCompanies from "./Companies/FeaturedCompanies";
 import FeaturedAgencies from "./Agencies/FeaturedAgencies";
 import LatestCareJobs from "./CareJobs/LatestCareJobs";
@@ -15,6 +16,7 @@ export function HomePage() {
   return (
     <div>
       <Banner />
+      <AdBannersSlider />
       <OurServices />
       <FeaturedCompanies/>
       <FeaturedAgencies/>
