@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Star,
   MapPin,
@@ -13,6 +14,7 @@ import {
   Mail,
   ArrowLeft,
   UserCheck,
+  Lock,
 } from "lucide-react";
 import findCareApi from "../api/findCareApi";
 import { CarerItem } from "../types/findCare.types";
@@ -30,13 +32,48 @@ export const CarerDetailView = () => {
   const id = (params?.id as string) || "";
   const decodedSlug = decodeURIComponent(id).toLowerCase().replace(/\s+/g, "-");
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [carer, setCarer] = useState<CarerItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadCarer() {
-      setIsLoading(true);
+
+    async function checkAuthAndLoadCarer() {
+      // 1. Verify user authentication
+      let authed = false;
+      try {
+        const authRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (authData.authenticated) {
+            authed = true;
+          }
+        }
+      } catch {
+        // network error
+      }
+
+      if (!authed && typeof document !== "undefined") {
+        if (document.cookie.includes("bedders_role=")) {
+          authed = true;
+        }
+      }
+
+      if (!authed) {
+        if (isMounted) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          router.push(`/login?redirect=/find-care/${encodeURIComponent(id)}&reason=carer_details`);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsAuthenticated(true);
+      }
+
+      // 2. Load carer details only when authenticated
       try {
         const res = await findCareApi.getCarers({ limit: 50, page: 1 });
         if (res && res.data && isMounted) {
@@ -61,11 +98,12 @@ export const CarerDetailView = () => {
         }
       }
     }
-    loadCarer();
+
+    checkAuthAndLoadCarer();
     return () => {
       isMounted = false;
     };
-  }, [id, decodedSlug]);
+  }, [id, decodedSlug, router]);
 
   if (isLoading) {
     return (
@@ -80,6 +118,36 @@ export const CarerDetailView = () => {
             <div className="lg:col-span-4">
               <div className="h-48 animate-pulse rounded-3xl bg-white p-6 shadow-sm" />
             </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="min-h-screen bg-[#F4F7FC] flex items-center justify-center p-6 font-['Wix_Madefor_Text']">
+        <div className="max-w-md w-full rounded-3xl bg-white p-8 text-center shadow-sm border border-slate-100 flex flex-col items-center gap-4">
+          <div className="size-16 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-700">
+            <Lock className="size-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-[#1B2C54]">Login Required</h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Carer profiles and contact details are only accessible to authenticated users. Please sign in to view this carer profile.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full pt-2">
+            <Link
+              href={`/login?redirect=/find-care/${encodeURIComponent(id)}&reason=carer_details`}
+              className="flex-1 py-3 bg-[#2D6A9F] hover:bg-[#20527F] text-white font-bold text-sm rounded-xl text-center transition-all shadow-sm"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/select-type"
+              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl text-center transition-all"
+            >
+              Join Free
+            </Link>
           </div>
         </div>
       </main>

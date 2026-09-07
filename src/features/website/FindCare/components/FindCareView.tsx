@@ -10,7 +10,6 @@ export const FindCareView = () => {
   const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedRating, setSelectedRating] = useState("");
 
   const handleSearch = () => {
     setSearchTriggeredQuery(searchQuery);
@@ -33,7 +32,6 @@ export const FindCareView = () => {
     setSearchTriggeredQuery("");
     setSelectedServiceTypes([]);
     setSelectedRegions([]);
-    setSelectedRating("");
   };
 
   return (
@@ -50,15 +48,12 @@ export const FindCareView = () => {
             toggleServiceType={toggleServiceType}
             selectedRegions={selectedRegions}
             toggleRegion={toggleRegion}
-            selectedRating={selectedRating}
-            setSelectedRating={setSelectedRating}
             clearAllFilters={clearAllFilters}
           />
           <CarersList
             searchQuery={searchTriggeredQuery}
             selectedServiceTypes={selectedServiceTypes}
             selectedRegions={selectedRegions}
-            selectedRating={selectedRating}
           />
         </div>
       </div>

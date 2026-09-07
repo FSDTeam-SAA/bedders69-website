@@ -62,6 +62,23 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Detail pages require authentication: redirect unauthenticated users to login with descriptive reason
+  if (!token) {
+    if (pathname.startsWith("/find-care/") && pathname !== "/find-care") {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("reason", "carer_details");
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (pathname.startsWith("/services/") && pathname !== "/services") {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("reason", "service_details");
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   // Already logged in user accessing login page
   if (token && role) {
     const destination = resolveDashboardPath(role);
@@ -87,6 +104,8 @@ export const config = {
     "/care-company/:path*",
     "/recruitment-agency",
     "/recruitment-agency/:path*",
+    "/find-care/:path*",
+    "/services/:path*",
   ],
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export interface CartItem {
   id: string;
@@ -16,7 +17,7 @@ export interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: any, quantity?: number) => void;
+  addToCart: (product: any, quantity?: number) => boolean;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, amount: number) => void;
   clearCart: () => void;
@@ -27,6 +28,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   // Optional: Load cart from localStorage on mount
@@ -47,7 +49,25 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("bedders69_cart", JSON.stringify(newCart));
   };
 
-  const addToCart = (product: any, quantityToAdd = 1) => {
+  const isUserAuthenticated = (): boolean => {
+    if (typeof document === "undefined") return false;
+    const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
+    return Boolean(match && match[1] && match[1].trim() !== "");
+  };
+
+  const addToCart = (product: any, quantityToAdd = 1): boolean => {
+    if (!isUserAuthenticated()) {
+      const currentUrl =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search
+          : "/marketplace";
+      const name = product?.title || product?.name || "item";
+      router.push(
+        `/login?redirect=${encodeURIComponent(currentUrl)}&reason=cart_add&productName=${encodeURIComponent(name)}`
+      );
+      return false;
+    }
+
     const existing = cartItems.find((item) => item.id === product.id);
     let updatedCart: CartItem[];
 
@@ -61,6 +81,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updatedCart = [...cartItems, { ...product, quantity: quantityToAdd }];
     }
     saveCart(updatedCart);
+    return true;
   };
 
   const removeFromCart = (id: string) => {

@@ -6,8 +6,6 @@ interface AgenciesSidebarProps {
   toggleService: (service: string) => void;
   selectedRegions: string[];
   toggleRegion: (region: string) => void;
-  selectedRating: string;
-  setSelectedRating: (rating: string) => void;
   clearAllFilters: () => void;
 }
 
@@ -16,8 +14,6 @@ export const AgenciesSidebar = ({
   toggleService,
   selectedRegions,
   toggleRegion,
-  selectedRating,
-  setSelectedRating,
   clearAllFilters,
 }: AgenciesSidebarProps) => {
 
@@ -34,12 +30,6 @@ export const AgenciesSidebar = ({
     "Manchester",
     "Birmingham",
     "Bristol",
-  ];
-
-  const ratings = [
-    "5 Stars",
-    "4+ Stars",
-    "3+ Stars",
   ];
 
   return (
@@ -103,35 +93,6 @@ export const AgenciesSidebar = ({
                 </div>
                 <span className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors font-medium">
                   {region}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Rating */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-          Rating
-        </h3>
-        <div className="flex flex-col gap-3">
-          {ratings.map((rating) => {
-            const isChecked = selectedRating === rating;
-            return (
-              <label key={rating} className="flex items-center gap-3 cursor-pointer group">
-                <div
-                  onClick={() => setSelectedRating(isChecked ? "" : rating)}
-                  className={`size-4.5 rounded border flex items-center justify-center transition-all ${
-                    isChecked
-                      ? "bg-cyan-700 border-cyan-700 text-white"
-                      : "border-slate-200 group-hover:border-slate-300 bg-white"
-                  }`}
-                >
-                  {isChecked && <Check className="size-3.5 stroke-[3]" />}
-                </div>
-                <span className="text-sm text-slate-500 group-hover:text-slate-900 transition-colors font-medium">
-                  {rating}
                 </span>
               </label>
             );

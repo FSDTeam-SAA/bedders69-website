@@ -17,7 +17,6 @@ export const AgenciesView = () => {
 
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedRating, setSelectedRating] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
@@ -43,7 +42,6 @@ export const AgenciesView = () => {
     setSearchTriggeredQuery("");
     setSelectedServices([]);
     setSelectedRegions([]);
-    setSelectedRating("");
   };
 
   const handleContactClick = async (agency: AgencyProps) => {
@@ -82,8 +80,6 @@ export const AgenciesView = () => {
             toggleService={toggleService}
             selectedRegions={selectedRegions}
             toggleRegion={toggleRegion}
-            selectedRating={selectedRating}
-            setSelectedRating={setSelectedRating}
             clearAllFilters={clearAllFilters}
           />
 
@@ -91,7 +87,6 @@ export const AgenciesView = () => {
             searchQuery={searchTriggeredQuery}
             selectedServices={selectedServices}
             selectedRegions={selectedRegions}
-            selectedRating={selectedRating}
             onContactClick={handleContactClick}
           />
         </div>
