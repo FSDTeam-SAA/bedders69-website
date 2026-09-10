@@ -28,7 +28,7 @@ export default function AdBannersSlider() {
     const fetchBanners = async () => {
       try {
         const backendUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080/api/v1";
+          process.env.NEXT_PUBLIC_BACKEND_API_URL ;
         const res = await fetch(`${backendUrl}/banners`);
         if (!res.ok) throw new Error("Failed to fetch banners");
         const json = await res.json();
