@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { JobsHero } from "./JobsHero";
 import { JobsFilterSidebar } from "./JobsFilterSidebar";
 import { JobsList } from "./JobsList";
@@ -8,6 +9,7 @@ import { JobProps } from "../types/jobs.types";
 import { X, UploadCloud, Send, FileText, Check } from "lucide-react";
 
 export const JobsView = () => {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -60,7 +62,33 @@ export const JobsView = () => {
     setSelectedPosted([]);
   };
 
-  const handleApplyClick = (job: JobProps) => {
+  const handleApplyClick = async (job: JobProps) => {
+    let authed = false;
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) {
+          authed = true;
+        }
+      }
+    } catch {
+      // network error
+    }
+
+    if (!authed && typeof document !== "undefined") {
+      if (document.cookie.includes("bedders_role=")) {
+        authed = true;
+      }
+    }
+
+    if (!authed) {
+      router.push(
+        `/login?redirect=/jobs&reason=job_apply&jobTitle=${encodeURIComponent(job.title)}`
+      );
+      return;
+    }
+
     setApplyingJob(job);
     setIsApplicationSubmitted(false);
     // Reset modal inputs
@@ -81,8 +109,28 @@ export const JobsView = () => {
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Secondary auth check before submission
+    let authed = false;
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) authed = true;
+      }
+    } catch {}
+
+    if (!authed && typeof document !== "undefined") {
+      if (document.cookie.includes("bedders_role=")) authed = true;
+    }
+
+    if (!authed) {
+      router.push("/login?redirect=/jobs&reason=job_apply");
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Simulate API Submission

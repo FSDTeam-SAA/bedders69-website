@@ -65,6 +65,29 @@ export const ServiceDetailView = () => {
 
     async function loadData() {
       setIsLoading(true);
+
+      // Verify authentication for viewing company details
+      let authed = false;
+      try {
+        const authRes = await fetch("/api/auth/me", { cache: "no-store" });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (authData.authenticated) authed = true;
+        }
+      } catch {}
+
+      if (!authed && typeof document !== "undefined") {
+        if (document.cookie.includes("bedders_role=")) authed = true;
+      }
+
+      if (!authed) {
+        if (isMounted) {
+          setIsLoading(false);
+          router.push(`/login?redirect=/services/${encodeURIComponent(rawId)}&reason=service_details`);
+        }
+        return;
+      }
+
       try {
         // Fetch all approved care companies to find exact match
         const [compRes, jobsRes] = await Promise.all([

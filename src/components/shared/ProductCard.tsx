@@ -31,7 +31,7 @@ const ProductCard = ({
   const [imgSrc, setImgSrc] = useState<string>(image || DEFAULT_IMAGE);
 
   const handleAddToCart = () => {
-    addToCart({
+    const success = addToCart({
       id: id || name,
       title: name,
       price,
@@ -41,8 +41,10 @@ const ProductCard = ({
       imageBg: "bg-slate-100",
       imageUrl: imgSrc,
     });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    if (success) {
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }
   };
 
   return (

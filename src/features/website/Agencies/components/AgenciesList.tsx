@@ -11,24 +11,26 @@ interface AgenciesListProps {
   searchQuery: string;
   selectedServices: string[];
   selectedRegions: string[];
-  selectedRating: string;
   onContactClick: (agency: AgencyProps) => void;
 }
 
-const backgroundGradients = [
-  "bg-gradient-to-r from-blue-600 to-indigo-700",
-  "bg-gradient-to-r from-teal-600 to-cyan-700",
-  "bg-gradient-to-r from-violet-600 to-purple-700",
-  "bg-gradient-to-r from-emerald-600 to-teal-700",
-  "bg-gradient-to-r from-amber-600 to-orange-700",
-  "bg-gradient-to-r from-rose-600 to-pink-700",
-];
+const getAgencyInitials = (name: string): string => {
+  if (!name || name.trim().length === 0) return "AG";
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) {
+    return words[0].length > 1
+      ? (words[0][0] + words[0][words[0].length - 1]).toUpperCase()
+      : words[0][0].toUpperCase();
+  }
+  const firstWordInitial = words[0][0];
+  const lastWordInitial = words[words.length - 1][0];
+  return (firstWordInitial + lastWordInitial).toUpperCase();
+};
 
 export const AgenciesList = ({
   searchQuery,
   selectedServices,
   selectedRegions,
-  selectedRating,
   onContactClick,
 }: AgenciesListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +65,7 @@ export const AgenciesList = ({
   // Reset page when any filter criteria changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedServices, selectedRegions, selectedRating]);
+  }, [searchQuery, selectedServices, selectedRegions]);
 
   // Map backend agencies to AgencyProps
   const allAgencies = useMemo<AgencyProps[]>(() => {
@@ -87,7 +89,6 @@ export const AgenciesList = ({
           rating: ratingNum,
           reviews: reviewsCount,
           services: servs,
-          imageBg: backgroundGradients[idx % backgroundGradients.length],
           phone: agency.phoneNumber || "+44 20 7946 0991",
           email: agency.email || "info@careagency.co.uk",
           website: agency.websiteLink || "www.careagency.co.uk",
@@ -132,18 +133,9 @@ export const AgenciesList = ({
         if (!matchesRegion) return false;
       }
 
-      // 4. Rating filter
-      if (selectedRating && selectedRating.trim() !== "") {
-        const minRating = parseFloat(selectedRating);
-        if (!isNaN(minRating)) {
-          const currentRating = parseFloat(agency.rating);
-          if (currentRating < minRating) return false;
-        }
-      }
-
       return true;
     });
-  }, [allAgencies, searchQuery, selectedServices, selectedRegions, selectedRating]);
+  }, [allAgencies, searchQuery, selectedServices, selectedRegions]);
 
   // Pagination calculation
   const totalItems = filteredAgencies.length;
@@ -226,10 +218,7 @@ export const AgenciesList = ({
       {!isLoading && paginatedAgencies.length > 0 && (
         <div className="flex flex-col gap-4">
           {paginatedAgencies.map((agency) => {
-            const initial =
-              agency.name && agency.name.trim().length > 0
-                ? agency.name.trim()[0].toUpperCase()
-                : "A";
+            const initials = getAgencyInitials(agency.name);
 
             return (
               <div
@@ -238,13 +227,11 @@ export const AgenciesList = ({
               >
                 {/* Left Side: Agency Info */}
                 <div className="flex gap-4 items-start flex-1 min-w-0">
-                  {/* Agency Icon Banner */}
+                  {/* Agency Initials Profile Badge (Neutral, no colors) */}
                   <div
-                    className={`size-14 rounded-2xl ${
-                      agency.imageBg || "bg-gradient-to-r from-blue-600 to-indigo-700"
-                    } flex items-center justify-center shrink-0 shadow-sm text-white font-bold text-xl`}
+                    className="size-14 rounded-2xl bg-slate-100 border border-slate-200/90 flex items-center justify-center shrink-0 shadow-sm text-slate-700 font-bold text-lg tracking-wide select-none group-hover:bg-slate-200/60 group-hover:border-slate-300 transition-colors"
                   >
-                    {initial}
+                    {initials}
                   </div>
 
                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">

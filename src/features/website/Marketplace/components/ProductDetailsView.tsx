@@ -80,7 +80,7 @@ export const ProductDetailsView = ({ productId }: ProductDetailsViewProps) => {
           })}`
         : "£199";
 
-    addToCart(
+    const success = addToCart(
       {
         id: listing.id,
         title: listing.title,
@@ -93,10 +93,13 @@ export const ProductDetailsView = ({ productId }: ProductDetailsViewProps) => {
       },
       quantity
     );
-    setShowCartSuccess(true);
-    setTimeout(() => {
-      setShowCartSuccess(false);
-    }, 3000);
+
+    if (success) {
+      setShowCartSuccess(true);
+      setTimeout(() => {
+        setShowCartSuccess(false);
+      }, 3000);
+    }
   };
 
   if (isLoading) {

@@ -85,8 +85,27 @@ export const JobDetailView = () => {
     };
   }, [rawId, decodedSlug]);
 
-  const handleApplySubmit = (e: React.FormEvent) => {
+  const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let authed = false;
+    try {
+      const authRes = await fetch("/api/auth/me", { cache: "no-store" });
+      if (authRes.ok) {
+        const authData = await authRes.json();
+        if (authData.authenticated) authed = true;
+      }
+    } catch {}
+
+    if (!authed && typeof document !== "undefined") {
+      if (document.cookie.includes("bedders_role=")) authed = true;
+    }
+
+    if (!authed) {
+      router.push(`/login?redirect=/jobs/${encodeURIComponent(rawId)}&reason=job_apply&jobTitle=${encodeURIComponent(title)}`);
+      return;
+    }
+
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
@@ -332,7 +351,25 @@ export const JobDetailView = () => {
               </p>
 
               <button
-                onClick={() => {
+                onClick={async () => {
+                  let authed = false;
+                  try {
+                    const authRes = await fetch("/api/auth/me", { cache: "no-store" });
+                    if (authRes.ok) {
+                      const authData = await authRes.json();
+                      if (authData.authenticated) authed = true;
+                    }
+                  } catch {}
+
+                  if (!authed && typeof document !== "undefined") {
+                    if (document.cookie.includes("bedders_role=")) authed = true;
+                  }
+
+                  if (!authed) {
+                    router.push(`/login?redirect=/jobs/${encodeURIComponent(rawId)}&reason=job_apply&jobTitle=${encodeURIComponent(title)}`);
+                    return;
+                  }
+
                   setIsApplyModalOpen(true);
                   setIsSubmitted(false);
                 }}

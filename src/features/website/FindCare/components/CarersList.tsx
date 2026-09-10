@@ -25,7 +25,6 @@ interface CarersListProps {
   searchQuery: string;
   selectedServiceTypes: string[];
   selectedRegions: string[];
-  selectedRating: string;
 }
 
 const fallbackCarerImages = [
@@ -41,7 +40,6 @@ export const CarersList = ({
   searchQuery,
   selectedServiceTypes,
   selectedRegions,
-  selectedRating,
 }: CarersListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [backendCarers, setBackendCarers] = useState<CarerItem[]>([]);
@@ -74,7 +72,7 @@ export const CarersList = ({
   // Reset page when any filter criteria changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedServiceTypes, selectedRegions, selectedRating]);
+  }, [searchQuery, selectedServiceTypes, selectedRegions]);
 
   // Map backend carers to CarerProps
   const allCarers = useMemo<CarerProps[]>(() => {
@@ -151,15 +149,9 @@ export const CarersList = ({
         if (!matchesRegion) return false;
       }
 
-      // 4. Rating Filter
-      if (selectedRating && selectedRating.trim() !== "") {
-        const minStars = parseInt(selectedRating.split(" ")[0], 10);
-        if (parseFloat(carer.rating) < minStars) return false;
-      }
-
       return true;
     });
-  }, [allCarers, searchQuery, selectedServiceTypes, selectedRegions, selectedRating]);
+  }, [allCarers, searchQuery, selectedServiceTypes, selectedRegions]);
 
   // Pagination calculation
   const totalItems = filteredCarers.length;

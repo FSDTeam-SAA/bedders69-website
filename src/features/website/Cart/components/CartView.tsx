@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag, CreditCard, CheckCircle2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 export const CartView = () => {
+  const router = useRouter();
   const { cartItems, removeFromCart, updateQuantity, clearCart, subtotal, totalItemsCount } = useCart();
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
@@ -16,6 +18,12 @@ export const CartView = () => {
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("card");
+
+  const isUserAuthenticated = (): boolean => {
+    if (typeof document === "undefined") return false;
+    const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
+    return Boolean(match && match[1] && match[1].trim() !== "");
+  };
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +38,10 @@ export const CartView = () => {
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isUserAuthenticated()) {
+      router.push("/login?redirect=/cart&reason=checkout");
+      return;
+    }
     setCheckoutStep("submitting");
 
     setTimeout(() => {

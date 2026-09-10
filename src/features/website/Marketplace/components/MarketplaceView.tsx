@@ -16,11 +16,13 @@ export const MarketplaceView = () => {
   const { addToCart } = useCart();
 
   const handleAddToCart = (product: ProductProps) => {
-    addToCart(product, 1);
-    setAddedItemTitle(product.title);
-    setTimeout(() => {
-      setAddedItemTitle((curr) => (curr === product.title ? null : curr));
-    }, 2500);
+    const success = addToCart(product, 1);
+    if (success) {
+      setAddedItemTitle(product.title);
+      setTimeout(() => {
+        setAddedItemTitle((curr) => (curr === product.title ? null : curr));
+      }, 2500);
+    }
   };
 
   return (
