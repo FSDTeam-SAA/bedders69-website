@@ -72,6 +72,18 @@ export const LoginForm = () => {
         description: "Please sign in to view the requested details.",
       });
     }
+
+    const verified = searchParams.get("verified");
+    const emailParam = searchParams.get("email");
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    if (verified === "true") {
+      setToastInfo({
+        title: "Account Verified Successfully!",
+        description: "Your email has been verified. Please sign in to access your dashboard.",
+      });
+    }
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {

@@ -11,6 +11,7 @@ import {
   JobSearchParams,
   MarketplaceItem,
   MarketplaceSearchParams,
+  CommunityStats,
 } from "../types/home.types";
 
 export const homeApi = {
@@ -82,6 +83,16 @@ export const homeApi = {
       {
         params,
       }
+    );
+    return response.data;
+  },
+
+  /**
+   * Fetch public community statistics and member avatars for hero banner
+   */
+  async getCommunityStats(): Promise<ApiResponse<CommunityStats>> {
+    const response = await api.get<ApiResponse<CommunityStats>>(
+      "/profiles/community-stats"
     );
     return response.data;
   },

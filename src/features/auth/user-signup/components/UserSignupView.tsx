@@ -1,16 +1,22 @@
 "use client";
 
 import React, { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 
 export const UserSignupView = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type") || "user";
+  const isCarer = typeParam === "carer";
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [postCode, setPostCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -42,28 +48,48 @@ export const UserSignupView = () => {
     setLoading(true);
 
     try {
+      const role = isCarer ? "carer" : "family";
+      const payload: Record<string, any> = {
+        fullName: `${firstName} ${lastName}`.trim(),
+        email: email.trim(),
+        password,
+        role,
+      };
+
+      if (phoneNumber.trim()) {
+        payload.phoneNumber = phoneNumber.trim();
+      }
+      if (postCode.trim()) {
+        payload.postCode = postCode.trim();
+      }
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: `${firstName} ${lastName}`.trim(),
-          email: email.trim(),
-          password,
-          role: "family",
-        }),
+        body: JSON.stringify(payload),
       });
 
       const resData = await response.json();
-      setLoading(false);
 
       if (!response.ok) {
+        setLoading(false);
         setError(resData.message || "Registration failed. Please try again.");
         return;
       }
 
+      // Trigger initial OTP send to the user's email
+      await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      }).catch(() => {});
+
+      setLoading(false);
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/verify-otp?email=${encodeURIComponent(email)}&role=user`);
+        router.push(
+          `/verify-otp?email=${encodeURIComponent(email)}&type=${isCarer ? "carer" : "user"}`
+        );
       }, 1000);
     } catch (err: any) {
       setLoading(false);
@@ -133,8 +159,13 @@ export const UserSignupView = () => {
               />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl font-['Poppins',sans-serif]">
-              Create Your Account
+              {isCarer ? "Create Your Carer Account" : "Create Your Account"}
             </h1>
+            <p className="text-sm text-gray-500 max-w-[450px]">
+              {isCarer
+                ? "Find rewarding care jobs, set your availability and showcase your skills"
+                : "Join Bedders to find quality care and support services for your family"}
+            </p>
           </div>
 
           {/* Form */}
@@ -152,7 +183,7 @@ export const UserSignupView = () => {
             {success && (
               <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 animate-fade-in">
                 <CheckCircle2 className="size-5 shrink-0" />
-                <span>Account created successfully! Redirecting to login...</span>
+                <span>Account created successfully! Redirecting to OTP verification...</span>
               </div>
             )}
 
@@ -200,6 +231,37 @@ export const UserSignupView = () => {
                 placeholder="Type your email"
                 className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
               />
+            </div>
+
+            {/* Phone Number & Postcode Row */}
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex-1 flex flex-col gap-2">
+                <label className="text-base font-medium text-gray-700 leading-5">
+                  Phone Number {isCarer ? "" : <span className="text-xs text-gray-400 font-normal">(Optional)</span>}
+                </label>
+                <input
+                  type="tel"
+                  required={isCarer}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+44 7123 456789"
+                  className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+                />
+              </div>
+
+              <div className="flex-1 flex flex-col gap-2">
+                <label className="text-base font-medium text-gray-700 leading-5">
+                  Postcode {isCarer ? "" : <span className="text-xs text-gray-400 font-normal">(Optional)</span>}
+                </label>
+                <input
+                  type="text"
+                  required={isCarer}
+                  value={postCode}
+                  onChange={(e) => setPostCode(e.target.value)}
+                  placeholder="e.g. SW1A 1AA"
+                  className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+                />
+              </div>
             </div>
 
             {/* Create Password */}

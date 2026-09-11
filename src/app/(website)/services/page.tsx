@@ -1,17 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ServicesHero } from "@/features/website/Services/components/ServicesHero";
 import { ServicesFilterSidebar } from "@/features/website/Services/components/ServicesFilterSidebar";
 import { ServicesList } from "@/features/website/Services/components/ServicesList";
 import { CommitmentSection } from "@/features/website/Services/components/CommitmentSection";
 
-const ServicesPage = () => {
+const ServicesContent = () => {
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const urlLocation = searchParams.get("location") || "";
+
   // Search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
-  const [searchTriggeredLocation, setSearchTriggeredLocation] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [selectedLocation, setSelectedLocation] = useState(urlLocation);
+  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
+  const [searchTriggeredLocation, setSearchTriggeredLocation] = useState(urlLocation);
+
+  // Synchronize when URL searchParams change
+  useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+      setSearchTriggeredQuery(urlSearch);
+    }
+    if (urlLocation !== selectedLocation) {
+      setSelectedLocation(urlLocation);
+      setSearchTriggeredLocation(urlLocation);
+    }
+  }, [urlSearch, urlLocation]);
 
   // Sidebar filters state
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
@@ -88,6 +105,14 @@ const ServicesPage = () => {
       <CommitmentSection />
 
     </main>
+  );
+};
+
+const ServicesPage = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F4F7FC]" />}>
+      <ServicesContent />
+    </Suspense>
   );
 };
 

@@ -103,45 +103,83 @@ export const BusinessInformationView = () => {
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (password && password.length < 6) {
+    if (!password) {
+      setError("Password is required.");
+      return;
+    }
+
+    if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
       return;
     }
 
-    if (password && password !== confirmPassword) {
+    if (password !== confirmPassword) {
       setError("Passwords do not match. Please re-enter.");
       return;
     }
 
     setLoading(true);
 
-    // Save business profile information in localStorage or state
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "bedders_business_info",
-        JSON.stringify({
-          accountType,
-          companyName,
-          email,
-          phoneNumber,
-          registrationNumber,
-          website,
-          address,
-          password: password || "Secret123!",
-          selectedRegions,
-          selectedServices,
-        })
-      );
-    }
+    try {
+      // 1. Register in backend
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: companyName.trim(),
+          email: email.trim(),
+          password,
+          role: accountType,
+          phoneNumber: phoneNumber.trim(),
+          address: address.trim(),
+        }),
+      });
 
-    setTimeout(() => {
+      const resData = await res.json();
+      if (!res.ok) {
+        setLoading(false);
+        setError(resData?.message || "Registration failed. Please try again.");
+        return;
+      }
+
+      // Save business profile information in localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "bedders_business_info",
+          JSON.stringify({
+            accountType,
+            companyName: companyName.trim(),
+            email: email.trim(),
+            phoneNumber: phoneNumber.trim(),
+            registrationNumber: registrationNumber.trim(),
+            website: website.trim(),
+            address: address.trim(),
+            password,
+            selectedRegions,
+            selectedServices,
+          })
+        );
+      }
+
+      // 2. Trigger sending OTP
+      await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      }).catch(() => {});
+
       setLoading(false);
-      router.push(`/upload-documents?type=${accountType}&email=${encodeURIComponent(email)}`);
-    }, 600);
+      router.push(
+        `/upload-documents?type=${accountType}&email=${encodeURIComponent(email.trim())}`
+      );
+    } catch (err: any) {
+      setLoading(false);
+      setError("Failed to connect to server. Please try again.");
+    }
   };
 
   return (

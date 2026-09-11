@@ -96,11 +96,15 @@ export const ChoosePlanView = () => {
       setLoading(false);
       setSuccess(true);
       setTimeout(() => {
-        router.push("/login");
+        router.push(
+          email
+            ? `/login?verified=true&email=${encodeURIComponent(email)}`
+            : "/login?verified=true"
+        );
       }, 1200);
     } catch (err: any) {
       setLoading(false);
-      router.push("/login");
+      router.push("/login?verified=true");
     }
   };
 

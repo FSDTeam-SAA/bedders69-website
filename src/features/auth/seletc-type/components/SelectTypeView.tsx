@@ -18,38 +18,38 @@ import { AccountType, AccountTypeOption } from "../types/select-type.types";
 const ACCOUNT_TYPES: AccountTypeOption[] = [
   {
     id: "user",
-    title: "User",
-    description: "List your care business and recruit staff",
+    title: "User / Family",
+    description: "Find trusted care and services for yourself or loved ones",
     iconType: "user",
   },
   {
     id: "care_company",
     title: "Care Company",
-    description: "List your care business and recruit staff",
+    description: "List your care business and recruit qualified staff",
     iconType: "care_company",
   },
   {
     id: "agency",
     title: "Recruitment Agency",
-    description: "Connect carers with employers",
+    description: "Connect carers with care providers and employers",
     iconType: "agency",
   },
   {
     id: "carer",
     title: "Carer",
-    description: "Find care jobs and showcase your skills",
+    description: "Find care jobs and showcase your professional skills",
     iconType: "carer",
   },
   {
     id: "supplier",
     title: "Product Supplier",
-    description: "Sell products to the care industry",
+    description: "Sell products and equipment to the care industry",
     iconType: "supplier",
   },
   {
     id: "service_provider",
     title: "Service Provider",
-    description: "Offer services to care businesses",
+    description: "Offer professional services to care businesses",
     iconType: "service_provider",
   },
 ];
@@ -57,7 +57,7 @@ const ACCOUNT_TYPES: AccountTypeOption[] = [
 const renderIcon = (type: AccountTypeOption["iconType"]) => {
   switch (type) {
     case "user":
-      return <Building className="size-6 text-slate-800" strokeWidth={1.8} />;
+      return <UserCircle2 className="size-6 text-slate-800" strokeWidth={1.8} />;
     case "care_company":
       return <Building2 className="size-6 text-slate-800" strokeWidth={1.8} />;
     case "agency":
@@ -84,7 +84,9 @@ export const SelectTypeView = () => {
     }
 
     if (selectedType === "user") {
-      router.push("/signup/user");
+      router.push("/signup/user?type=user");
+    } else if (selectedType === "carer") {
+      router.push("/signup/user?type=carer");
     } else {
       router.push(`/business-information?type=${selectedType}`);
     }

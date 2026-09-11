@@ -47,11 +47,7 @@ export const UploadDocumentsView = () => {
 
   const emailParam = searchParams.get("email") || "";
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // Retrieve email from search params or local storage
+  const getBusinessEmail = () => {
     let businessEmail = emailParam;
     if (!businessEmail && typeof window !== "undefined") {
       try {
@@ -62,16 +58,31 @@ export const UploadDocumentsView = () => {
         }
       } catch (err) {}
     }
+    return businessEmail || "your email";
+  };
+
+  const handleSkip = () => {
+    const businessEmail = getBusinessEmail();
+    router.push(
+      `/verify-otp?email=${encodeURIComponent(businessEmail)}&type=${accountType}&from=business`
+    );
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const businessEmail = getBusinessEmail();
 
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
       setTimeout(() => {
         router.push(
-          `/verify-otp?email=${encodeURIComponent(businessEmail || "your email")}&type=${accountType}&from=business`
+          `/verify-otp?email=${encodeURIComponent(businessEmail)}&type=${accountType}&from=business`
         );
-      }, 1000);
-    }, 1000);
+      }, 800);
+    }, 800);
   };
 
   return (
@@ -263,23 +274,33 @@ export const UploadDocumentsView = () => {
               <span>Back</span>
             </button>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 rounded-lg bg-cyan-700 px-8 py-3.5 text-base font-medium leading-5 text-white shadow-sm transition-all hover:bg-cyan-800 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="size-5 animate-spin" />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <>
-                  <span>Continue</span>
-                  <ArrowRight className="size-4.5" />
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="px-5 py-3 text-base font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+              >
+                Skip for now
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 rounded-lg bg-cyan-700 px-8 py-3.5 text-base font-medium leading-5 text-white shadow-sm transition-all hover:bg-cyan-800 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" />
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Continue</span>
+                    <ArrowRight className="size-4.5" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

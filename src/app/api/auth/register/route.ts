@@ -20,7 +20,16 @@ const ROLE_MAP: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, email, password, role } = body;
+    const {
+      fullName,
+      email,
+      password,
+      role,
+      phoneNumber,
+      address,
+      city,
+      postCode,
+    } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -31,12 +40,17 @@ export async function POST(request: Request) {
 
     const normalizedRole = ROLE_MAP[role] || "family";
 
-    const payload = {
+    const payload: Record<string, any> = {
       fullName: fullName || email.split("@")[0] || "User",
       email: email.trim().toLowerCase(),
       password,
       role: normalizedRole,
     };
+
+    if (phoneNumber) payload.phoneNumber = phoneNumber;
+    if (address) payload.address = address;
+    if (city) payload.city = city;
+    if (postCode) payload.postCode = postCode;
 
     const response = await fetch(`${backendUrl}/auth/register`, {
       method: "POST",

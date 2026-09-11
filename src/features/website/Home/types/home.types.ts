@@ -170,3 +170,17 @@ export interface CarerSearchParams {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
+
+export interface CommunityMemberAvatar {
+  name: string;
+  image: string;
+  role?: string;
+}
+
+export interface CommunityStats {
+  totalMembers: number;
+  totalCarers: number;
+  totalCompanies: number;
+  totalAgencies?: number;
+  avatars?: CommunityMemberAvatar[];
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { MarketplaceHero } from "./MarketplaceHero";
 import { MarketplaceList, ProductProps } from "./MarketplaceList";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
@@ -8,9 +9,22 @@ import { useCart } from "@/context/CartContext";
 import Link from "next/link";
 
 export const MarketplaceView = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const urlCategory = searchParams.get("category") || "All";
+
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory);
   const [addedItemTitle, setAddedItemTitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+    if (urlCategory !== "All" && urlCategory !== selectedCategory) {
+      setSelectedCategory(urlCategory);
+    }
+  }, [urlSearch, urlCategory]);
 
   // Global Cart State
   const { addToCart } = useCart();

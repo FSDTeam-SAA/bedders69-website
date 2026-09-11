@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { JobsHero } from "./JobsHero";
 import { JobsFilterSidebar } from "./JobsFilterSidebar";
 import { JobsList } from "./JobsList";
@@ -10,9 +10,19 @@ import { X, UploadCloud, Send, FileText, Check } from "lucide-react";
 
 export const JobsView = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
   const [selectedCategory, setSelectedCategory] = useState("All");
+
+  useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+      setSearchTriggeredQuery(urlSearch);
+    }
+  }, [urlSearch]);
 
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);

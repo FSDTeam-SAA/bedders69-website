@@ -1,15 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FindCareHero } from "./FindCareHero";
 import { FindCareFilterSidebar } from "./FindCareFilterSidebar";
 import { CarersList } from "./CarersList";
 
 export const FindCareView = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+      setSearchTriggeredQuery(urlSearch);
+    }
+  }, [urlSearch]);
 
   const handleSearch = () => {
     setSearchTriggeredQuery(searchQuery);

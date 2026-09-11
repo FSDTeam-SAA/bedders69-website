@@ -7,13 +7,23 @@ import { AgenciesList } from "./AgenciesList";
 import { AgencyProps } from "../types/agencies.types";
 import { X, Send, CheckCircle2, Phone, Globe, Mail, MapPin } from "lucide-react";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import contactRequestsApi from "@/features/care-company/contact-requests/api/contactRequestsApi";
 
 export const AgenciesView = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
+
+  React.useEffect(() => {
+    if (urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+      setSearchTriggeredQuery(urlSearch);
+    }
+  }, [urlSearch]);
 
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);

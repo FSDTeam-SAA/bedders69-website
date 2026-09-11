@@ -132,7 +132,7 @@ export const OtpVerificationView = () => {
         if (fromParam === "business") {
           router.push(`/choose-plan?type=${accountType}`);
         } else {
-          router.push("/login");
+          router.push(`/login?verified=true&email=${encodeURIComponent(emailParam)}`);
         }
       }, 1000);
     } catch (err: any) {
