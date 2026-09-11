@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Star, MapPin, ChevronLeft, ChevronRight, Building2, Phone, Sparkles } from "lucide-react";
 import agenciesApi from "../api/agenciesApi";
 import { AgencyItem, AgencyProps } from "../types/agencies.types";
@@ -219,6 +220,8 @@ export const AgenciesList = ({
         <div className="flex flex-col gap-4">
           {paginatedAgencies.map((agency) => {
             const initials = getAgencyInitials(agency.name);
+            const slug = encodeURIComponent(agency.name.toLowerCase().replace(/\s+/g, "-"));
+            const detailsUrl = `/services/${slug}`;
 
             return (
               <div
@@ -227,18 +230,21 @@ export const AgenciesList = ({
               >
                 {/* Left Side: Agency Info */}
                 <div className="flex gap-4 items-start flex-1 min-w-0">
-                  {/* Agency Initials Profile Badge (Neutral, no colors) */}
-                  <div
-                    className="size-14 rounded-2xl bg-slate-100 border border-slate-200/90 flex items-center justify-center shrink-0 shadow-sm text-slate-700 font-bold text-lg tracking-wide select-none group-hover:bg-slate-200/60 group-hover:border-slate-300 transition-colors"
+                  {/* Agency Initials Profile Badge */}
+                  <Link
+                    href={detailsUrl}
+                    className="size-14 rounded-2xl bg-slate-100 border border-slate-200/90 flex items-center justify-center shrink-0 shadow-sm text-slate-700 font-bold text-lg tracking-wide select-none group-hover:bg-slate-200/60 group-hover:border-slate-300 transition-colors block cursor-pointer"
                   >
                     {initials}
-                  </div>
+                  </Link>
 
                   <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base md:text-lg font-bold text-[#1B2C54] leading-tight group-hover:text-cyan-700 transition-colors">
-                        {agency.name}
-                      </h3>
+                      <Link href={detailsUrl} className="block cursor-pointer">
+                        <h3 className="text-base md:text-lg font-bold text-[#1B2C54] leading-tight group-hover:text-cyan-700 transition-colors">
+                          {agency.name}
+                        </h3>
+                      </Link>
                       <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                         Verified
                       </span>

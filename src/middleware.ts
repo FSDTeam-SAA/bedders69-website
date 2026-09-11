@@ -70,13 +70,6 @@ export function middleware(request: NextRequest) {
       loginUrl.searchParams.set("reason", "carer_details");
       return NextResponse.redirect(loginUrl);
     }
-
-    if (pathname.startsWith("/services/") && pathname !== "/services") {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      loginUrl.searchParams.set("reason", "service_details");
-      return NextResponse.redirect(loginUrl);
-    }
   }
 
   // Already logged in user accessing login page
@@ -105,7 +98,6 @@ export const config = {
     "/recruitment-agency",
     "/recruitment-agency/:path*",
     "/find-care/:path*",
-    "/services/:path*",
   ],
 };
 

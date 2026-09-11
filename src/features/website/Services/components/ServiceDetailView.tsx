@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   MapPin,
   Star,
@@ -18,6 +19,8 @@ import {
   Calendar,
   Banknote,
   GraduationCap,
+  Lock,
+  X,
 } from "lucide-react";
 import servicesApi from "../api/servicesApi";
 import { CareCompanyItem } from "../types/services.types";
@@ -26,7 +29,6 @@ import { JobItem } from "@/features/website/Jobs/types/jobs.types";
 import { companies as fallbackCompanies } from "@/Data/data";
 
 import contactRequestsApi from "@/features/care-company/contact-requests/api/contactRequestsApi";
-import { X } from "lucide-react";
 
 export const ServiceDetailView = () => {
   const params = useParams();
@@ -38,35 +40,15 @@ export const ServiceDetailView = () => {
   const [company, setCompany] = useState<CareCompanyItem | null>(null);
   const [allJobs, setAllJobs] = useState<JobItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthed, setIsAuthed] = useState<boolean>(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  const handleSendConnectionRequest = async () => {
-    if (!company) return;
-    setIsSubmitting(true);
-    try {
-      await contactRequestsApi.createContactRequest({
-        targetUserId: company.id,
-      });
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 4000);
-    } catch (err: any) {
-      console.warn("Connection request error:", err?.message);
-      // Redirect unauthenticated user to login
-      router.push("/login");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  // Check login status asynchronously without blocking viewing
   useEffect(() => {
     let isMounted = true;
-
-    async function loadData() {
-      setIsLoading(true);
-
-      // Verify authentication for viewing company details
+    async function checkAuth() {
       let authed = false;
       try {
         const authRes = await fetch("/api/auth/me", { cache: "no-store" });
@@ -77,16 +59,73 @@ export const ServiceDetailView = () => {
       } catch {}
 
       if (!authed && typeof document !== "undefined") {
-        if (document.cookie.includes("bedders_role=")) authed = true;
-      }
-
-      if (!authed) {
-        if (isMounted) {
-          setIsLoading(false);
-          router.push(`/login?redirect=/services/${encodeURIComponent(rawId)}&reason=service_details`);
+        if (
+          document.cookie.includes("bedders_role=") ||
+          document.cookie.includes("bedders_access_token=")
+        ) {
+          authed = true;
         }
-        return;
       }
+      if (isMounted) {
+        setIsAuthed(authed);
+      }
+    }
+    checkAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSendConnectionRequest = async () => {
+    if (!company) return;
+
+    if (!isAuthed) {
+      router.push(
+        `/login?redirect=/services/${encodeURIComponent(rawId)}&reason=contact&message=${encodeURIComponent(
+          "Please sign in to contact " + (company.companyName || "this care provider")
+        )}`
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await contactRequestsApi.createContactRequest({
+        targetUserId: company.id,
+      });
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 4000);
+    } catch (err: any) {
+      console.warn("Connection request error:", err?.message);
+      router.push(
+        `/login?redirect=/services/${encodeURIComponent(rawId)}&reason=contact&message=${encodeURIComponent(
+          "Please sign in to contact " + (company.companyName || "this care provider")
+        )}`
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDirectContactClick = (
+    e: React.MouseEvent,
+    type: "phone" | "email"
+  ) => {
+    if (!isAuthed) {
+      e.preventDefault();
+      router.push(
+        `/login?redirect=/services/${encodeURIComponent(rawId)}&reason=contact&message=${encodeURIComponent(
+          "Please sign in to contact " + (company?.companyName || "this care provider")
+        )}`
+      );
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      setIsLoading(true);
 
       try {
         // Fetch all approved care companies to find exact match
@@ -555,13 +594,34 @@ export const ServiceDetailView = () => {
             <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
               <h3 className="text-base font-bold text-[#1B2C54]">Direct Contact</h3>
 
+              {!isAuthed && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 flex items-start gap-2.5">
+                  <Lock className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold text-amber-950">Sign In to Contact</span>
+                    <span className="text-amber-800 leading-relaxed">
+                      You can view all details, but an account is required to contact, call, or send connection requests to this provider.
+                    </span>
+                    <Link
+                      href={`/login?redirect=/services/${encodeURIComponent(rawId)}&reason=contact&message=${encodeURIComponent(
+                        "Please sign in to contact " + companyName
+                      )}`}
+                      className="text-cyan-800 font-bold hover:underline inline-flex items-center gap-1 mt-0.5"
+                    >
+                      Sign in or Register &rarr;
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {company.phoneNumber ? (
                 <a
-                  href={`tel:${company.phoneNumber}`}
-                  className="w-full bg-[#2D6A9F] hover:bg-[#20527F] text-white py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
+                  href={isAuthed ? `tel:${company.phoneNumber}` : "#"}
+                  onClick={(e) => handleDirectContactClick(e, "phone")}
+                  className="w-full bg-[#2D6A9F] hover:bg-[#20527F] text-white py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
                   <Phone className="size-4" />
-                  Call: {company.phoneNumber}
+                  {isAuthed ? `Call: ${company.phoneNumber}` : "Sign In to Call"}
                 </a>
               ) : (
                 <button
@@ -584,18 +644,19 @@ export const ServiceDetailView = () => {
                 ) : (
                   <>
                     <MessageSquare className="size-4" />
-                    Send Connection Request
+                    {isAuthed ? "Send Connection Request" : "Sign In to Connect"}
                   </>
                 )}
               </button>
 
               {company.email && (
                 <a
-                  href={`mailto:${company.email}?subject=Inquiry for ${companyName}`}
-                  className="w-full border border-cyan-700 text-cyan-700 hover:bg-cyan-50 py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+                  href={isAuthed ? `mailto:${company.email}?subject=Inquiry for ${companyName}` : "#"}
+                  onClick={(e) => handleDirectContactClick(e, "email")}
+                  className="w-full border border-cyan-700 text-cyan-700 hover:bg-cyan-50 py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Mail className="size-4" />
-                  Send Email Inquiry
+                  {isAuthed ? "Send Email Inquiry" : "Sign In to Email"}
                 </a>
               )}
 

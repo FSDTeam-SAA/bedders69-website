@@ -3,6 +3,7 @@
 import { MapPin, MessageCircle, Star, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export interface CareCompanyCardProps {
@@ -33,6 +34,7 @@ const Card = ({
   phoneNumber,
   websiteLink,
 }: CareCompanyCardProps) => {
+  const router = useRouter();
   const [imgSrc, setImgSrc] = useState<string>(image || DEFAULT_IMAGE);
 
   useEffect(() => {
@@ -47,6 +49,22 @@ const Card = ({
   // Generate URL-friendly slug for service details page
   const slug = encodeURIComponent(name.toLowerCase().replace(/\s+/g, "-"));
   const detailsUrl = `/services/${slug}`;
+
+  const handleContactClick = (e: React.MouseEvent) => {
+    const isLoggedIn =
+      typeof document !== "undefined" &&
+      (document.cookie.includes("bedders_access_token=") ||
+        document.cookie.includes("bedders_role="));
+
+    if (!isLoggedIn) {
+      e.preventDefault();
+      router.push(
+        `/login?redirect=${encodeURIComponent(detailsUrl)}&reason=contact&message=${encodeURIComponent(
+          "Please sign in to contact " + name
+        )}`
+      );
+    }
+  };
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0px_4px_6px_0px_rgba(43,110,166,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_12px_24px_0px_rgba(43,110,166,0.18)]">
@@ -131,7 +149,8 @@ const Card = ({
             href={websiteLink || (email ? `mailto:${email}` : (phoneNumber ? `tel:${phoneNumber}` : "#"))}
             target={websiteLink ? "_blank" : undefined}
             rel={websiteLink ? "noopener noreferrer" : undefined}
-            className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-cyan-700 px-3 text-sm font-semibold text-white shadow transition hover:bg-cyan-800"
+            onClick={handleContactClick}
+            className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-cyan-700 px-3 text-sm font-semibold text-white shadow transition hover:bg-cyan-800 cursor-pointer"
           >
             <MessageCircle className="size-4" />
             Contact

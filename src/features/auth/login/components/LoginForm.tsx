@@ -51,12 +51,19 @@ export const LoginForm = () => {
           ? `You must be logged in to apply for "${decodeURIComponent(jobTitle)}". Please sign in to submit your application.`
           : "You must be logged in to apply for this job vacancy. Please sign in to submit your application.",
       });
+    } else if (reason === "contact") {
+      setToastInfo({
+        title: "Login Required to Contact",
+        description:
+          customMessage ||
+          "You must be logged in to contact care providers or agencies. Please sign in to continue.",
+      });
     } else if (reason === "carer_details" || redirectUrl?.startsWith("/find-care/")) {
       setToastInfo({
         title: "Login Required for Carer Details",
         description: "Carer profiles and contact details are only accessible to registered users. Please log in to view this carer.",
       });
-    } else if (reason === "service_details" || redirectUrl?.startsWith("/services/")) {
+    } else if (reason === "service_details") {
       setToastInfo({
         title: "Login Required for Service Details",
         description: "Care provider details and contact information require an account. Please log in to continue.",
