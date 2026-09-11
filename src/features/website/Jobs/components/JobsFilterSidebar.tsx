@@ -62,10 +62,13 @@ export const JobsFilterSidebar = ({
           {salaries.map((sal) => {
             const isChecked = selectedSalaries.includes(sal);
             return (
-              <label key={sal} className="flex items-center gap-3 cursor-pointer group">
+              <label
+                key={sal}
+                onClick={() => toggleSalary(sal)}
+                className="flex items-center gap-3 cursor-pointer group select-none"
+              >
                 <div
-                  onClick={() => toggleSalary(sal)}
-                  className={`size-4.5 rounded border flex items-center justify-center transition-all ${
+                  className={`size-4.5 rounded border flex items-center justify-center transition-all shrink-0 ${
                     isChecked
                       ? "bg-cyan-700 border-cyan-700 text-white"
                       : "border-slate-200 group-hover:border-slate-300 bg-white"
@@ -91,10 +94,13 @@ export const JobsFilterSidebar = ({
           {experienceLevels.map((exp) => {
             const isChecked = selectedExperience.includes(exp);
             return (
-              <label key={exp} className="flex items-center gap-3 cursor-pointer group">
+              <label
+                key={exp}
+                onClick={() => toggleExperience(exp)}
+                className="flex items-center gap-3 cursor-pointer group select-none"
+              >
                 <div
-                  onClick={() => toggleExperience(exp)}
-                  className={`size-4.5 rounded border flex items-center justify-center transition-all ${
+                  className={`size-4.5 rounded border flex items-center justify-center transition-all shrink-0 ${
                     isChecked
                       ? "bg-cyan-700 border-cyan-700 text-white"
                       : "border-slate-200 group-hover:border-slate-300 bg-white"
@@ -120,10 +126,13 @@ export const JobsFilterSidebar = ({
           {postedTimes.map((posted) => {
             const isChecked = selectedPosted.includes(posted);
             return (
-              <label key={posted} className="flex items-center gap-3 cursor-pointer group">
+              <label
+                key={posted}
+                onClick={() => togglePosted(posted)}
+                className="flex items-center gap-3 cursor-pointer group select-none"
+              >
                 <div
-                  onClick={() => togglePosted(posted)}
-                  className={`size-4.5 rounded border flex items-center justify-center transition-all ${
+                  className={`size-4.5 rounded border flex items-center justify-center transition-all shrink-0 ${
                     isChecked
                       ? "bg-cyan-700 border-cyan-700 text-white"
                       : "border-slate-200 group-hover:border-slate-300 bg-white"

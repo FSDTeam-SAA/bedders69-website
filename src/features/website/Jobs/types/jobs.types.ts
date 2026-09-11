@@ -37,6 +37,7 @@ export interface JobItem {
 
 export interface JobSearchParams {
   search?: string;
+  category?: string;
   city?: string;
   postCode?: string;
   jobType?: string;
@@ -62,4 +63,5 @@ export interface JobProps {
   rawSalaryMax?: number;
   experienceYears?: number;
   publishedAt?: string;
+  description?: string;
 }

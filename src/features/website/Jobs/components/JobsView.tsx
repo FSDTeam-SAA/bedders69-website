@@ -8,21 +8,62 @@ import { JobsList } from "./JobsList";
 import { JobProps } from "../types/jobs.types";
 import { X, UploadCloud, Send, FileText, Check } from "lucide-react";
 
+function normalizeCategory(param: string | null): string {
+  if (!param) return "All";
+  const p = param.toLowerCase().trim();
+  if (p === "all") return "All";
+  if (p.includes("nurse") || p.includes("nursing")) return "Nursing";
+  if (p.includes("live-in") || p.includes("live in")) return "Live-In Care";
+  if (p.includes("manage")) return "Management";
+  if (p.includes("support")) return "Support Worker";
+  if (p.includes("night")) return "Night Care";
+  if (p.includes("care assistant") || p.includes("carer") || p === "care") return "Care Assistant";
+  return param;
+}
+
 export const JobsView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const initialCategory = normalizeCategory(searchParams.get("category"));
 
   const [searchQuery, setSearchQuery] = useState(urlSearch);
-  const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
 
-  useEffect(() => {
-    if (urlSearch !== searchQuery) {
-      setSearchQuery(urlSearch);
-      setSearchTriggeredQuery(urlSearch);
+  // Synchronize URL parameters without causing full page reload
+  const updateUrlParams = (query: string, cat: string) => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (query && query.trim()) {
+      params.set("search", query.trim());
+      params.delete("q");
+    } else {
+      params.delete("search");
+      params.delete("q");
     }
-  }, [urlSearch]);
+    if (cat && cat !== "All") {
+      params.set("category", cat);
+    } else {
+      params.delete("category");
+    }
+    const qs = params.toString();
+    const newUrl = qs ? `/jobs?${qs}` : "/jobs";
+    window.history.replaceState(null, "", newUrl);
+  };
+
+  // Sync state if user clicks browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get("search") || params.get("q") || "";
+      const c = normalizeCategory(params.get("category"));
+      setSearchQuery(s);
+      setSelectedCategory(c);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const [selectedSalaries, setSelectedSalaries] = useState<string[]>([]);
   const [selectedExperience, setSelectedExperience] = useState<string[]>([]);
@@ -41,8 +82,23 @@ export const JobsView = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    updateUrlParams(val, selectedCategory);
+  };
+
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+    updateUrlParams(searchQuery, cat);
+  };
+
+  // Search trigger on button click or Enter key
   const handleSearch = () => {
-    setSearchTriggeredQuery(searchQuery);
+    updateUrlParams(searchQuery, selectedCategory);
+    const listEl = document.getElementById("jobs-vacancies-section");
+    if (listEl) {
+      listEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const toggleSalary = (sal: string) => {
@@ -65,11 +121,11 @@ export const JobsView = () => {
 
   const clearAllFilters = () => {
     setSearchQuery("");
-    setSearchTriggeredQuery("");
     setSelectedCategory("All");
     setSelectedSalaries([]);
     setSelectedExperience([]);
     setSelectedPosted([]);
+    updateUrlParams("", "All");
   };
 
   const handleApplyClick = async (job: JobProps) => {
@@ -161,10 +217,10 @@ export const JobsView = () => {
       {/* Jobs Hero Banner */}
       <JobsHero
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        setSearchQuery={handleSearchChange}
         onSearch={handleSearch}
         selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
+        setSelectedCategory={handleCategoryChange}
       />
 
       {/* Main Content Layout */}
@@ -182,12 +238,13 @@ export const JobsView = () => {
           />
 
           <JobsList
-            searchQuery={searchTriggeredQuery}
+            searchQuery={searchQuery}
             selectedCategory={selectedCategory}
             selectedSalaries={selectedSalaries}
             selectedExperience={selectedExperience}
             selectedPosted={selectedPosted}
             onApply={handleApplyClick}
+            onResetFilters={clearAllFilters}
           />
 
         </div>

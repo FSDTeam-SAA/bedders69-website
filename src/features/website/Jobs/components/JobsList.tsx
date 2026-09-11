@@ -4,8 +4,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { MapPin, Clock, Briefcase, ChevronLeft, ChevronRight, Banknote, Sparkles } from "lucide-react";
 import Link from "next/link";
 import jobsApi from "../api/jobsApi";
-import { JobItem, JobProps } from "../types/jobs.types";
+import { JobItem, JobProps, JobSearchParams } from "../types/jobs.types";
+import { fallbackJobs } from "../data/fallbackJobs";
+import { matchJobCategory, matchJobSearch } from "../utils/jobMatching";
 export type { JobProps };
+export { matchJobCategory, matchJobSearch };
 
 interface JobsListProps {
   searchQuery: string;
@@ -14,6 +17,7 @@ interface JobsListProps {
   selectedExperience: string[];
   selectedPosted: string[];
   onApply: (job: JobProps) => void;
+  onResetFilters?: () => void;
 }
 
 function formatJobType(type?: string) {
@@ -31,6 +35,7 @@ export const JobsList = ({
   selectedExperience,
   selectedPosted,
   onApply,
+  onResetFilters,
 }: JobsListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [backendJobs, setBackendJobs] = useState<JobItem[]>([]);
@@ -42,12 +47,23 @@ export const JobsList = ({
     async function loadJobs() {
       setIsLoading(true);
       try {
-        const res = await jobsApi.getJobs({ limit: 50, page: 1 });
+        const params: JobSearchParams = {
+          limit: 50,
+          page: 1,
+        };
+        if (selectedCategory && selectedCategory !== "All") {
+          params.category = selectedCategory;
+        }
+        if (searchQuery && searchQuery.trim()) {
+          params.search = searchQuery.trim();
+        }
+
+        const res = await jobsApi.getJobs(params);
         if (res && res.data && isMounted) {
           setBackendJobs(res.data);
         }
       } catch (err) {
-        console.warn("Error fetching jobs:", err);
+        console.warn("Error fetching jobs from backend:", err);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -59,17 +75,20 @@ export const JobsList = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selectedCategory, searchQuery]);
 
   // Reset page when any filter criteria changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedSalaries, selectedExperience, selectedPosted]);
 
-  // Map backend jobs to JobProps
+  // Map backend or fallback jobs to JobProps
   const allJobs = useMemo<JobProps[]>(() => {
-    if (backendJobs && backendJobs.length > 0) {
-      return backendJobs.map((j, idx) => {
+    const dataSource =
+      backendJobs && backendJobs.length > 0 ? backendJobs : fallbackJobs;
+
+    if (dataSource && dataSource.length > 0) {
+      return dataSource.map((j, idx) => {
         const salaryStr =
           j.salaryMin && j.salaryMax
             ? `£${j.salaryMin.toLocaleString()} – £${j.salaryMax.toLocaleString()}/yr`
@@ -100,6 +119,7 @@ export const JobsList = ({
           rawSalaryMax: j.salaryMax,
           experienceYears: j.requiredExperience || 2,
           publishedAt: j.publishedAt || j.createdAt,
+          description: j.description || "",
         };
       });
     }
@@ -110,22 +130,14 @@ export const JobsList = ({
   // Filtering logic
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job) => {
-      // 1. Search Query
-      if (searchQuery && searchQuery.trim() !== "") {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTitle = job.title.toLowerCase().includes(q);
-        const matchesCompany = job.company.toLowerCase().includes(q);
-        const matchesLoc = job.location.toLowerCase().includes(q);
-        const matchesTags = job.tags.some((t) => t.toLowerCase().includes(q));
-        if (!matchesTitle && !matchesCompany && !matchesLoc && !matchesTags) return false;
+      // 1. Multi-token Search Query
+      if (!matchJobSearch(job, searchQuery)) {
+        return false;
       }
 
-      // 2. Category selection (from Hero pills)
-      if (selectedCategory && selectedCategory !== "All") {
-        const catLower = selectedCategory.toLowerCase();
-        const matchesTitle = job.title.toLowerCase().includes(catLower);
-        const matchesTags = job.tags.some((t) => t.toLowerCase().includes(catLower));
-        if (!matchesTitle && !matchesTags) return false;
+      // 2. Category selection with intelligent synonym matching
+      if (!matchJobCategory(job, selectedCategory)) {
+        return false;
       }
 
       // 3. Salary Range filter
@@ -212,7 +224,7 @@ export const JobsList = ({
   return (
     <div className="flex-1 flex flex-col gap-5 font-['Wix_Madefor_Text'] w-full">
       {/* List Header info */}
-      <div className="flex justify-between items-end border-b border-slate-100 pb-3">
+      <div id="jobs-vacancies-section" className="flex justify-between items-end border-b border-slate-100 pb-3 scroll-mt-6">
         <div>
           <h2 className="text-xl font-bold text-slate-800 font-['Poppins']">
             Available Vacancies{" "}
@@ -363,6 +375,14 @@ export const JobsList = ({
           <p className="text-xs text-slate-400 mt-1 max-w-sm">
             No active jobs match your search or filter selections. Try adjusting your query or resetting filters.
           </p>
+          {onResetFilters && (
+            <button
+              onClick={onResetFilters}
+              className="mt-4 px-5 py-2.5 bg-[#2D6A9F] hover:bg-[#20527F] text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:shadow active:scale-98"
+            >
+              Reset All Filters
+            </button>
+          )}
         </div>
       )}
 

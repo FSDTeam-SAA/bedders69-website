@@ -1,5 +1,5 @@
 import React from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface JobsHeroProps {
   searchQuery: string;
@@ -54,12 +54,22 @@ export const JobsHero = ({
               <Search className="size-5 text-slate-400 shrink-0" />
               <input
                 type="text"
-                placeholder="Search by job title or keyword..."
+                placeholder="Search by job title, location, or keyword..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-slate-700 placeholder-slate-400 text-sm font-medium focus:outline-none font-['Poppins']"
                 onKeyDown={(e) => e.key === "Enter" && onSearch()}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                  aria-label="Clear search"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
 
             <button
@@ -74,13 +84,21 @@ export const JobsHero = ({
           {/* Categories Pill Container */}
           <div className="flex flex-wrap justify-center gap-2.5 max-w-4xl mt-2">
             {categories.map((cat) => {
-              const isActive = selectedCategory === cat;
+              const isActive =
+                selectedCategory?.toLowerCase() === cat.toLowerCase();
               return (
                 <button
+                  type="button"
                   key={cat}
-                  onClick={() => setSelectedCategory(cat)}
+                  onClick={() => {
+                    if (isActive && cat !== "All") {
+                      setSelectedCategory("All");
+                    } else {
+                      setSelectedCategory(cat);
+                    }
+                  }}
                   className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer border ${isActive
-                      ? "bg-white text-[#2D6A9F] border-white shadow-sm"
+                      ? "bg-white text-[#2D6A9F] border-white shadow-sm font-bold"
                       : "bg-white/10 hover:bg-white/20 text-white border-transparent"
                     }`}
                 >
