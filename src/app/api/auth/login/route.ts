@@ -1,29 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-export const getDashboardPath = (role?: string | null): string => {
-  if (!role) return "/";
-  const r = role.toLowerCase().trim().replace(/-/g, "_");
-  switch (r) {
-    case "care_company":
-      return "/care-company/dashboard-overview";
-    case "agency":
-    case "recruitment_agency":
-      return "/recruitment-agency/overview";
-    case "carer":
-      return "/care";
-    case "supplier":
-      return "/marketplace";
-    case "service_provider":
-      return "/services";
-    case "admin":
-      return process.env.NEXT_PUBLIC_ADMIN_URL || "/";
-    case "family":
-    case "user":
-    default:
-      return "/";
-  }
-};
+export { getDashboardPath } from "@/lib/auth/dashboard";
+import { getDashboardPath } from "@/lib/auth/dashboard";
 
 const backendUrl =
   process.env.BACKEND_API_URL ||

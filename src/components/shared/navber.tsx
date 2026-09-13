@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, ShoppingCart, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { hasWebsiteDashboard } from "@/lib/auth/dashboard";
 
 export const Navbar = () => {
   const pathname = usePathname();
-  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { totalItemsCount } = useCart();
@@ -16,11 +16,11 @@ export const Navbar = () => {
   const [authStatus, setAuthStatus] = useState<{
     authenticated: boolean;
     role: string | null;
-    dashboardPath: string;
+    hasDashboard: boolean;
   }>({
     authenticated: false,
     role: null,
-    dashboardPath: "/",
+    hasDashboard: false,
   });
 
   const checkAuth = async () => {
@@ -29,7 +29,11 @@ export const Navbar = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.authenticated) {
-          setAuthStatus(data);
+          setAuthStatus({
+            authenticated: true,
+            role: data.role,
+            hasDashboard: hasWebsiteDashboard(data.role),
+          });
           return;
         }
       }
@@ -42,19 +46,12 @@ export const Navbar = () => {
       const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
       if (match && match[1]) {
         const role = decodeURIComponent(match[1]);
-        let path = "/";
-        const r = role.toLowerCase().trim().replace(/-/g, "_");
-        if (r === "care_company") path = "/care-company/dashboard-overview";
-        else if (r === "agency" || r === "recruitment_agency") path = "/recruitment-agency/overview";
-        else if (r === "carer") path = "/care";
-        else if (r === "supplier") path = "/marketplace";
-        else if (r === "service_provider") path = "/services";
-        setAuthStatus({ authenticated: true, role, dashboardPath: path });
+        setAuthStatus({ authenticated: true, role, hasDashboard: hasWebsiteDashboard(role) });
         return;
       }
     }
 
-    setAuthStatus({ authenticated: false, role: null, dashboardPath: "/" });
+    setAuthStatus({ authenticated: false, role: null, hasDashboard: false });
   };
 
   useEffect(() => {
@@ -83,7 +80,7 @@ export const Navbar = () => {
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      setAuthStatus({ authenticated: false, role: null, dashboardPath: "/" });
+      setAuthStatus({ authenticated: false, role: null, hasDashboard: false });
       window.location.href = "/login";
     }
   };
@@ -146,13 +143,15 @@ export const Navbar = () => {
 
           {authStatus.authenticated ? (
             <>
-              <Link
-                href={authStatus.dashboardPath}
-                className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
-              >
-                <LayoutDashboard className="size-4 text-white" />
-                <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
-              </Link>
+              {authStatus.hasDashboard && (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
+                >
+                  <LayoutDashboard className="size-4 text-white" />
+                  <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 type="button"
@@ -228,13 +227,15 @@ export const Navbar = () => {
 
             {authStatus.authenticated ? (
               <>
-                <Link
-                  href={authStatus.dashboardPath}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
-                >
-                  <LayoutDashboard className="size-5" />
-                  Dashboard
-                </Link>
+                {authStatus.hasDashboard && (
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
+                  >
+                    <LayoutDashboard className="size-5" />
+                    Dashboard
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   type="button"

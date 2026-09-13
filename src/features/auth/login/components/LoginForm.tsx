@@ -119,7 +119,9 @@ export const LoginForm = () => {
 
       const searchParams = new URLSearchParams(window.location.search);
       const redirectUrl = searchParams.get("redirect");
-      const destination = redirectUrl || body.dashboardPath || "/";
+      // Dashboard routing must be decided from the newly-created server
+      // session. This avoids using a stale role value in the browser.
+      const destination = redirectUrl || "/dashboard";
       window.location.replace(destination);
     } catch (err: any) {
       setLoading(false);

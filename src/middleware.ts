@@ -1,31 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-function resolveDashboardPath(role?: string | null): string {
-  if (!role) return "/";
-  const r = role.toLowerCase().trim().replace(/-/g, "_");
-  switch (r) {
-    case "care_company":
-      return "/care-company/dashboard-overview";
-    case "agency":
-    case "recruitment_agency":
-      return "/recruitment-agency/overview";
-    case "carer":
-      return "/care";
-    case "supplier":
-      return "/marketplace";
-    case "service_provider":
-      return "/services";
-    case "admin":
-      return process.env.NEXT_PUBLIC_ADMIN_URL || "/";
-    default:
-      return "/";
-  }
-}
-
-function normalizeRole(role?: string | null): string {
-  if (!role) return "";
-  return role.toLowerCase().trim().replace(/-/g, "_");
-}
+import { getDashboardPath, hasRole, normalizeRole } from "@/lib/auth/dashboard";
 
 const routeRoleRequirements: Array<[string, string]> = [
   ["/care-company", "care_company"],
@@ -40,6 +14,10 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("bedders_access_token")?.value;
   const role = normalizeRole(rawRole);
 
+  if (pathname === "/dashboard" && !token) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   // Check if pathname falls under any role-protected prefix
   const routeReq = routeRoleRequirements.find(([prefix]) => pathname.startsWith(prefix));
 
@@ -52,8 +30,8 @@ export function middleware(request: NextRequest) {
     }
 
     // Authenticated user with invalid/unauthorized role -> redirect to their role dashboard
-    if (role && role !== requiredRole && !(requiredRole === "agency" && role === "recruitment_agency")) {
-      const target = resolveDashboardPath(role);
+    if (role && !hasRole(role, requiredRole)) {
+      const target = getDashboardPath(role);
       if (target.startsWith("http")) {
         return NextResponse.redirect(target);
       }
@@ -74,7 +52,7 @@ export function middleware(request: NextRequest) {
 
   // Already logged in user accessing login page
   if (token && role) {
-    const destination = resolveDashboardPath(role);
+    const destination = getDashboardPath(role);
 
     if (pathname === "/login") {
       if (destination.startsWith("http")) {
@@ -91,6 +69,7 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/dashboard",
     "/care",
     "/care/:path*",
     "/care-company",
@@ -100,4 +79,3 @@ export const config = {
     "/find-care/:path*",
   ],
 };
-

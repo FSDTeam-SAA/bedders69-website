@@ -19,16 +19,9 @@ export const OtpVerificationView = () => {
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Automatically trigger real email OTP send on mount
-  useEffect(() => {
-    if (emailParam && emailParam !== "your email") {
-      fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailParam }),
-      }).catch((err) => console.error("Error sending initial OTP:", err));
-    }
-  }, [emailParam]);
+  // The registration flow has already sent the initial code before opening
+  // this page. Sending another one here would overwrite that valid code in
+  // the database and make the email OTP appear invalid.
 
   // Countdown timer for resend
   useEffect(() => {

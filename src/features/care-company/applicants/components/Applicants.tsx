@@ -64,7 +64,7 @@ export default function Applicants() {
             case "Shortlisted":
                 return (
                     <span className="inline-flex h-8 items-center justify-center rounded-full bg-orange-50 px-4 text-sm font-semibold text-stone-600 border border-orange-100">
-                        Shortlisted
+                        Shortlisted 
                     </span>
                 );
             case "Interview":
