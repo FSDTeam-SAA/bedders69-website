@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
+import CareCompanyHeaderBadge from "@/features/care-company/components/CareCompanyHeaderBadge";
 import { Check, Sparkles, X, Loader2 } from "lucide-react";
 import { useMembership } from "../hooks/useMembership";
 import { MembershipPlan } from "../types/membership.types";
@@ -53,27 +52,7 @@ export default function Membership() {
                 Choose the plan that's right for you
               </p>
             </div>
-            <Link
-              href="/care-company/company-profile"
-              className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
-            >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="Sunrise Care"
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
-                </span>
-                <span className="text-xs font-normal text-gray-500">
-                  Care Company
-                </span>
-              </div>
-            </Link>
+            <CareCompanyHeaderBadge />
           </header>
 
           {/* Pricing Cards Container */}

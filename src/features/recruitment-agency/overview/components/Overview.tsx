@@ -42,7 +42,7 @@ export default function Overview() {
     totalApplicants: 0,
     mostApplied: [] as Array<{ title: string; count: number }>,
     monthlyPipeline: [] as number[],
-    agencyName: "CareRecruitPro",
+    agencyName: "",
     logoUrl: "",
   });
 
@@ -61,7 +61,7 @@ export default function Overview() {
               totalApplicants: data.totalApplicants ?? 0,
               mostApplied: Array.isArray(data.mostApplied) ? data.mostApplied : [],
               monthlyPipeline: Array.isArray(data.monthlyPipeline) ? data.monthlyPipeline : [],
-              agencyName: data.agencyName || "CareRecruitPro",
+              agencyName: data.agencyName || "Agency",
               logoUrl: data.logoUrl || "",
             });
           }
@@ -106,7 +106,7 @@ export default function Overview() {
                 ) : (
                   <Image
                     src="/images/logo.png"
-                    alt="CareRecruitPro"
+                    alt={stats.agencyName || "Agency"}
                     fill
                     className="object-contain p-1"
                   />
@@ -114,7 +114,7 @@ export default function Overview() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  {stats.agencyName}
+                  {stats.agencyName || "Agency"}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Agency

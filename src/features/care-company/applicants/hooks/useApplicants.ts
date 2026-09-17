@@ -4,101 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import applicantsApi from "../api/applicantsApi";
 import { Applicant, ApiMeta } from "../types/applicants.types";
 
-const INITIAL_FALLBACK_APPLICANTS: Applicant[] = [
-  {
-    id: "1",
-    name: "James Okafor",
-    initials: "JO",
-    avatarBg: "bg-emerald-600",
-    experience: "5 years",
-    role: "Senior Care Assistant",
-    location: "Manchester",
-    applied: "Today 10:23",
-    status: "New",
-    matchScore: 87,
-    verified: true,
-    notes:
-      "Strong candidate — excellent dementia experience. Follow up re: availability.",
-    documents: [
-      { name: "CV / Resume", size: "245 KB" },
-      { name: "NVQ Certificate", size: "182 KB" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Emma Williams",
-    initials: "EW",
-    avatarBg: "bg-indigo-600",
-    experience: "8 years",
-    role: "Registered Nurse",
-    location: "Salford",
-    applied: "Today 08:45",
-    status: "Shortlisted",
-    matchScore: 92,
-    verified: true,
-    notes:
-      "Extensive clinical experience in dementia ward management and medication admin.",
-    documents: [
-      { name: "CV / Resume", size: "310 KB" },
-      { name: "Nursing Pin Certificate", size: "215 KB" },
-    ],
-  },
-  {
-    id: "3",
-    name: "Priya Patel",
-    initials: "PP",
-    avatarBg: "bg-rose-600",
-    experience: "3 years",
-    role: "Support Worker",
-    location: "Stockport",
-    applied: "Yesterday",
-    status: "Interview",
-    matchScore: 79,
-    verified: true,
-    notes: "Interview scheduled for Tuesday 2:00 PM via video call.",
-    documents: [
-      { name: "CV / Resume", size: "198 KB" },
-      { name: "First Aid Certificate", size: "140 KB" },
-    ],
-  },
-  {
-    id: "4",
-    name: "Michael Thompson",
-    initials: "MT",
-    avatarBg: "bg-blue-600",
-    experience: "7 years",
-    role: "Senior Care Assistant",
-    location: "Bolton",
-    applied: "2 weeks ago",
-    status: "New",
-    matchScore: 84,
-    verified: true,
-    notes: "Reliable background in residential care and complex physical support.",
-    documents: [
-      { name: "CV / Resume", size: "220 KB" },
-      { name: "DBS Enhanced Check", size: "175 KB" },
-    ],
-  },
-  {
-    id: "5",
-    name: "Lisa Chen",
-    initials: "LC",
-    avatarBg: "bg-teal-600",
-    experience: "10 years",
-    role: "Registered Nurse",
-    location: "Wigan",
-    applied: "2 weeks ago",
-    status: "Hired",
-    matchScore: 95,
-    verified: true,
-    notes: "Offer accepted! Induction scheduled for next Monday.",
-    documents: [
-      { name: "CV / Resume", size: "280 KB" },
-      { name: "References & Clearances", size: "320 KB" },
-    ],
-  },
-];
-
 const normalizeStatus = (status: string): Applicant["status"] => {
   const s = status.toLowerCase();
   if (s === "shortlisted") return "Shortlisted";
@@ -109,14 +14,14 @@ const normalizeStatus = (status: string): Applicant["status"] => {
 };
 
 export function useApplicants(initialLimit: number = 5) {
-  const [applicants, setApplicants] = useState<Applicant[]>(INITIAL_FALLBACK_APPLICANTS);
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(initialLimit);
   const [meta, setMeta] = useState<ApiMeta>({
     page: 1,
     limit: initialLimit,
-    total: INITIAL_FALLBACK_APPLICANTS.length,
-    totalPages: Math.ceil(INITIAL_FALLBACK_APPLICANTS.length / initialLimit) || 1,
+    total: 0,
+    totalPages: 1,
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,30 +47,28 @@ export function useApplicants(initialLimit: number = 5) {
                   .toUpperCase()
               : "AP"),
           avatarBg: item.avatarBg || "bg-emerald-600",
-          experience: item.experience || "3 years",
+          experience: item.experience || "Not specified",
           role: item.role || "Care Assistant",
-          location: item.location || "Manchester",
+          location: item.location || "United Kingdom",
           applied: item.applied || (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recent"),
           status: normalizeStatus(item.status),
-          matchScore: item.matchScore || 85,
-          verified: item.verified ?? true,
+          matchScore: item.matchScore || 0,
+          verified: item.verified ?? false,
           notes: item.notes || "",
-          documents:
-            item.documents && item.documents.length > 0
-              ? item.documents
-              : [
-                  { name: "CV / Resume", size: "245 KB" },
-                  { name: "NVQ Certificate", size: "182 KB" },
-                ],
+          documents: Array.isArray(item.documents) ? item.documents : [],
         }));
         setApplicants(formatted);
 
         if (response.meta) {
           setMeta(response.meta);
         }
+      } else {
+        setApplicants([]);
       }
     } catch (err: any) {
-      console.warn("Using fallback applicants list:", err?.message);
+      console.warn("Could not load applicants:", err?.message);
+      setApplicants([]);
+      setError(err?.message || "Failed to load applicants");
     } finally {
       setIsLoading(false);
     }

@@ -6,10 +6,17 @@ const backendUrl =
   process.env.NEXT_PUBLIC_BACKEND_API_URL ||
   "http://localhost:8080/api/v1";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("bedders_access_token")?.value;
+    let token = cookieStore.get("bedders_access_token")?.value;
+
+    if (!token) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
+    }
 
     if (!token) {
       return NextResponse.json(
@@ -46,7 +53,14 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("bedders_access_token")?.value;
+    let token = cookieStore.get("bedders_access_token")?.value;
+
+    if (!token) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
+    }
 
     if (!token) {
       return NextResponse.json(

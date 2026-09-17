@@ -1,109 +1,34 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
+import CareCompanyHeaderBadge from "@/features/care-company/components/CareCompanyHeaderBadge";
 import { Check, ChevronLeft, Clock3, MapPin, Loader2 } from "lucide-react";
 import { useSavedCarerDetail } from "../hooks/useSavedCarers";
-
-export interface CarerDetailData {
-  id: string;
-  name: string;
-  subtitle?: string;
-  about: string;
-  skills: string[];
-  availability: string;
-  qualifications: string[];
-  serviceArea: string;
-}
-
-export const savedCarersData: Record<string, CarerDetailData> = {
-  "1": {
-    id: "1",
-    name: "Matthew Warkentin",
-    subtitle: "See the details",
-    about:
-      "Matthew Warkentin is a compassionate and dedicated professional carer with over 8 years of experience supporting older adults and individuals with complex care needs. He specialises in residential care, dementia support, personal care, respite care, and medication assistance. Known for his patient-centred approach, Matthew is committed to promoting dignity, independence, and well-being while building trusted relationships with clients and their families. His goal is to deliver high-quality, compassionate care tailored to each individual's unique needs.",
-    skills: [
-      "Dementia Care",
-      "Medication Admin",
-      "Palliative Care",
-      "Mental Health",
-      "Night Shifts",
-    ],
-    availability:
-      "Mon–Fri 7am–6pm · Sat 8am–2pm · Emergency 24/7 · Weekends · Day Shifts · Night Shifts · Live-In",
-    qualifications: [
-      "NVQ Level 3 Health & Social Care",
-      "First Aid Certificate (2023)",
-      "Dementia Care Training",
-    ],
-    serviceArea: "Manchester, Greater Manchester",
-  },
-  "2": {
-    id: "2",
-    name: "Sarah Palmer",
-    subtitle: "See the details",
-    about:
-      "Sarah Palmer is a dedicated and empathetic support worker with over 6 years of expertise focusing on mental health, autism spectrum assistance, and emotional well-being. She excels in establishing secure and reassuring routines for her clients while actively promoting independence and confidence.",
-    skills: [
-      "Mental Health Support",
-      "Crisis Intervention",
-      "Autism Care",
-      "Medication Management",
-      "Day Shifts",
-    ],
-    availability:
-      "Mon–Fri 8am–6pm · Sat 9am–3pm · Flexible Shifts · Emergency Support",
-    qualifications: [
-      "BSc in Health & Social Care",
-      "Mental Health First Aid Certified",
-      "Autism Awareness Level 2",
-    ],
-    serviceArea: "Birmingham, West Midlands",
-  },
-  "3": {
-    id: "3",
-    name: "John Smith",
-    subtitle: "See the details",
-    about:
-      "John Smith is an experienced home carer with a background in adult rehabilitation and physical disability support. He prides himself on fostering a comfortable, empowering environment for each client under his care.",
-    skills: [
-      "Personal Care",
-      "Companionship",
-      "Rehabilitation Support",
-      "Meal Prep",
-      "Live-In Care",
-    ],
-    availability:
-      "Flexible Hours · Day & Night Shifts · Weekend Availability",
-    qualifications: [
-      "Care Certificate Certified",
-      "Moving and Handling Level 3",
-      "Food Hygiene Level 2",
-    ],
-    serviceArea: "Manchester, Greater Manchester",
-  },
-};
 
 interface SavedCarerDetailProps {
   id: string;
 }
 
 export default function SavedCarerDetail({ id }: SavedCarerDetailProps) {
-  const { carer: apiCarer, isLoading } = useSavedCarerDetail(id);
-  const fallback = savedCarersData[id] || savedCarersData["1"];
-  const carer = apiCarer ? {
-    id: apiCarer.carerId || apiCarer.id || id,
-    name: apiCarer.name,
-    subtitle: "See the details",
-    about: apiCarer.bio || fallback.about,
-    skills: apiCarer.skills && apiCarer.skills.length > 0 ? apiCarer.skills : fallback.skills,
-    availability: apiCarer.availability || fallback.availability,
-    qualifications: apiCarer.qualifications && apiCarer.qualifications.length > 0 ? apiCarer.qualifications : fallback.qualifications,
-    serviceArea: apiCarer.serviceArea || apiCarer.location || fallback.serviceArea,
-  } : fallback;
+  const { carer: apiCarer, isLoading, error } = useSavedCarerDetail(id);
+
+  const carer = apiCarer
+    ? {
+        id: apiCarer.carerId || apiCarer.id || id,
+        name: apiCarer.name || "Carer",
+        subtitle: "See the details",
+        about: apiCarer.bio || "No biography provided.",
+        skills: Array.isArray(apiCarer.skills) && apiCarer.skills.length > 0 ? apiCarer.skills : [],
+        availability: apiCarer.availability || "Not specified",
+        qualifications:
+          Array.isArray(apiCarer.qualifications) && apiCarer.qualifications.length > 0
+            ? apiCarer.qualifications
+            : [],
+        serviceArea: apiCarer.serviceArea || apiCarer.location || "Not specified",
+      }
+    : null;
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
@@ -125,120 +50,126 @@ export default function SavedCarerDetail({ id }: SavedCarerDetailProps) {
               </Link>
               <div className="flex flex-col justify-start items-start gap-1">
                 <h1 className="text-2xl font-bold leading-7 text-[#2b6ea6]">
-                  {carer.name}
+                  {carer?.name || "Carer Details"}
                 </h1>
                 <p className="text-xs font-normal leading-4 text-gray-500">
-                  {carer.subtitle || "See the details"}
+                  {carer ? carer.subtitle : "Details view"}
                 </p>
               </div>
             </div>
-            <Link
-              href="/care-company/company-profile"
-              className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
-            >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="Sunrise Care"
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
-                </span>
-                <span className="text-xs font-normal text-gray-500">
-                  Care Company
-                </span>
-              </div>
-            </Link>
+            <CareCompanyHeaderBadge />
           </header>
 
-          {/* Details Cards Container */}
+          {/* Details Content Area */}
           <div className="p-4 sm:p-6 lg:p-8 space-y-4 max-w-6xl pb-16">
-            {/* 1. About */}
-            <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
-              <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
-                About
-              </h3>
-              <p className="max-w-[999px] justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-relaxed">
-                {carer.about}
-              </p>
-            </section>
+            {isLoading ? (
+              <div className="flex min-h-[300px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-[#2b6ea6]" />
+              </div>
+            ) : !carer ? (
+              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl bg-white p-12 text-center border border-slate-100">
+                <p className="text-slate-600 font-medium">Carer details not found.</p>
+                <Link
+                  href="/care-company/save-carers"
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2b6ea6] px-4 py-2 text-sm font-medium text-white hover:bg-[#20527f] transition-colors"
+                >
+                  Back to Saved Carers
+                </Link>
+              </div>
+            ) : (
+              <>
+                {/* 1. About */}
+                <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
+                  <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
+                    About
+                  </h3>
+                  <p className="max-w-[999px] justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-relaxed">
+                    {carer.about}
+                  </p>
+                </section>
 
-            {/* 2. Skills & Specialisms */}
-            <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
-              <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
-                Skills & Specialisms
-              </h3>
-              <div className="inline-flex flex-wrap justify-start items-center gap-2">
-                {carer.skills.map((skill) => (
-                  <div
-                    key={skill}
-                    className="h-6 px-3 bg-slate-100 rounded-full flex justify-center items-center gap-2.5"
-                  >
-                    <span className="text-center justify-center text-cyan-700 text-xs font-semibold font-['Wix_Madefor_Text'] leading-4">
-                      {skill}
-                    </span>
+                {/* 2. Skills & Specialisms */}
+                <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
+                  <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
+                    Skills & Specialisms
+                  </h3>
+                  {carer.skills.length > 0 ? (
+                    <div className="inline-flex flex-wrap justify-start items-center gap-2">
+                      {carer.skills.map((skill) => (
+                        <div
+                          key={skill}
+                          className="h-6 px-3 bg-slate-100 rounded-full flex justify-center items-center gap-2.5"
+                        >
+                          <span className="text-center justify-center text-cyan-700 text-xs font-semibold font-['Wix_Madefor_Text'] leading-4">
+                            {skill}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">No skills listed.</p>
+                  )}
+                </section>
+
+                {/* 3. Availability */}
+                <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
+                  <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
+                    Availability
+                  </h3>
+                  <div className="w-full max-w-[998px] inline-flex justify-start items-start gap-2">
+                    <Clock3 className="h-5 w-5 text-cyan-700 mt-0.5 shrink-0" strokeWidth={1.8} />
+                    <p className="justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-relaxed">
+                      {carer.availability}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </section>
+                </section>
 
-            {/* 3. Availability */}
-            <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
-              <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
-                Availability
-              </h3>
-              <div className="w-full max-w-[998px] inline-flex justify-start items-start gap-2">
-                <Clock3 className="h-5 w-5 text-cyan-700 mt-0.5 shrink-0" strokeWidth={1.8} />
-                <p className="justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-relaxed">
-                  {carer.availability}
-                </p>
-              </div>
-            </section>
+                {/* 4. Qualifications */}
+                <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
+                  <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
+                    Qualifications
+                  </h3>
+                  {carer.qualifications.length > 0 ? (
+                    <div className="w-full max-w-[998px] flex flex-col justify-start items-start gap-2">
+                      {carer.qualifications.map((qualification) => (
+                        <div
+                          key={qualification}
+                          className="self-stretch inline-flex justify-start items-center gap-2"
+                        >
+                          <Check
+                            className="h-4 w-4 text-emerald-500 shrink-0"
+                            strokeWidth={2.5}
+                          />
+                          <span className="justify-center text-slate-800 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
+                            {qualification}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">No qualifications listed.</p>
+                  )}
+                </section>
 
-            {/* 4. Qualifications */}
-            <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
-              <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
-                Qualifications
-              </h3>
-              <div className="w-full max-w-[998px] flex flex-col justify-start items-start gap-2">
-                {carer.qualifications.map((qualification) => (
-                  <div
-                    key={qualification}
-                    className="self-stretch inline-flex justify-start items-center gap-2"
-                  >
-                    <Check
-                      className="h-4 w-4 text-emerald-500 shrink-0"
-                      strokeWidth={2.5}
-                    />
-                    <span className="justify-center text-slate-800 text-sm font-normal font-['Wix_Madefor_Text'] leading-4">
-                      {qualification}
-                    </span>
+                {/* 5. Service Area */}
+                <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
+                  <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
+                    Service Area
+                  </h3>
+                  <div className="inline-flex justify-start items-center gap-2">
+                    <div className="flex justify-start items-center gap-1">
+                      <MapPin
+                        className="h-4 w-4 text-cyan-700 shrink-0"
+                        strokeWidth={1.8}
+                      />
+                      <span className="justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-5">
+                        {carer.serviceArea}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            {/* 5. Service Area */}
-            <section className="self-stretch p-5 bg-white rounded-xl border border-zinc-100 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-start items-start gap-4">
-              <h3 className="justify-center text-slate-800 text-2xl font-semibold font-['Wix_Madefor_Text'] leading-7">
-                Service Area
-              </h3>
-              <div className="inline-flex justify-start items-center gap-2">
-                <div className="flex justify-start items-center gap-1">
-                  <MapPin
-                    className="h-4 w-4 text-cyan-700 shrink-0"
-                    strokeWidth={1.8}
-                  />
-                  <span className="justify-start text-gray-500 text-base font-normal font-['Wix_Madefor_Text'] leading-5">
-                    {carer.serviceArea}
-                  </span>
-                </div>
-              </div>
-            </section>
+                </section>
+              </>
+            )}
           </div>
         </div>
       </div>

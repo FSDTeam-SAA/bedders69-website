@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useState } from "react";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
+import CareCompanyHeaderBadge from "@/features/care-company/components/CareCompanyHeaderBadge";
 import {
   Check,
-  CheckCircle2,
-  Clock,
   MessageSquare,
-  Phone,
-  X,
-  XCircle,
   Loader2,
+  Clock,
+  Phone,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useContactRequests } from "../hooks/useContactRequests";
 
@@ -73,27 +71,7 @@ export default function ContactRequests() {
                 Manage incoming inquiries from families and healthcare professionals
               </p>
             </div>
-            <Link
-              href="/care-company/company-profile"
-              className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
-            >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="Sunrise Care"
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-semibold leading-tight text-slate-800">
-                  Sunrise Care
-                </span>
-                <span className="text-xs font-normal text-gray-500">
-                  Care Company
-                </span>
-              </div>
-            </Link>
+            <CareCompanyHeaderBadge />
           </header>
 
           {/* Main Content Area */}
@@ -166,10 +144,14 @@ export default function ContactRequests() {
                 <div className="w-full p-12 bg-white rounded-2xl border border-sky-950/10 text-center flex flex-col items-center justify-center gap-2">
                   <MessageSquare className="h-10 w-10 text-gray-400" />
                   <p className="text-slate-700 font-semibold text-base">
-                    No contact requests in this filter
+                    {activeTab === "All"
+                      ? "No contact requests yet"
+                      : `No ${activeTab.toLowerCase()} contact requests`}
                   </p>
-                  <p className="text-gray-500 text-xs">
-                    Try selecting another tab to view other inquiries.
+                  <p className="text-gray-500 text-xs max-w-sm">
+                    {activeTab === "All"
+                      ? "When families or healthcare professionals send an inquiry to your company, they will appear here."
+                      : "Try selecting another tab to view other inquiries."}
                   </p>
                 </div>
               ) : (

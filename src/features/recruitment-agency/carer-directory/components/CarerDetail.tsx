@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import RecruitmentAgencySidebar from "@/features/recruitment-agency/components/RecruitmentAgencySidebar";
+import AgencyHeaderBadge from "@/features/recruitment-agency/components/AgencyHeaderBadge";
 import {
   Check,
   CheckSquare,
@@ -106,7 +107,7 @@ export default function CarerDetail({ id }: { id?: string }) {
   const shifts = ["Day Shift", "Night Shift", "Weekend", "Flexible"];
 
   const openContactModal = () => {
-    setContactMessage(`Hello ${name}, CareRecruitPro recruitment agency is interested in connecting with you regarding upcoming healthcare staffing opportunities.`);
+    setContactMessage(`Hello ${name}, our recruitment agency is interested in connecting with you regarding upcoming healthcare staffing opportunities.`);
     setShowContactModal(true);
   };
 
@@ -249,27 +250,7 @@ export default function CarerDetail({ id }: { id?: string }) {
             </div>
 
             {/* Profile Badge */}
-            <Link
-              href="/recruitment-agency/agency-profile"
-              className="inline-flex items-center gap-3 rounded-full bg-white py-1.5 pl-2 pr-4 shadow-sm hover:bg-slate-50 transition-colors border border-slate-100 shrink-0 ml-4"
-            >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full border border-cyan-700/20 bg-slate-100 shrink-0">
-                <Image
-                  src="/images/logo.png"
-                  alt="CareRecruitPro"
-                  fill
-                  className="object-contain p-1"
-                />
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-sm font-semibold leading-tight text-slate-800">
-                  CareRecruitPro
-                </span>
-                <span className="text-xs font-normal text-gray-500">
-                  Agency
-                </span>
-              </div>
-            </Link>
+            <AgencyHeaderBadge />
           </header>
 
           {/* Body Content Container */}

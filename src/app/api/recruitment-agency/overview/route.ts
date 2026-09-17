@@ -96,7 +96,7 @@ export async function GET() {
       totalApplicants,
       mostApplied,
       monthlyPipeline,
-      agencyName: profile.name || "CareRecruitPro",
+      agencyName: profile.name || "Agency",
       logoUrl: profile.logoUrl || profile.logo || "",
     });
   } catch (error: any) {

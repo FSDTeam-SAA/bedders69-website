@@ -10,15 +10,60 @@ import {
 
 const LOCAL_STORAGE_KEY = "bedders_care_company_profile_cache";
 
+const isDemo = (str?: string) => {
+  if (!str) return false;
+  const s = str.trim().toLowerCase();
+  return (
+    s.includes("sunrise") ||
+    s.includes("carerecruitpro") ||
+    s === "care company" ||
+    s === "no name" ||
+    s === "demo"
+  );
+};
+
 export function useCompanyProfile() {
   const [profile, setProfile] = useState<CareCompanyProfile>(() => {
     if (typeof window !== "undefined") {
+      // 1. Try local cache
       const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (cached) {
         try {
-          return { ...DEFAULT_CARE_COMPANY_PROFILE, ...JSON.parse(cached) };
+          const parsed = JSON.parse(cached);
+          // If cached data contains any demo data, clear it immediately
+          if (
+            isDemo(parsed?.companyName) ||
+            isDemo(parsed?.tradingName) ||
+            isDemo(parsed?.about)
+          ) {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+          } else if (parsed?.companyName || parsed?.tradingName) {
+            return {
+              ...DEFAULT_CARE_COMPANY_PROFILE,
+              ...parsed,
+              tradingName: parsed.tradingName || parsed.companyName,
+            };
+          }
         } catch (e) {}
       }
+
+      // 2. Fallback to registered business info if available
+      try {
+        const biz = localStorage.getItem("bedders_business_info");
+        if (biz) {
+          const parsedBiz = JSON.parse(biz);
+          if (parsedBiz?.companyName && !isDemo(parsedBiz.companyName)) {
+            return {
+              ...DEFAULT_CARE_COMPANY_PROFILE,
+              companyName: parsedBiz.companyName,
+              tradingName: parsedBiz.companyName,
+              email: parsedBiz.email || "",
+              phoneNumber: parsedBiz.phoneNumber || "",
+              address: parsedBiz.address || "",
+            };
+          }
+        }
+      } catch (e) {}
     }
     return DEFAULT_CARE_COMPANY_PROFILE;
   });
@@ -33,23 +78,25 @@ export function useCompanyProfile() {
     try {
       const response = await companyProfileApi.getMyProfile();
       if (response && response.data) {
-        const merged = {
+        const data = response.data;
+        const realCompanyName = (data.companyName || (data as any).name || "").trim();
+        const realTradingName = (data.tradingName || realCompanyName).trim();
+
+        const cleanProfile: CareCompanyProfile = {
           ...DEFAULT_CARE_COMPANY_PROFILE,
-          ...response.data,
-          serviceOffered:
-            response.data.serviceOffered && response.data.serviceOffered.length > 0
-              ? response.data.serviceOffered
-              : DEFAULT_CARE_COMPANY_PROFILE.serviceOffered,
+          ...data,
+          companyName: realCompanyName,
+          tradingName: realTradingName,
+          serviceOffered: Array.isArray(data.serviceOffered) ? data.serviceOffered : [],
         };
-        setProfile(merged);
+        setProfile(cleanProfile);
         if (typeof window !== "undefined") {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanProfile));
         }
       }
     } catch (err: any) {
-      console.warn("Using default care company demo profile:", err?.message);
-      // If unauthorized or offline, use demo data
-      setProfile((prev) => prev || DEFAULT_CARE_COMPANY_PROFILE);
+      console.warn("Could not fetch care company profile:", err?.message);
+      setError(err?.message || "Failed to load profile");
     } finally {
       setIsLoading(false);
     }
@@ -80,8 +127,8 @@ export function useCompanyProfile() {
       return true;
     } catch (err: any) {
       console.error("Error updating care company profile:", err);
-      // Even if offline, local state and localStorage are updated for demo editing
-      return true;
+      setUpdateError(err?.message || "Failed to update profile");
+      return false;
     } finally {
       setIsUpdating(false);
     }

@@ -24,36 +24,26 @@ export default function AgencyProfile() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Business Information States
-  const [agencyName, setAgencyName] = useState("CareRecruitPro");
-  const [companyRegNumber, setCompanyRegNumber] = useState("CRN-8849204");
-  const [website, setWebsite] = useState("https://www.carerecruitpro.co.uk");
-  const [companyDescription, setCompanyDescription] = useState(
-    "Leading healthcare & care recruitment agency providing qualified and vetted care assistants, nurses, and support workers."
-  );
+  const [agencyName, setAgencyName] = useState("");
+  const [companyRegNumber, setCompanyRegNumber] = useState("");
+  const [website, setWebsite] = useState("");
+  const [companyDescription, setCompanyDescription] = useState("");
 
   // Contact Information States
-  const [email, setEmail] = useState("info@carerecruitpro.co.uk");
-  const [phoneNumber, setPhoneNumber] = useState("+44 161 800 2345");
-  const [altEmail, setAltEmail] = useState("admissions@carerecruitpro.co.uk");
-  const [address, setAddress] = useState(
-    "100 King Street, Manchester, M2 4WU, United Kingdom"
-  );
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [altEmail, setAltEmail] = useState("");
+  const [address, setAddress] = useState("");
 
   // Specialisations & Documents
-  const [specialisations, setSpecialisations] = useState<string[]>([
-    "Live-in Care",
-    "Dementia Care",
-    "Elderly Care",
-    "Nursing",
-    "Mental Health",
-  ]);
+  const [specialisations, setSpecialisations] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState("");
   const [showAddTag, setShowAddTag] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<Array<{ name: string; url?: string }>>([]);
 
   // Images
   const [logoUrl, setLogoUrl] = useState<string>("");
-  const [bannerUrl, setBannerUrl] = useState<string>("/images/agency_banner.jpg");
+  const [bannerUrl, setBannerUrl] = useState<string>("");
 
   // Edit toggles
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
@@ -312,7 +302,7 @@ export default function AgencyProfile() {
                 ) : (
                   <Image
                     src="/images/logo.png"
-                    alt="CareRecruitPro"
+                    alt={agencyName || "Agency Logo"}
                     fill
                     className="object-contain p-1"
                   />
@@ -320,7 +310,7 @@ export default function AgencyProfile() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-sm font-semibold leading-tight text-slate-800">
-                  {agencyName || "CareRecruitPro"}
+                  {agencyName || "Agency Profile"}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   Agency
@@ -343,11 +333,17 @@ export default function AgencyProfile() {
             <div className="w-full bg-white rounded-2xl border border-neutral-200/80 shadow-[0px_2px_4px_rgba(0,0,0,0.03)] overflow-hidden">
               {/* Banner Image */}
               <div className="relative w-full h-48 sm:h-64 bg-slate-200">
-                <img
-                  src={bannerUrl || "/images/agency_banner.jpg"}
-                  alt="Agency Team Banner"
-                  className="w-full h-full object-cover"
-                />
+                {bannerUrl ? (
+                  <img
+                    src={bannerUrl}
+                    alt="Agency Team Banner"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-cyan-900 via-slate-800 to-indigo-950 flex items-center justify-center">
+                    <span className="text-white/40 text-sm font-medium">Upload agency banner</span>
+                  </div>
+                )}
                 {/* Edit Banner Button */}
                 <button
                   type="button"
@@ -385,7 +381,7 @@ export default function AgencyProfile() {
 
                 <div className="flex-1 pb-1">
                   <h2 className="text-neutral-900 text-2xl sm:text-3xl font-semibold font-['Wix_Madefor_Text'] leading-tight">
-                    {agencyName || "CareRecruitPro"}
+                    {agencyName || "Agency Name"}
                   </h2>
                   <p className="text-zinc-500 text-base sm:text-lg font-normal font-['Wix_Madefor_Text'] mt-0.5">
                     Recruitment Agency Profile

@@ -20,53 +20,43 @@ export default function EditCompanyProfile() {
   const router = useRouter();
   const { profile, updateProfile, isUpdating, isLoading } = useCompanyProfile();
 
-  // Form states matching screenshot
+  // Form states
   const [companyName, setCompanyName] = useState("");
   const [tradingName, setTradingName] = useState("");
   const [about, setAbout] = useState("");
-  const [services, setServices] = useState<string[]>([
-    "Residential Care",
-    "Dementia Care",
-    "Respite Care",
-    "Home Care",
-    "Day Services",
-  ]);
+  const [services, setServices] = useState<string[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
   const [newServiceText, setNewServiceText] = useState("");
 
-  const [serviceHourDay, setServiceHourDay] = useState("Mon–Fri 7am–6pm · Sat 8am–2pm");
-  const [serviceHourTime, setServiceHourTime] = useState("Emergency 24/7");
-  const [serviceArea, setServiceArea] = useState(
-    "Manchester, Greater Manchester"
-  );
-  const [founded, setFounded] = useState("2008");
-  const [staffCount, setStaffCount] = useState("320+");
-  const [locationsCount, setLocationsCount] = useState("8");
-  const [cqcRating, setCqcRating] = useState("Outstanding (CQC)");
-
-  // Jobs Post states
-  const [jobName, setJobName] = useState("Senior Care Assistant");
-  const [jobTime, setJobTime] = useState("Full Time");
-  const [jobSalary, setJobSalary] = useState("£24,000–£28,000");
+  const [serviceHourDay, setServiceHourDay] = useState("");
+  const [serviceHourTime, setServiceHourTime] = useState("");
+  const [serviceArea, setServiceArea] = useState("");
+  const [founded, setFounded] = useState("");
+  const [staffCount, setStaffCount] = useState("");
+  const [locationsCount, setLocationsCount] = useState("");
+  const [cqcRating, setCqcRating] = useState("");
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync profile data from hook
   useEffect(() => {
     if (profile) {
-      if (profile.companyName) setCompanyName(profile.companyName);
-      if (profile.tradingName) setTradingName(profile.tradingName);
-      if (profile.about) setAbout(profile.about);
-      if (profile.serviceOffered && profile.serviceOffered.length > 0) setServices(profile.serviceOffered);
-      if (profile.address) setServiceArea(profile.address);
-      if (profile.founded) setFounded(profile.founded);
-      if (profile.staffCount) setStaffCount(profile.staffCount);
-      if (profile.locationsCount) setLocationsCount(profile.locationsCount);
-      if (profile.cqcRating) setCqcRating(profile.cqcRating);
+      setCompanyName(profile.companyName || "");
+      setTradingName(profile.tradingName || "");
+      setAbout(profile.about || "");
+      setServices(Array.isArray(profile.serviceOffered) ? profile.serviceOffered.filter(Boolean) : []);
+      setServiceArea(profile.address || "");
+      setFounded(profile.founded || "");
+      setStaffCount(profile.staffCount || "");
+      setLocationsCount(profile.locationsCount || "");
+      setCqcRating(profile.cqcRating || "");
       if (profile.serviceHours) {
         const parts = profile.serviceHours.split("·");
-        if (parts[0]) setServiceHourDay(parts[0].trim());
-        if (parts[1]) setServiceHourTime(parts.slice(1).join("·").trim());
+        setServiceHourDay(parts[0]?.trim() || "");
+        setServiceHourTime(parts.slice(1).join("·").trim() || "");
+      } else {
+        setServiceHourDay("");
+        setServiceHourTime("");
       }
     }
   }, [profile]);
@@ -328,52 +318,52 @@ export default function EditCompanyProfile() {
               </div>
             </div>
 
-            {/* 2. Jobs Post Card */}
+            {/* 2. Additional Information Card */}
             <div className="w-full rounded-2xl bg-white p-6 sm:p-8 shadow-[0px_4px_6px_0px_rgba(0,0,0,0.05)] border border-slate-100">
               <h2 className="text-xl font-bold leading-6 text-slate-800 mb-6">
-                Jobs Post
+                Additional Information
               </h2>
 
-              <div className="space-y-5">
-                {/* Name */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Staff Count */}
                 <div className="space-y-2">
                   <label className="block text-base font-medium text-slate-800">
-                    Name
+                    Staff Count
                   </label>
                   <input
                     type="text"
-                    value={jobName}
-                    onChange={(e) => setJobName(e.target.value)}
+                    value={staffCount}
+                    onChange={(e) => setStaffCount(e.target.value)}
                     className="w-full h-12 px-4 rounded-md border border-neutral-200 outline-none text-base text-slate-700 bg-white focus:border-[#2b6ea6] focus:ring-1 focus:ring-[#2b6ea6] transition-all"
-                    placeholder="Senior Care Assistant"
+                    placeholder="e.g. 50+"
                   />
                 </div>
 
-                {/* Time */}
+                {/* Locations */}
                 <div className="space-y-2">
                   <label className="block text-base font-medium text-slate-800">
-                    Time
+                    Locations
                   </label>
                   <input
                     type="text"
-                    value={jobTime}
-                    onChange={(e) => setJobTime(e.target.value)}
+                    value={locationsCount}
+                    onChange={(e) => setLocationsCount(e.target.value)}
                     className="w-full h-12 px-4 rounded-md border border-neutral-200 outline-none text-base text-slate-700 bg-white focus:border-[#2b6ea6] focus:ring-1 focus:ring-[#2b6ea6] transition-all"
-                    placeholder="Full Time"
+                    placeholder="e.g. 3"
                   />
                 </div>
 
-                {/* Salary */}
+                {/* CQC Rating */}
                 <div className="space-y-2">
                   <label className="block text-base font-medium text-slate-800">
-                    Salary
+                    CQC Rating
                   </label>
                   <input
                     type="text"
-                    value={jobSalary}
-                    onChange={(e) => setJobSalary(e.target.value)}
+                    value={cqcRating}
+                    onChange={(e) => setCqcRating(e.target.value)}
                     className="w-full h-12 px-4 rounded-md border border-neutral-200 outline-none text-base text-slate-700 bg-white focus:border-[#2b6ea6] focus:ring-1 focus:ring-[#2b6ea6] transition-all"
-                    placeholder="£24,000–£28,000"
+                    placeholder="e.g. Good or Outstanding"
                   />
                 </div>
               </div>
