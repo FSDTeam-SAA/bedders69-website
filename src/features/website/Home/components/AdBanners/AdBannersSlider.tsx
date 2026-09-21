@@ -93,8 +93,22 @@ export default function AdBannersSlider() {
     setDragOffset(0);
   };
 
-  if (isLoading || banners.length === 0) {
+  if (isLoading) {
     return null;
+  }
+
+  if (banners.length === 0) {
+    return (
+      <section className="w-full border-y border-slate-100 bg-slate-50 py-8">
+        <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
+          <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-8 text-center">
+            <Sparkles className="size-7 text-cyan-700" />
+            <h2 className="mt-3 text-base font-semibold text-slate-800">No banner data found</h2>
+            <p className="mt-1 text-sm text-slate-500">There are no active banners to display right now.</p>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (

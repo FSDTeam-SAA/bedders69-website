@@ -5,7 +5,6 @@ import { MapPin, Clock, Briefcase, ChevronLeft, ChevronRight, Banknote, Sparkles
 import Link from "next/link";
 import jobsApi from "../api/jobsApi";
 import { JobItem, JobProps, JobSearchParams } from "../types/jobs.types";
-import { fallbackJobs } from "../data/fallbackJobs";
 import { matchJobCategory, matchJobSearch } from "../utils/jobMatching";
 export type { JobProps };
 export { matchJobCategory, matchJobSearch };
@@ -82,13 +81,10 @@ export const JobsList = ({
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedSalaries, selectedExperience, selectedPosted]);
 
-  // Map backend or fallback jobs to JobProps
+  // Map API jobs to the card format.
   const allJobs = useMemo<JobProps[]>(() => {
-    const dataSource =
-      backendJobs && backendJobs.length > 0 ? backendJobs : fallbackJobs;
-
-    if (dataSource && dataSource.length > 0) {
-      return dataSource.map((j, idx) => {
+    if (backendJobs.length > 0) {
+      return backendJobs.map((j, idx) => {
         const salaryStr =
           j.salaryMin && j.salaryMax
             ? `£${j.salaryMin.toLocaleString()} – £${j.salaryMax.toLocaleString()}/yr`
@@ -370,10 +366,10 @@ export const JobsList = ({
             <Briefcase className="size-7" />
           </div>
           <h3 className="text-base font-bold text-[#1B2C54]">
-            No care vacancies found
+            No data found
           </h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm">
-            No active jobs match your search or filter selections. Try adjusting your query or resetting filters.
+            No active jobs are available for your search or filter selections. Try adjusting your query or resetting filters.
           </p>
           {onResetFilters && (
             <button

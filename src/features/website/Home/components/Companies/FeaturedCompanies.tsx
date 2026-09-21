@@ -2,7 +2,6 @@
 
 import CareCompanyCard from "@/components/shared/careCard";
 import { useFeaturedCompanies } from "../../hooks/useHome";
-import { companies as fallbackCompanies } from "@/Data/data";
 import { RefreshCw } from "lucide-react";
 
 const REALISTIC_CARE_IMAGES = [
@@ -20,7 +19,7 @@ const FeaturedCompanies = () => {
     page: 1,
   });
 
-  const displayList = companies && companies.length > 0 ? companies : fallbackCompanies;
+  const displayList = companies || [];
 
   return (
     <section className="w-full bg-white px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
@@ -74,8 +73,8 @@ const FeaturedCompanies = () => {
           </div>
         )}
 
-        {/* Real / Fallback Companies Grid */}
-        {!isLoading && (!error || displayList.length > 0) && (
+        {/* API Companies Grid */}
+        {!isLoading && !error && displayList.length > 0 && (
           <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {displayList.map((item: any, index: number) => {
               const name = item.companyName || item.name || "Care Provider";
@@ -118,6 +117,13 @@ const FeaturedCompanies = () => {
                 />
               );
             })}
+          </div>
+        )}
+
+        {!isLoading && !error && displayList.length === 0 && (
+          <div className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+            <p className="text-base font-semibold text-indigo-900">No data found</p>
+            <p className="mt-1 text-sm text-slate-500">There are no featured care companies available right now.</p>
           </div>
         )}
       </div>

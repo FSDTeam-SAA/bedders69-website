@@ -26,7 +26,6 @@ import servicesApi from "../api/servicesApi";
 import { CareCompanyItem } from "../types/services.types";
 import jobsApi from "@/features/website/Jobs/api/jobsApi";
 import { JobItem } from "@/features/website/Jobs/types/jobs.types";
-import { companies as fallbackCompanies } from "@/Data/data";
 
 import contactRequestsApi from "@/features/care-company/contact-requests/api/contactRequestsApi";
 
@@ -145,26 +144,6 @@ export const ServiceDetailView = () => {
 
             if (found) {
               setCompany(found);
-            } else {
-              // Fallback to matching from static data or first backend company
-              const staticMatch = fallbackCompanies.find(
-                (c) => c.name.toLowerCase().replace(/\s+/g, "-") === decodedSlug
-              );
-              if (staticMatch) {
-                setCompany({
-                  id: "static",
-                  companyName: staticMatch.name,
-                  email: "contact@" + staticMatch.name.toLowerCase().replace(/\s+/g, "") + ".co.uk",
-                  phoneNumber: "+44 20 7946 0123",
-                  address: staticMatch.location,
-                  postCode: "UK",
-                  serviceOffered: staticMatch.tags,
-                  coverageRegions: [staticMatch.location],
-                  status: "approved",
-                });
-              } else if (compRes.data.length > 0) {
-                setCompany(compRes.data[0]);
-              }
             }
           }
 

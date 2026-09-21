@@ -2,7 +2,6 @@
 
 import CareCompanyCard from "@/components/shared/careCard";
 import { useFeaturedAgencies } from "../../hooks/useHome";
-import { fallbackAgencies } from "@/Data/data";
 import { RefreshCw } from "lucide-react";
 
 const REALISTIC_AGENCY_IMAGES = [
@@ -20,7 +19,7 @@ const FeaturedAgencies = () => {
     page: 1,
   });
 
-  const displayList = agencies && agencies.length > 0 ? agencies : fallbackAgencies;
+  const displayList = agencies || [];
 
   return (
     <section className="w-full bg-white px-4 py-16 sm:px-6 md:px-8 lg:px-12 xl:px-20 2xl:px-24">
@@ -74,8 +73,8 @@ const FeaturedAgencies = () => {
           </div>
         )}
 
-        {/* Real / Fallback Agencies Grid */}
-        {!isLoading && (!error || displayList.length > 0) && (
+        {/* API Agencies Grid */}
+        {!isLoading && !error && displayList.length > 0 && (
           <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {displayList.map((item: any, index: number) => {
               const name = item.organizationName || item.name || "Care Agency";
@@ -115,6 +114,13 @@ const FeaturedAgencies = () => {
                 />
               );
             })}
+          </div>
+        )}
+
+        {!isLoading && !error && displayList.length === 0 && (
+          <div className="w-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-14 text-center">
+            <p className="text-base font-semibold text-indigo-900">No data found</p>
+            <p className="mt-1 text-sm text-slate-500">There are no featured care agencies available right now.</p>
           </div>
         )}
       </div>

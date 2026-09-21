@@ -19,11 +19,6 @@ import {
   MapPin,
 } from "lucide-react";
 import homeApi from "../../api/homeApi";
-import {
-  companies as fallbackCompanies,
-  fallbackAgencies,
-  products as fallbackProducts,
-} from "@/Data/data";
 
 interface SearchResultItem {
   id: string;
@@ -37,36 +32,9 @@ interface SearchResultItem {
 
 interface MemberAvatar {
   name: string;
-  image: string;
+  image?: string;
   role?: string;
 }
-
-const DEFAULT_COMMUNITY_AVATARS: MemberAvatar[] = [
-  {
-    name: "Sarah M. (Registered Nurse)",
-    image:
-      "https://images.unsplash.com/photo-1594824813571-638f026385a4?auto=format&fit=crop&q=80&w=120",
-    role: "Registered Nurse",
-  },
-  {
-    name: "David K. (Senior Carer)",
-    image:
-      "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=120",
-    role: "Senior Carer",
-  },
-  {
-    name: "Dr. Elena R. (Care Specialist)",
-    image:
-      "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=120",
-    role: "Care Specialist",
-  },
-  {
-    name: "Marcus L. (Support Worker)",
-    image:
-      "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=120",
-    role: "Support Worker",
-  },
-];
 
 const Banner = () => {
   const router = useRouter();
@@ -77,11 +45,9 @@ const Banner = () => {
 
   // Dynamic community members & stats
   const [communityStats, setCommunityStats] = useState<{
-    totalMembers: number;
     avatars: MemberAvatar[];
   }>({
-    totalMembers: 10000,
-    avatars: DEFAULT_COMMUNITY_AVATARS,
+    avatars: [],
   });
 
   // Categorized search results
@@ -94,61 +60,26 @@ const Banner = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch community statistics & member avatars
+  // Fetch carer avatars for the hero community section.
   useEffect(() => {
     let isMounted = true;
 
     const fetchCommunityData = async () => {
       try {
-        const statsRes = await homeApi.getCommunityStats();
-        if (isMounted && statsRes?.data) {
-          const apiTotal = statsRes.data.totalMembers || 0;
-          const apiAvatars = (statsRes.data.avatars || []).filter(
-            (a) => a.image && a.image.trim().length > 0
-          );
-
-          const combinedAvatars: MemberAvatar[] = [
-            ...apiAvatars,
-            ...DEFAULT_COMMUNITY_AVATARS.slice(apiAvatars.length),
-          ].slice(0, 4);
+        const carersRes = await homeApi.getCarers({ limit: 50, page: 1 });
+        if (isMounted && carersRes?.data) {
+          const apiAvatars: MemberAvatar[] = carersRes.data.map((carer) => ({
+              name: carer.careName || "Carer",
+              image: carer.profilePicture?.trim() || undefined,
+              role: carer.specialisms?.[0] || "Carer",
+            }));
 
           setCommunityStats({
-            totalMembers: apiTotal > 0 ? apiTotal : 10000,
-            avatars: combinedAvatars,
+            avatars: apiAvatars,
           });
-          return;
         }
       } catch {
-        // Fallback to getCarers
-        try {
-          const carersRes = await homeApi.getCarers({ limit: 4 });
-          if (isMounted && carersRes?.data && carersRes.data.length > 0) {
-            const carerAvatars: MemberAvatar[] = carersRes.data
-              .filter(
-                (c): c is typeof c & { profilePicture: string } =>
-                  Boolean(c.profilePicture)
-              )
-              .map((c) => ({
-                name: c.careName || "Carer",
-                image: c.profilePicture,
-                role: c.specialisms?.[0] || "Carer",
-              }));
-
-            const combined: MemberAvatar[] = [
-              ...carerAvatars,
-              ...DEFAULT_COMMUNITY_AVATARS.slice(carerAvatars.length),
-            ].slice(0, 4);
-
-            const total = carersRes.meta?.total || 10000;
-            setCommunityStats({
-              totalMembers: total > 0 ? total : 10000,
-              avatars: combined,
-            });
-            return;
-          }
-        } catch {
-          // Keep default fallback
-        }
+        // Carer images and count are displayed only from the carers API.
       }
     };
 
@@ -227,28 +158,7 @@ const Banner = () => {
             }));
           }
         } catch {
-          // Fallback to static data
-        }
-        if (foundCare.length === 0) {
-          foundCare = fallbackCompanies
-            .filter(
-              (c) =>
-                c.name.toLowerCase().includes(q) ||
-                c.location.toLowerCase().includes(q) ||
-                c.tags.some((t) => t.toLowerCase().includes(q))
-            )
-            .slice(0, 4)
-            .map((c) => ({
-              id: c.id || c.name,
-              title: c.name,
-              subtitle: c.tags?.[0] || "Care Home",
-              location: c.location,
-              category: "care",
-              href: `/services/${encodeURIComponent(
-                c.name.toLowerCase().replace(/\s+/g, "-")
-              )}`,
-              tag: "Care Provider",
-            }));
+          // The dropdown intentionally shows no results when the API is unavailable.
         }
       }
 
@@ -272,26 +182,7 @@ const Banner = () => {
             }));
           }
         } catch {
-          // Fallback to static agencies
-        }
-        if (foundAgencies.length === 0) {
-          foundAgencies = fallbackAgencies
-            .filter(
-              (a) =>
-                a.name.toLowerCase().includes(q) ||
-                a.location.toLowerCase().includes(q) ||
-                a.tags.some((t) => t.toLowerCase().includes(q))
-            )
-            .slice(0, 4)
-            .map((a) => ({
-              id: a.id || a.name,
-              title: a.name,
-              subtitle: a.tags?.[0] || "Recruitment Agency",
-              location: a.location,
-              category: "agency",
-              href: `/agencies?search=${encodeURIComponent(a.name)}`,
-              tag: "Agency",
-            }));
+          // The dropdown intentionally shows no results when the API is unavailable.
         }
       }
 
@@ -340,28 +231,7 @@ const Banner = () => {
             }));
           }
         } catch {
-          // Fallback
-        }
-        if (foundProducts.length === 0) {
-          foundProducts = fallbackProducts
-            .filter(
-              (p) =>
-                p.name.toLowerCase().includes(q) ||
-                p.category.toLowerCase().includes(q) ||
-                p.seller.toLowerCase().includes(q)
-            )
-            .slice(0, 4)
-            .map((p, idx) => ({
-              id: `prod-${idx}`,
-              title: p.name,
-              subtitle: p.category,
-              location: p.price,
-              category: "products",
-              href: `/marketplace/${encodeURIComponent(
-                p.name.toLowerCase().replace(/\s+/g, "-")
-              )}`,
-              tag: "Product",
-            }));
+          // The dropdown intentionally shows no results when the API is unavailable.
         }
       }
 
@@ -400,19 +270,21 @@ const Banner = () => {
 
   // Debounce search input
   useEffect(() => {
-    if (searchQuery.trim().length >= 2) {
-      const timer = setTimeout(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim().length >= 2) {
         performSearch(searchQuery, selectedCategory);
-      }, 250);
-      return () => clearTimeout(timer);
-    } else {
+        return;
+      }
+
       setCareResults([]);
       setAgencyResults([]);
       setJobResults([]);
       setProductResults([]);
       setCarerResults([]);
       setIsLoading(false);
-    }
+    }, searchQuery.trim().length >= 2 ? 250 : 0);
+
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedCategory, performSearch]);
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
@@ -483,9 +355,7 @@ const Banner = () => {
             </h1>
 
             <p className="max-w-[700px] text-base leading-7 text-gray-500 sm:text-lg lg:text-2xl">
-              The centralised ecosystem for the UK care industry connecting care
-              companies, carers, agencies, and families with everything they
-              need.
+A Centralised Hub for the UK care industry connecting care companies, agencies, carers and families with everything they need.
             </p>
           </div>
 
@@ -825,24 +695,27 @@ const Banner = () => {
                   style={{ zIndex: 10 - idx }}
                   title={avatar.name}
                 >
-                  <img
-                    src={avatar.image}
-                    alt={avatar.name}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        DEFAULT_COMMUNITY_AVATARS[
-                          idx % DEFAULT_COMMUNITY_AVATARS.length
-                        ].image;
-                    }}
-                  />
+                  {avatar.image ? (
+                    <img
+                      src={avatar.image}
+                      alt={avatar.name}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-cyan-100 text-sm font-bold text-cyan-800">
+                      {avatar.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
 
             <div className="flex items-center gap-1.5">
               <p className="text-base font-bold tracking-tight text-cyan-700 group-hover:text-cyan-800 transition-colors">
-                Join {communityStats.totalMembers.toLocaleString()}+
+                Join {communityStats.avatars.length.toLocaleString()}+
               </p>
               <ArrowUpRight className="size-4 text-cyan-600 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-200" />
             </div>

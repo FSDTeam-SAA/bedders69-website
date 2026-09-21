@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const OurCommitment = () => {
   return (
@@ -62,9 +63,12 @@ const OurCommitment = () => {
             </div>
 
             {/* CTA */}
-            <button className="rounded-xl bg-cyan-700 px-6 py-4 text-sm font-medium leading-5 text-white transition hover:bg-cyan-800 sm:text-base">
+            {/* <button className="rounded-xl bg-cyan-700 px-6 py-4 text-sm font-medium leading-5 text-white transition hover:bg-cyan-800 sm:text-base">
               Find Care Services Near You
-            </button>
+            </button> */}
+            <Link href="/find-care" className="rounded-xl bg-cyan-700 px-6 py-4 text-sm font-medium leading-5 text-white transition hover:bg-cyan-800 sm:text-base">
+              Find Care Services Near You
+            </Link>
           </div>
         </div>
 

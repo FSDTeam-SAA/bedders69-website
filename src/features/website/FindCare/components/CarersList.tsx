@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Star, MapPin, ChevronLeft, ChevronRight, UserCheck, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserCheck, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import findCareApi from "../api/findCareApi";
 import { CarerItem } from "../types/findCare.types";
@@ -9,14 +9,11 @@ import { CarerItem } from "../types/findCare.types";
 export interface CarerProps {
   id?: string;
   name: string;
-  rating: string;
-  reviews: number;
   location: string;
   biography: string;
   skills: string[];
   experience: string;
   verified: boolean;
-  rate: string;
   available: boolean;
   image?: string;
 }
@@ -98,8 +95,6 @@ export const CarersList = ({
         return {
           id: c.id,
           name: c.careName,
-          rating: "4.9",
-          reviews: 24 + idx * 5,
           location: loc,
           biography:
             c.professionalSummary ||
@@ -107,7 +102,6 @@ export const CarersList = ({
           skills: skills,
           experience: `${expYears} Years Exp`,
           verified: true,
-          rate: `£${18 + (idx % 5) * 2}/hr`,
           available: c.isAvailable !== false,
           image: photo,
         };
@@ -264,30 +258,6 @@ export const CarersList = ({
                 {/* Details Section */}
                 <div className="p-5 flex-1 flex flex-col justify-between gap-4">
                   <div className="flex flex-col gap-3">
-                    {/* Star Rating & Location row */}
-                    <div className="flex justify-between items-center text-xs text-slate-400">
-                      <div className="flex items-center gap-1">
-                        <div className="flex items-center gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className="size-3 fill-amber-400 text-amber-400"
-                            />
-                          ))}
-                        </div>
-                        <span className="text-slate-700 font-bold ml-1">
-                          {carer.rating}
-                        </span>
-                        <span className="text-slate-400 text-[10px]">
-                          ({carer.reviews})
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 font-medium text-slate-500">
-                        <MapPin className="size-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate max-w-[120px]">{carer.location}</span>
-                      </div>
-                    </div>
-
                     {/* Name & Biography */}
                     <div className="flex flex-col gap-1">
                       <Link href={carerUrl} className="block cursor-pointer">
@@ -319,7 +289,7 @@ export const CarersList = ({
                         )}
                       </div>
 
-                      {/* Row 2: Experience, Verification, Rate */}
+                      {/* Row 2: Experience and verification */}
                       <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-[#0A66C2]">
                         <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">
                           {carer.experience}
@@ -329,9 +299,6 @@ export const CarersList = ({
                             DBS Verified
                           </span>
                         )}
-                        <span className="bg-cyan-50 text-cyan-800 border border-cyan-200 px-2 py-0.5 rounded-md font-semibold">
-                          {carer.rate}
-                        </span>
                       </div>
                     </div>
                   </div>

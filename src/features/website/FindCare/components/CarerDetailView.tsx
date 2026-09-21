@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Star,
   MapPin,
   CheckCircle,
   Award,
@@ -260,7 +259,7 @@ export const CarerDetailView = () => {
                   </div>
                 </div>
 
-                {/* Rating & Location line */}
+                {/* Location */}
                 <div className="flex flex-wrap justify-center sm:justify-start items-center gap-4 text-slate-500 text-sm mt-1">
                   <div className="flex items-center gap-1 font-semibold">
                     <MapPin className="size-4 text-slate-400" />
@@ -268,19 +267,6 @@ export const CarerDetailView = () => {
                   </div>
 
                   <span className="hidden sm:inline text-slate-200">•</span>
-
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-center">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className="size-4 fill-amber-400 text-amber-400"
-                        />
-                      ))}
-                    </div>
-                    <span className="text-slate-700 font-bold ml-1">4.9</span>
-                    <span className="text-slate-400">(28 reviews)</span>
-                  </div>
                 </div>
 
                 {/* Extra Stats */}

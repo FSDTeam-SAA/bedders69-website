@@ -5,7 +5,6 @@ import { MapPin, Star, ChevronLeft, ChevronRight, Building2, ArrowUpRight } from
 import Link from "next/link";
 import servicesApi from "../api/servicesApi";
 import { CareCompanyItem } from "../types/services.types";
-import { companies as fallbackCompanies } from "@/Data/data";
 
 interface ServicesListProps {
   searchQuery: string;
@@ -27,7 +26,7 @@ export const ServicesList = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const itemsPerPage = 6;
 
-  // Custom provider images for nice fallback visual appearance
+  // Used only when an API record has no uploaded image.
   const providerImages = [
     "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&q=80&w=400",
     "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=400",
@@ -71,10 +70,9 @@ export const ServicesList = ({
     setCurrentPage(1);
   }, [searchQuery, selectedLocation, selectedServiceTypes, selectedRegions, selectedRating]);
 
-  // Combine backend companies with formatted properties
+  // Format API companies for the listing.
   const allCompanies = useMemo(() => {
-    if (backendCompanies && backendCompanies.length > 0) {
-      return backendCompanies.map((c, index) => {
+    return backendCompanies.map((c, index) => {
         const image =
           c.coverPhoto ||
           c.logo ||
@@ -106,22 +104,6 @@ export const ServicesList = ({
           coverageRegions: c.coverageRegions || [loc],
         };
       });
-    }
-
-    // Fallback to static data if backend returned empty
-    return fallbackCompanies.map((c, index) => ({
-      id: `static-${index}`,
-      name: c.name,
-      location: c.location,
-      tags: c.tags,
-      image: providerImages[index % providerImages.length],
-      rating: c.rating,
-      reviews: c.reviews,
-      email: "",
-      phone: "",
-      website: "",
-      coverageRegions: [c.location],
-    }));
   }, [backendCompanies]);
 
   // Filter based on active search criteria
@@ -356,10 +338,10 @@ export const ServicesList = ({
             <Building2 className="size-7" />
           </div>
           <h3 className="text-base font-bold text-[#1B2C54]">
-            No care providers found
+            No data found
           </h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm">
-            No care providers match your active filters or search terms. Try adjusting your search or clearing filters.
+            No care providers are available for your current search or filters. Try adjusting your search or clearing filters.
           </p>
         </div>
       )}
