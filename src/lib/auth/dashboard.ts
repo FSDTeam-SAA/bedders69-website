@@ -15,7 +15,7 @@ export function getSupplierDashboardUrl(): string {
 
   try {
     const url = new URL(envUrl.trim());
-    if (url.pathname === "/" || url.pathname === "") {
+    if (url.pathname === "/" || url.pathname === "" || url.pathname === "/supplir") {
       url.pathname = "/supplier";
     }
     return url.toString().replace(/\/+$/, "");
@@ -23,6 +23,9 @@ export function getSupplierDashboardUrl(): string {
     const trimmed = envUrl.trim().replace(/\/+$/, "");
     if (trimmed.endsWith("/supplier")) {
       return trimmed;
+    }
+    if (trimmed.endsWith("/supplir")) {
+      return trimmed.replace(/\/supplir$/, "/supplier");
     }
     return `${trimmed}/supplier`;
   }
