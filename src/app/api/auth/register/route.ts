@@ -15,6 +15,7 @@ const ROLE_MAP: Record<string, string> = {
   supplier: "supplier",
   product_supplier: "supplier",
   service_provider: "service_provider",
+  service: "service_provider",
 };
 
 export async function POST(request: Request) {

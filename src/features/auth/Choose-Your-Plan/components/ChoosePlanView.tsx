@@ -41,7 +41,11 @@ export const ChoosePlanView = () => {
     } catch (e) {}
   }
   const accountType = typeParam || savedAccountType || "care_company";
-  const isSupplier = accountType === "supplier";
+  const isExternalRole =
+    accountType === "supplier" ||
+    accountType === "product_supplier" ||
+    accountType === "service_provider" ||
+    accountType === "service";
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("free");
   const [loading, setLoading] = useState(false);
@@ -49,9 +53,9 @@ export const ChoosePlanView = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isSupplier) {
+    if (isExternalRole) {
       setLoading(true);
-      const bypassSupplier = async () => {
+      const bypassExternalRole = async () => {
         let email = "";
         let password = "";
         if (typeof window !== "undefined") {
@@ -74,16 +78,18 @@ export const ChoosePlanView = () => {
             });
             if (loginRes.ok) {
               const loginData = await loginRes.json();
-              const destination = loginData.dashboardPath || "/";
-              setSuccess(true);
-              setTimeout(() => {
-                if (destination.startsWith("http")) {
-                  window.location.assign(destination);
-                } else {
-                  window.location.href = destination;
-                }
-              }, 1000);
-              return;
+              const destination = loginData.dashboardPath;
+              if (destination && destination !== "/") {
+                setSuccess(true);
+                setTimeout(() => {
+                  if (destination.startsWith("http")) {
+                    window.location.assign(destination);
+                  } else {
+                    window.location.href = destination;
+                  }
+                }, 1000);
+                return;
+              }
             }
           } catch (err) {}
         }
@@ -97,9 +103,9 @@ export const ChoosePlanView = () => {
         }, 1000);
       };
 
-      bypassSupplier();
+      bypassExternalRole();
     }
-  }, [isSupplier, router]);
+  }, [isExternalRole, router]);
 
   const handleContinue = async () => {
     setLoading(true);
@@ -173,7 +179,12 @@ export const ChoosePlanView = () => {
     }
   };
 
-  if (isSupplier) {
+  if (isExternalRole) {
+    const roleTitle =
+      accountType === "service_provider" || accountType === "service"
+        ? "Service Provider"
+        : "Product Supplier";
+
     return (
       <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#F5F9FD] via-[#EEF5FC] to-[#E5F0FA] px-4 py-12 font-['Wix_Madefor_Text',Arial,sans-serif]">
         <div className="relative z-10 mx-auto flex w-full max-w-[500px] flex-col items-center text-center p-8 rounded-2xl border border-slate-100/90 bg-white shadow-[0px_10px_35px_rgba(27,44,84,0.06)]">
@@ -185,12 +196,12 @@ export const ChoosePlanView = () => {
             )}
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">
-            {success ? "Account Ready!" : "Setting Up Supplier Account"}
+            {success ? "Account Ready!" : `Setting Up ${roleTitle} Account`}
           </h2>
           <p className="text-sm text-slate-600">
             {success
-              ? "Your supplier account is ready. Redirecting..."
-              : "Supplier accounts do not require a subscription plan. Redirecting you..."}
+              ? "Your account is ready. Redirecting to your dashboard..."
+              : `${roleTitle} accounts do not require a subscription plan. Redirecting you to your dashboard...`}
           </p>
         </div>
       </main>

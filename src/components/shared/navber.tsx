@@ -17,10 +17,12 @@ export const Navbar = () => {
     authenticated: boolean;
     role: string | null;
     hasDashboard: boolean;
+    dashboardPath?: string;
   }>({
     authenticated: false,
     role: null,
     hasDashboard: false,
+    dashboardPath: "/",
   });
 
   const checkAuth = async () => {
@@ -33,6 +35,7 @@ export const Navbar = () => {
             authenticated: true,
             role: data.role,
             hasDashboard: hasWebsiteDashboard(data.role),
+            dashboardPath: data.dashboardPath,
           });
           return;
         }
@@ -144,13 +147,23 @@ export const Navbar = () => {
           {authStatus.authenticated ? (
             <>
               {authStatus.hasDashboard && (
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
-                >
-                  <LayoutDashboard className="size-4 text-white" />
-                  <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
-                </Link>
+                authStatus.dashboardPath?.startsWith("http") ? (
+                  <a
+                    href={authStatus.dashboardPath}
+                    className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
+                  >
+                    <LayoutDashboard className="size-4 text-white" />
+                    <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
+                  </a>
+                ) : (
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2.5 shadow-sm transition-all duration-200 hover:bg-cyan-800 hover:shadow"
+                  >
+                    <LayoutDashboard className="size-4 text-white" />
+                    <span className="text-base font-semibold leading-5 text-white">Dashboard</span>
+                  </Link>
+                )
               )}
               <button
                 onClick={handleLogout}
@@ -228,13 +241,23 @@ export const Navbar = () => {
             {authStatus.authenticated ? (
               <>
                 {authStatus.hasDashboard && (
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
-                  >
-                    <LayoutDashboard className="size-5" />
-                    Dashboard
-                  </Link>
+                  authStatus.dashboardPath?.startsWith("http") ? (
+                    <a
+                      href={authStatus.dashboardPath}
+                      className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
+                    >
+                      <LayoutDashboard className="size-5" />
+                      Dashboard
+                    </a>
+                  ) : (
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 py-3 text-center text-base font-semibold text-white"
+                    >
+                      <LayoutDashboard className="size-5" />
+                      Dashboard
+                    </Link>
+                  )
                 )}
                 <button
                   onClick={handleLogout}

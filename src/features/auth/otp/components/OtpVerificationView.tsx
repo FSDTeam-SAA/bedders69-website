@@ -122,8 +122,14 @@ export const OtpVerificationView = () => {
 
       setSuccess(true);
       setTimeout(async () => {
-        if (accountType === "supplier") {
-          // Supplier accounts do not require a subscription plan
+        const isExternalRole =
+          accountType === "supplier" ||
+          accountType === "product_supplier" ||
+          accountType === "service_provider" ||
+          accountType === "service";
+
+        if (isExternalRole) {
+          // Supplier & Service Provider accounts are routed to external dashboards
           if (typeof window !== "undefined") {
             try {
               const stored = localStorage.getItem("bedders_business_info");
@@ -137,13 +143,15 @@ export const OtpVerificationView = () => {
                   });
                   if (loginRes.ok) {
                     const loginData = await loginRes.json();
-                    const destination = loginData.dashboardPath || "/";
-                    if (destination.startsWith("http")) {
-                      window.location.assign(destination);
-                    } else {
-                      window.location.href = destination;
+                    const destination = loginData.dashboardPath;
+                    if (destination && destination !== "/") {
+                      if (destination.startsWith("http")) {
+                        window.location.assign(destination);
+                      } else {
+                        window.location.href = destination;
+                      }
+                      return;
                     }
-                    return;
                   }
                 }
               }
