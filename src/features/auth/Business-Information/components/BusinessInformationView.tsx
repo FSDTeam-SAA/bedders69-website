@@ -11,39 +11,9 @@ import {
   Check,
   X,
   Loader2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
-
-const COVERAGE_REGIONS = [
-  "London",
-  "South East",
-  "South West",
-  "East of England",
-  "West Midlands",
-  "East Midlands",
-  "Yorkshire",
-  "North West",
-  "North East",
-  "Wales",
-  "Scotland",
-  "Northern Ireland",
-];
-
-const SERVICES_OFFERED = [
-  "Dementia Care",
-  "Alzheimer's",
-  "Parkinson's",
-  "Stroke Recovery",
-  "Diabetes",
-  "COPD",
-  "Brain Injury Support",
-  "Mental Health Support",
-  "Medication Administration",
-  "Companionship",
-  "Palliative Care",
-  "Live-In Care",
-  "Personal Care",
-  "Manual Handling",
-];
 
 export const BusinessInformationView = () => {
   const router = useRouter();
@@ -59,33 +29,15 @@ export const BusinessInformationView = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
-
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
-
-  const toggleRegion = (region: string) => {
-    setSelectedRegions((prev) =>
-      prev.includes(region)
-        ? prev.filter((r) => r !== region)
-        : [...prev, region]
-    );
-  };
-
-  const toggleService = (service: string) => {
-    setSelectedServices((prev) =>
-      prev.includes(service)
-        ? prev.filter((s) => s !== service)
-        : [...prev, service]
-    );
-  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,6 +58,12 @@ export const BusinessInformationView = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address (e.g. name@example.com).");
+      return;
+    }
 
     if (!password) {
       setError("Password is required.");
@@ -159,8 +117,6 @@ export const BusinessInformationView = () => {
             website: website.trim(),
             address: address.trim(),
             password,
-            selectedRegions,
-            selectedServices,
           })
         );
       }
@@ -310,28 +266,56 @@ export const BusinessInformationView = () => {
               <label className="text-base font-medium leading-5 text-slate-800">
                 Password
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter account password (min. 6 chars)"
-                className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
-              />
+              <div className="relative w-full">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter account password (min. 6 chars)"
+                  className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 pr-12 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-slate-600 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-5" />
+                  ) : (
+                    <Eye className="size-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 flex flex-col gap-3">
               <label className="text-base font-medium leading-5 text-slate-800">
                 Confirm Password
               </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
-                className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
-              />
+              <div className="relative w-full">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="h-14 w-full rounded-lg border border-neutral-400/80 bg-white px-4 pr-12 text-base font-normal text-slate-700 outline-none transition-all placeholder:text-gray-400 focus:border-cyan-700 focus:ring-1 focus:ring-cyan-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((p) => !p)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-slate-600 focus:outline-none"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="size-5" />
+                  ) : (
+                    <Eye className="size-5" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -473,64 +457,6 @@ export const BusinessInformationView = () => {
                   </>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Coverage Regions */}
-          <div className="flex flex-col gap-3 pt-2">
-            <label className="text-base font-medium leading-5 text-slate-800">
-              Coverage Regions
-            </label>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {COVERAGE_REGIONS.map((region) => {
-                const checked = selectedRegions.includes(region);
-                return (
-                  <label
-                    key={region}
-                    onClick={() => toggleRegion(region)}
-                    className="flex cursor-pointer items-center gap-2 select-none py-1"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {}}
-                      className="size-4 rounded border-gray-400 text-cyan-700 accent-cyan-700 focus:ring-cyan-700 cursor-pointer"
-                    />
-                    <span className="text-sm font-normal text-gray-600 truncate">
-                      {region}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Services Offered */}
-          <div className="flex flex-col gap-3 pt-2">
-            <label className="text-base font-medium leading-5 text-slate-800">
-              Services Offered
-            </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {SERVICES_OFFERED.map((service) => {
-                const checked = selectedServices.includes(service);
-                return (
-                  <label
-                    key={service}
-                    onClick={() => toggleService(service)}
-                    className="flex cursor-pointer items-center gap-2 select-none py-1"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => {}}
-                      className="size-4 rounded border-gray-400 text-cyan-700 accent-cyan-700 focus:ring-cyan-700 cursor-pointer"
-                    />
-                    <span className="text-sm font-normal text-gray-600 truncate">
-                      {service}
-                    </span>
-                  </label>
-                );
-              })}
             </div>
           </div>
 

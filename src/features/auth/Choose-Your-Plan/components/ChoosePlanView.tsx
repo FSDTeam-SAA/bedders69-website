@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 import { PlanType, PricingPlan } from "../types/choose-plan.types";
@@ -29,12 +29,77 @@ const PLANS: PricingPlan[] = [
 export const ChoosePlanView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const accountType = searchParams.get("type") || "care_company";
+  const typeParam = searchParams.get("type");
+
+  let savedAccountType = "";
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("bedders_business_info");
+      if (stored) {
+        savedAccountType = JSON.parse(stored).accountType || "";
+      }
+    } catch (e) {}
+  }
+  const accountType = typeParam || savedAccountType || "care_company";
+  const isSupplier = accountType === "supplier";
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("free");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isSupplier) {
+      setLoading(true);
+      const bypassSupplier = async () => {
+        let email = "";
+        let password = "";
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem("bedders_business_info");
+            if (stored) {
+              const info = JSON.parse(stored);
+              email = (info.email || "").trim().toLowerCase();
+              password = info.password || "";
+            }
+          } catch (e) {}
+        }
+
+        if (email && password) {
+          try {
+            const loginRes = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+            if (loginRes.ok) {
+              const loginData = await loginRes.json();
+              const destination = loginData.dashboardPath || "/";
+              setSuccess(true);
+              setTimeout(() => {
+                if (destination.startsWith("http")) {
+                  window.location.assign(destination);
+                } else {
+                  window.location.href = destination;
+                }
+              }, 1000);
+              return;
+            }
+          } catch (err) {}
+        }
+
+        setTimeout(() => {
+          router.replace(
+            email
+              ? `/login?verified=true&email=${encodeURIComponent(email)}`
+              : "/login?verified=true"
+          );
+        }, 1000);
+      };
+
+      bypassSupplier();
+    }
+  }, [isSupplier, router]);
 
   const handleContinue = async () => {
     setLoading(true);
@@ -107,6 +172,30 @@ export const ChoosePlanView = () => {
       router.push("/login?verified=true");
     }
   };
+
+  if (isSupplier) {
+    return (
+      <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#F5F9FD] via-[#EEF5FC] to-[#E5F0FA] px-4 py-12 font-['Wix_Madefor_Text',Arial,sans-serif]">
+        <div className="relative z-10 mx-auto flex w-full max-w-[500px] flex-col items-center text-center p-8 rounded-2xl border border-slate-100/90 bg-white shadow-[0px_10px_35px_rgba(27,44,84,0.06)]">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-cyan-50 text-cyan-700">
+            {success ? (
+              <CheckCircle2 className="size-8 text-emerald-600" />
+            ) : (
+              <Loader2 className="size-8 animate-spin text-cyan-700" />
+            )}
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">
+            {success ? "Account Ready!" : "Setting Up Supplier Account"}
+          </h2>
+          <p className="text-sm text-slate-600">
+            {success
+              ? "Your supplier account is ready. Redirecting..."
+              : "Supplier accounts do not require a subscription plan. Redirecting you..."}
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#F5F9FD] via-[#EEF5FC] to-[#E5F0FA] px-4 py-12 font-['Wix_Madefor_Text',Arial,sans-serif]">

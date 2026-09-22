@@ -35,6 +35,12 @@ export const UserSignupView = () => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address (e.g. name@example.com).");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match. Please re-enter your password.");
       return;

@@ -121,8 +121,36 @@ export const OtpVerificationView = () => {
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        if (fromParam === "business") {
+      setTimeout(async () => {
+        if (accountType === "supplier") {
+          // Supplier accounts do not require a subscription plan
+          if (typeof window !== "undefined") {
+            try {
+              const stored = localStorage.getItem("bedders_business_info");
+              if (stored) {
+                const info = JSON.parse(stored);
+                if (info.email && info.password) {
+                  const loginRes = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: info.email, password: info.password }),
+                  });
+                  if (loginRes.ok) {
+                    const loginData = await loginRes.json();
+                    const destination = loginData.dashboardPath || "/";
+                    if (destination.startsWith("http")) {
+                      window.location.assign(destination);
+                    } else {
+                      window.location.href = destination;
+                    }
+                    return;
+                  }
+                }
+              }
+            } catch (err) {}
+          }
+          router.push(`/login?verified=true&email=${encodeURIComponent(emailParam)}`);
+        } else if (fromParam === "business") {
           router.push(`/choose-plan?type=${accountType}`);
         } else {
           router.push(`/login?verified=true&email=${encodeURIComponent(emailParam)}`);

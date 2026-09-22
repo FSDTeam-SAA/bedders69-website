@@ -38,6 +38,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(String(email).trim())) {
+      return NextResponse.json(
+        { message: "Please provide a valid email address (e.g. name@example.com)" },
+        { status: 400 }
+      );
+    }
+
     const normalizedRole = ROLE_MAP[role] || "family";
 
     const payload: Record<string, any> = {
@@ -61,8 +69,18 @@ export async function POST(request: Request) {
     const resData = await response.json();
 
     if (!response.ok) {
+      const errorMessage =
+        (Array.isArray(resData?.errorSources) && resData.errorSources.length > 0
+          ? resData.errorSources
+              .map((e: any) => e.message)
+              .filter(Boolean)
+              .join(", ")
+          : null) ||
+        resData?.message ||
+        "Registration failed";
+
       return NextResponse.json(
-        { message: resData?.message || "Registration failed" },
+        { message: errorMessage, errorSources: resData?.errorSources },
         { status: response.status }
       );
     }

@@ -28,7 +28,7 @@ const formatType = (value?: string) =>
 export function CarerJobDetailPage({ slug: jobId }: { slug: string }) {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {

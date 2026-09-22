@@ -7,6 +7,4 @@ export interface BusinessInformationData {
   address: string;
   logo?: string | File | null;
   coverPhoto?: string | File | null;
-  coverageRegions: string[];
-  servicesOffered: string[];
 }

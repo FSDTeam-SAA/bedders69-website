@@ -18,6 +18,7 @@ export const UploadDocumentsView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountType = searchParams.get("type") || "care_company";
+  const isCarer = accountType === "carer" || accountType === "care";
 
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
@@ -142,7 +143,7 @@ export const UploadDocumentsView = () => {
             Upload Documents
           </h1>
           <p className="text-base font-normal leading-6 text-gray-500 sm:text-xl">
-            Upload your credentials and certifications
+            {isCarer ? "Upload your credentials and certifications" : "Upload your company credentials and business verification documents"}
           </p>
         </div>
 
@@ -159,7 +160,8 @@ export const UploadDocumentsView = () => {
           )}
 
           {/* CV / Resume Section */}
-          <div className="flex flex-col gap-3">
+          {isCarer && (
+            <div className="flex flex-col gap-3">
             <label className="text-base font-medium leading-5 text-slate-800">
               CV / Resume
             </label>
@@ -210,12 +212,13 @@ export const UploadDocumentsView = () => {
                 </>
               )}
             </div>
-          </div>
+            </div>
+          )}
 
           {/* Supporting Documents Section */}
           <div className="flex flex-col gap-3">
             <label className="text-base font-medium leading-5 text-slate-800">
-              Supporting Documents
+              {isCarer ? "Supporting Documents" : "Company / Business Documents"}
             </label>
             <input
               type="file"
@@ -236,7 +239,9 @@ export const UploadDocumentsView = () => {
                 </div>
               </div>
               <p className="max-w-[680px] text-sm font-normal leading-6 text-gray-500">
-                Upload your supporting documents, including certificates, identification, DBS, proof of address, right-to-work documents, or any other relevant files.
+                {isCarer
+                  ? "Upload your supporting documents, including certificates, identification, DBS, proof of address, right-to-work documents, or any other relevant files."
+                  : "Upload your company documents, such as business registration, insurance certificates, accreditations, or licenses."}
               </p>
             </div>
 
