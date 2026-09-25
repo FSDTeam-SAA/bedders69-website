@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Bedders - UK Care Industry Ecosystem",
   description: "Manage care services, jobs, marketplace, and recruitment.",
+  icons: {
+    icon: "/images/logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

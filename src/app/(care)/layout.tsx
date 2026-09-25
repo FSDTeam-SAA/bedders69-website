@@ -142,7 +142,7 @@ export default function CarersLayout({
     <div className="min-h-screen overflow-hidden bg-white text-slate-900">
       <div className="flex min-h-screen">
         {/* Desktop Sidebar */}
-        <aside className="hidden h-screen w-[304px] shrink-0 flex-col justify-between bg-[#eaf6ff] xl:flex">
+        <aside className="hidden h-screen w-76 shrink-0 flex-col justify-between bg-[#eaf6ff] xl:flex">
           <div className="flex flex-1 flex-col gap-8 p-5">
             <Link
               href="/care"
@@ -200,7 +200,7 @@ export default function CarersLayout({
               className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            <div className="relative flex w-[280px] flex-col justify-between bg-[#eaf6ff] p-5 shadow-2xl z-10">
+            <div className="relative flex w-70 flex-col justify-between bg-[#eaf6ff] p-5 shadow-2xl z-10">
               <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                   <Link href="/care" onClick={() => setIsMobileMenuOpen(false)}>
@@ -298,7 +298,7 @@ export default function CarersLayout({
                     />
                   </div>
                   <div className="hidden sm:flex flex-col text-left">
-                    <span className="text-sm font-semibold leading-tight text-slate-800 truncate max-w-[150px]">
+                    <span className="text-sm font-semibold leading-tight text-slate-800 truncate max-w-37.5">
                       {carerName}
                     </span>
                     <span className="text-xs font-normal text-gray-500">
@@ -327,7 +327,7 @@ export default function CarersLayout({
               <button
                 type="button"
                 onClick={() => setIsLogoutModalOpen(false)}
-                className="inline-flex min-w-[120px] items-center justify-center rounded-lg border border-cyan-700 px-6 py-3 text-base font-medium leading-5 text-cyan-700 transition hover:bg-cyan-50 cursor-pointer"
+                className="inline-flex min-w-30 items-center justify-center rounded-lg border border-cyan-700 px-6 py-3 text-base font-medium leading-5 text-cyan-700 transition hover:bg-cyan-50 cursor-pointer"
               >
                 Cancel
               </button>
@@ -335,7 +335,7 @@ export default function CarersLayout({
                 type="button"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="inline-flex min-w-[120px] items-center justify-center rounded-lg bg-red-500 px-6 py-3 text-base font-medium leading-5 text-white transition hover:bg-red-600 cursor-pointer"
+                className="inline-flex min-w-30 items-center justify-center rounded-lg bg-red-500 px-6 py-3 text-base font-medium leading-5 text-white transition hover:bg-red-600 cursor-pointer"
               >
                 {isLoggingOut ? "Logging out…" : "Log Out"}
               </button>
