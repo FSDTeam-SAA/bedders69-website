@@ -338,8 +338,6 @@ const Banner = () => {
         className="absolute inset-0 h-full w-full object-cover object-center"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-b from-white/0 from-[9%] via-white/60 via-[43%] to-white/90" />
-
       <div className="relative z-10 mx-auto flex w-full max-w-[1600px] px-4 pb-16 pt-12 sm:px-6 md:px-8 lg:min-h-[780px] lg:items-center lg:px-12 xl:px-20 2xl:px-24">
         <div className="flex w-full max-w-[760px] flex-col items-start gap-6 lg:gap-8">
           <div className="flex w-full flex-col items-start gap-4">

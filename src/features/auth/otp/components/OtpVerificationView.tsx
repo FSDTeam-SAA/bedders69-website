@@ -122,6 +122,10 @@ export const OtpVerificationView = () => {
 
       setSuccess(true);
       setTimeout(async () => {
+        const membershipPlanId =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("bedders_membership_plan_id")
+            : null;
         const isExternalRole =
           accountType === "supplier" ||
           accountType === "product_supplier" ||
@@ -159,7 +163,7 @@ export const OtpVerificationView = () => {
           }
           router.push(`/login?verified=true&email=${encodeURIComponent(emailParam)}`);
         } else if (fromParam === "business") {
-          router.push(`/choose-plan?type=${accountType}`);
+          router.push(`/choose-plan?type=${accountType}${membershipPlanId ? `&membershipPlan=${encodeURIComponent(membershipPlanId)}` : ""}`);
         } else {
           router.push(`/login?verified=true&email=${encodeURIComponent(emailParam)}`);
         }

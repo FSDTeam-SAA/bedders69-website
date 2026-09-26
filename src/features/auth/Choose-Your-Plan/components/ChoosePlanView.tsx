@@ -30,6 +30,7 @@ export const ChoosePlanView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
+  const membershipPlanId = searchParams.get("membershipPlan");
 
   let savedAccountType = "";
   if (typeof window !== "undefined") {
@@ -150,6 +151,16 @@ export const ChoosePlanView = () => {
 
         if (loginRes.ok) {
           const loginData = await loginRes.json();
+          if (membershipPlanId) {
+            const checkoutRes = await fetch(`/api/membership/checkout/${encodeURIComponent(membershipPlanId)}`, { method: "POST" });
+            const checkoutData = await checkoutRes.json().catch(() => ({}));
+            const checkoutUrl = checkoutData?.data?.checkoutUrl;
+            if (checkoutRes.ok && checkoutUrl) {
+              window.location.assign(checkoutUrl);
+              return;
+            }
+            throw new Error(checkoutData?.message || "Unable to start membership checkout");
+          }
           setLoading(false);
           setSuccess(true);
           const destination = loginData.dashboardPath || "/login";

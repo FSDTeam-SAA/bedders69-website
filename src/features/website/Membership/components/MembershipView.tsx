@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   X,
@@ -16,6 +17,7 @@ import membershipApi from "../api/membershipApi";
 import { PackageItem, PlanCardProps } from "../types/membership.types";
 
 export const MembershipView = () => {
+  const router = useRouter();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [backendPackages, setBackendPackages] = useState<PackageItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -24,6 +26,7 @@ export const MembershipView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loginNotice, setLoginNotice] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -130,10 +133,25 @@ export const MembershipView = () => {
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans[1];
 
-  const handlePlanAction = (planId: string) => {
+  const handlePlanAction = async (planId: string) => {
     setSelectedPlanId(planId);
-    setIsModalOpen(true);
-    setIsSuccess(false);
+    const auth = await fetch("/api/auth/me").then((response) => response.json());
+    if (!auth.authenticated) {
+      window.localStorage.setItem("bedders_membership_plan_id", planId);
+      setLoginNotice(true);
+      window.setTimeout(() => {
+        const redirect = encodeURIComponent(`/choose-plan?membershipPlan=${planId}`);
+        router.push(`/login?redirect=${redirect}&reason=membership&message=Please%20sign%20in%20to%20upgrade%20your%20membership.`);
+      }, 1400);
+      return;
+    }
+    setIsProcessing(true);
+    const response = await fetch(`/api/membership/checkout/${encodeURIComponent(planId)}`, { method: "POST" });
+    const payload = await response.json().catch(() => ({}));
+    setIsProcessing(false);
+    const checkoutUrl = payload?.data?.checkoutUrl;
+    if (response.ok && checkoutUrl) window.location.assign(checkoutUrl);
+    else setIsModalOpen(true);
   };
 
   const handleConfirmPlan = () => {
@@ -146,6 +164,11 @@ export const MembershipView = () => {
 
   return (
     <div className="bg-[#F4F7FC] min-h-screen pb-24 font-['Wix_Madefor_Text'] overflow-x-hidden">
+      {loginNotice && (
+        <div role="status" className="fixed right-4 top-4 z-[100] max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900 shadow-lg">
+          Login required. Redirecting you to the login page...
+        </div>
+      )}
       {/* Hero Header Section */}
       <div className="relative overflow-hidden bg-white border-b border-slate-100 py-16 md:py-24 px-6 md:px-12 lg:px-20 xl:px-32">
         <div className="absolute inset-0 bg-[radial-gradient(#2d6a9f_1px,transparent_1px)] [background-size:16px_16px] opacity-10" />
