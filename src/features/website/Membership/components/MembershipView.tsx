@@ -9,12 +9,10 @@ import {
   Sparkles,
   Building2,
   Zap,
-  ArrowRight,
-  ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 import membershipApi from "../api/membershipApi";
-import { PackageItem, PlanCardProps } from "../types/membership.types";
+import { PackageItem } from "../types/membership.types";
 
 export const MembershipView = () => {
   const router = useRouter();
@@ -66,20 +64,24 @@ export const MembershipView = () => {
 
         const price = pkg.price;
         const period = pkg.duration ? `/${pkg.duration}` : "/month";
+        const normalizedTitle = title.toLowerCase();
+        const registrationLabel = normalizedTitle.includes("carer")
+          ? "as a carer"
+          : normalizedTitle.includes("agency")
+            ? "as an agency"
+            : normalizedTitle.includes("cqc") || normalizedTitle.includes("company")
+              ? "as a CQC registered company"
+              : `for ${title}`;
 
         let icon = Zap;
         let accent = "text-slate-500";
-        let bgBtn = "bg-slate-800 hover:bg-slate-900 text-white";
-        let btnText = isFree ? "Get Started Free" : "Upgrade Now";
 
         if (isPopular) {
           icon = Sparkles;
           accent = "text-[#2D6A9F]";
-          bgBtn = "bg-[#2D6A9F] hover:bg-[#20527F] text-white shadow-md hover:shadow-lg";
         } else if (isEnterprise) {
           icon = Building2;
           accent = "text-indigo-600";
-          bgBtn = "bg-slate-800 hover:bg-slate-900 text-white";
         }
 
         let features: string[] = [];
@@ -99,16 +101,15 @@ export const MembershipView = () => {
           period,
           duration: pkg.duration,
           description: "",
-          buttonText: btnText,
+          registrationLabel,
           icon,
           accent,
           isPopular,
-          bgBtn,
           features,
         };
       });
 
-      let sorted = [...mapped];
+      const sorted = [...mapped];
       const popularIndex = sorted.findIndex((p) => p.isPopular);
       if (popularIndex !== -1 && sorted.length >= 2) {
         const [popularPlan] = sorted.splice(popularIndex, 1);
@@ -121,32 +122,71 @@ export const MembershipView = () => {
   }, [backendPackages]);
 
   const comparisonFeatures = [
-    { name: "Directory Placement", free: "Standard", premium: "Enhanced", enterprise: "Top-Tier Featured" },
-    { name: "Job Postings", free: "2 / month", premium: "Unlimited", enterprise: "Unlimited Priority" },
-    { name: "Candidate Search Access", free: false, premium: true, enterprise: true },
-    { name: "Analytics Dashboard", free: "Basic", premium: "Advanced", enterprise: "Real-time & Custom" },
+    {
+      name: "Directory Placement",
+      free: "Standard",
+      premium: "Enhanced",
+      enterprise: "Top-Tier Featured",
+    },
+    {
+      name: "Job Postings",
+      free: "2 / month",
+      premium: "Unlimited",
+      enterprise: "Unlimited Priority",
+    },
+    {
+      name: "Candidate Search Access",
+      free: false,
+      premium: true,
+      enterprise: true,
+    },
+    {
+      name: "Analytics Dashboard",
+      free: "Basic",
+      premium: "Advanced",
+      enterprise: "Real-time & Custom",
+    },
     { name: "Direct Messaging", free: false, premium: true, enterprise: true },
     { name: "Priority Support", free: false, premium: true, enterprise: true },
-    { name: "Dedicated Account Manager", free: false, premium: false, enterprise: true },
-    { name: "API & Custom Integrations", free: false, premium: false, enterprise: true },
+    {
+      name: "Dedicated Account Manager",
+      free: false,
+      premium: false,
+      enterprise: true,
+    },
+    {
+      name: "API & Custom Integrations",
+      free: false,
+      premium: false,
+      enterprise: true,
+    },
   ];
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans[1];
 
   const handlePlanAction = async (planId: string) => {
     setSelectedPlanId(planId);
-    const auth = await fetch("/api/auth/me").then((response) => response.json());
+    const auth = await fetch("/api/auth/me").then((response) =>
+      response.json(),
+    );
     if (!auth.authenticated) {
       window.localStorage.setItem("bedders_membership_plan_id", planId);
       setLoginNotice(true);
       window.setTimeout(() => {
-        const redirect = encodeURIComponent(`/choose-plan?membershipPlan=${planId}`);
-        router.push(`/login?redirect=${redirect}&reason=membership&message=Please%20sign%20in%20to%20upgrade%20your%20membership.`);
+        const redirect = encodeURIComponent(
+          `/choose-plan?membershipPlan=${planId}`,
+        );
+        router.push(
+          `/login?redirect=${redirect}&reason=membership&message=Please%20sign%20in%20to%20upgrade%20your%20membership.`,
+        );
       }, 1400);
       return;
     }
     setIsProcessing(true);
-    const response = await fetch(`/api/membership/checkout/${encodeURIComponent(planId)}`, { method: "POST" });
+    const response = await fetch(
+      `/api/membership/checkout/${encodeURIComponent(planId)}`,
+      { method: "POST" },
+    );
     const payload = await response.json().catch(() => ({}));
     setIsProcessing(false);
     const checkoutUrl = payload?.data?.checkoutUrl;
@@ -165,7 +205,10 @@ export const MembershipView = () => {
   return (
     <div className="bg-[#F4F7FC] min-h-screen pb-24 font-['Wix_Madefor_Text'] overflow-x-hidden">
       {loginNotice && (
-        <div role="status" className="fixed right-4 top-4 z-[100] max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900 shadow-lg">
+        <div
+          role="status"
+          className="fixed right-4 top-4 z-[100] max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900 shadow-lg"
+        >
           Login required. Redirecting you to the login page...
         </div>
       )}
@@ -181,10 +224,14 @@ export const MembershipView = () => {
             Grow Your Care Business with the Right Plan
           </h1>
           <p className="text-base md:text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
-            Start free and upgrade as you grow. Connect with thousands of clients, care staff, and suppliers across the UK.
+            Start free and upgrade as you grow. Connect with thousands of
+            clients, care staff, and suppliers across the UK.
           </p>
+        </div>
 
-
+        <div className="text-3xl md:text-5xl text-center font-extrabold text-cyan-700 tracking-tight leading-tight mt-6">
+          Membership options are avialable from within your profiles when you
+          regsister.
         </div>
       </div>
 
@@ -212,7 +259,8 @@ export const MembershipView = () => {
               No Membership Plans Available
             </h3>
             <p className="text-sm text-slate-500 mt-2">
-              There are currently no membership plans listed. Please check back later.
+              There are currently no membership plans listed. Please check back
+              later.
             </p>
           </div>
         ) : (
@@ -274,7 +322,10 @@ export const MembershipView = () => {
                           Included Features
                         </span>
                         {plan.features.map((feature: string, idx: number) => (
-                          <div key={idx} className="flex items-start gap-3 text-sm">
+                          <div
+                            key={idx}
+                            className="flex items-start gap-3 text-sm"
+                          >
                             <Check className="size-4 text-emerald-600 shrink-0 mt-0.5" />
                             <span className="text-slate-600 font-medium">
                               {feature}
@@ -288,10 +339,14 @@ export const MembershipView = () => {
                   {/* Action Button */}
                   <button
                     onClick={() => handlePlanAction(plan.id)}
-                    className={`w-full py-4 rounded-2xl text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98 ${plan.bgBtn}`}
+                    className="w-full border-2 border-[#007C9C] bg-white px-4 py-2.5 text-center text-[#007C9C] transition-colors duration-200 hover:bg-[#007C9C] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007C9C] cursor-pointer active:scale-[0.99]"
                   >
-                    <span>{plan.buttonText}</span>
-                    <ArrowRight className="size-4" />
+                    <span className="block font-serif text-[clamp(2rem,4vw,2.65rem)] italic leading-none tracking-tight">
+                      Register now
+                    </span>
+                    <span className="mt-1 block text-sm font-bold italic leading-none">
+                      {plan.registrationLabel}
+                    </span>
                   </button>
                 </div>
               );
@@ -308,7 +363,8 @@ export const MembershipView = () => {
               Compare Plan Features
             </h2>
             <p className="text-sm text-slate-500 font-medium">
-              Everything you need to evaluate the best fit for your organization.
+              Everything you need to evaluate the best fit for your
+              organization.
             </p>
           </div>
 
@@ -332,7 +388,10 @@ export const MembershipView = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {comparisonFeatures.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                  <tr
+                    key={idx}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="py-4 font-medium text-slate-700">
                       {row.name}
                     </td>
@@ -344,7 +403,9 @@ export const MembershipView = () => {
                           <X className="size-4 text-slate-300 mx-auto" />
                         )
                       ) : (
-                        <span className="text-xs font-semibold">{row.free}</span>
+                        <span className="text-xs font-semibold">
+                          {row.free}
+                        </span>
                       )}
                     </td>
                     <td className="py-4 text-center text-slate-700 font-semibold">
@@ -355,7 +416,9 @@ export const MembershipView = () => {
                           <X className="size-4 text-slate-300 mx-auto" />
                         )
                       ) : (
-                        <span className="text-xs font-bold text-[#2D6A9F]">{row.premium}</span>
+                        <span className="text-xs font-bold text-[#2D6A9F]">
+                          {row.premium}
+                        </span>
                       )}
                     </td>
                     <td className="py-4 text-center text-slate-700 font-semibold">
@@ -366,7 +429,9 @@ export const MembershipView = () => {
                           <X className="size-4 text-slate-300 mx-auto" />
                         )
                       ) : (
-                        <span className="text-xs font-bold text-indigo-600">{row.enterprise}</span>
+                        <span className="text-xs font-bold text-indigo-600">
+                          {row.enterprise}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -409,13 +474,20 @@ export const MembershipView = () => {
 
                 {selectedPlan?.features && selectedPlan.features.length > 0 && (
                   <div className="flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <span className="text-xs font-bold text-slate-700">What is included:</span>
-                    {selectedPlan.features.slice(0, 5).map((f: string, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
-                        <Check className="size-3.5 text-emerald-600" />
-                        <span>{f}</span>
-                      </div>
-                    ))}
+                    <span className="text-xs font-bold text-slate-700">
+                      What is included:
+                    </span>
+                    {selectedPlan.features
+                      .slice(0, 5)
+                      .map((f: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 text-xs text-slate-600"
+                        >
+                          <Check className="size-3.5 text-emerald-600" />
+                          <span>{f}</span>
+                        </div>
+                      ))}
                   </div>
                 )}
 
@@ -445,7 +517,9 @@ export const MembershipView = () => {
                     Plan Selected!
                   </h4>
                   <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                    You have chosen the <strong>{selectedPlan?.name}</strong> plan. Your entitlements and dashboard access have been configured.
+                    You have chosen the <strong>{selectedPlan?.name}</strong>{" "}
+                    plan. Your entitlements and dashboard access have been
+                    configured.
                   </p>
                 </div>
                 <button
