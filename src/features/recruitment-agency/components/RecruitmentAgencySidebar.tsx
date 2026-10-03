@@ -42,7 +42,7 @@ export default function RecruitmentAgencySidebar({ activeHref }: { activeHref: s
     } finally {
       setShowLogoutModal(false);
       setIsLoggingOut(false);
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
     }
   };

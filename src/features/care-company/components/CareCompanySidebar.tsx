@@ -47,7 +47,7 @@ export default function CareCompanySidebar({ activeHref }: { activeHref: string 
     } finally {
       setShowLogoutModal(false);
       setIsLoggingOut(false);
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
     }
   };

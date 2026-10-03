@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Menu, ShoppingCart, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -9,6 +9,7 @@ import { hasWebsiteDashboard } from "@/lib/auth/dashboard";
 
 export const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { totalItemsCount } = useCart();
@@ -84,7 +85,8 @@ export const Navbar = () => {
       console.error("Logout error:", err);
     } finally {
       setAuthStatus({ authenticated: false, role: null, hasDashboard: false });
-      window.location.href = "/login";
+      router.replace("/");
+      router.refresh();
     }
   };
 

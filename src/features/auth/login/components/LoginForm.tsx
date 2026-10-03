@@ -1,12 +1,10 @@
 "use client";
 
 import React, { FormEvent, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, Lock, X } from "lucide-react";
 
 export const LoginForm = () => {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -349,6 +347,13 @@ export const LoginForm = () => {
                 "Log In"
               )}
             </button>
+
+            <Link
+              href="/"
+              className="flex h-13.5 w-full items-center justify-center rounded-lg border border-cyan-700 px-8 text-base font-medium leading-5 text-cyan-700 transition-colors hover:bg-cyan-50"
+            >
+              Back to Home
+            </Link>
 
             {/* Footer / Sign Up Link */}
             <div className="pt-1 text-center">

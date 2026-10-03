@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -12,20 +12,19 @@ import {
   Loader2,
   MapPin,
   MessageSquare,
+  Search,
   Send,
-  Star,
   X,
 } from "lucide-react";
 
 export interface CarerCardData {
   id: string;
   name: string;
-  rating: number;
-  reviewsCount: number;
   location: string;
   bio: string;
   image: string;
   specialties: string[];
+  gender: string;
   experienceYears: string;
   dbsVerified: boolean;
   rate: string;
@@ -65,26 +64,24 @@ function mapBackendCarer(item: any): CarerCardData {
     carerInfo?.bio ||
     "Experienced healthcare assistant and care professional.";
 
-  const rating = typeof item.rating === "number" ? item.rating : 4.8;
+  const specialties = Array.from(
+    new Set(
+      [
+        ...(Array.isArray(item.skills) ? item.skills : []),
+        ...(Array.isArray(item.specialisms) ? item.specialisms : []),
+        ...(Array.isArray(item.specialties) ? item.specialties : []),
+        ...(Array.isArray(carerInfo?.skills) ? carerInfo.skills : []),
+        ...(Array.isArray(carerInfo?.specialties) ? carerInfo.specialties : []),
+      ].filter((skill): skill is string => typeof skill === "string" && skill.trim().length > 0),
+    ),
+  );
 
-  const reviewsCount =
-    typeof item.reviews === "number"
-      ? item.reviews
-      : typeof item.reviewsCount === "number"
-      ? item.reviewsCount
-      : 24;
-
-  const rawSkills =
-    (Array.isArray(item.skills) && item.skills.length > 0 ? item.skills : null) ||
-    (Array.isArray(item.specialisms) && item.specialisms.length > 0 ? item.specialisms : null) ||
-    item.specialties ||
-    carerInfo?.skills ||
-    carerInfo?.specialties;
-    
-  const specialties =
-    Array.isArray(rawSkills) && rawSkills.length > 0
-      ? rawSkills
-      : ["Personal Care", "Dementia Care"];
+  const gender =
+    typeof item.gender === "string"
+      ? item.gender
+      : typeof carerInfo?.gender === "string"
+        ? carerInfo.gender
+        : "";
 
   const experienceYears =
     item.yearsOfExperience
@@ -110,12 +107,11 @@ function mapBackendCarer(item: any): CarerCardData {
   return {
     id: item._id || item.id || item.carerId || `carer-${Math.random()}`,
     name,
-    rating,
-    reviewsCount,
     location,
     bio,
     image,
     specialties,
+    gender,
     experienceYears,
     dbsVerified,
     rate,
@@ -128,6 +124,11 @@ export default function CarerDirectory() {
   const [selectedCarerForContact, setSelectedCarerForContact] = useState<CarerCardData | null>(null);
   const [contactMessage, setContactMessage] = useState("");
   const [isSendingContact, setIsSendingContact] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedGender, setSelectedGender] = useState("");
+  const [availability, setAvailability] = useState("all");
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -187,6 +188,42 @@ export default function CarerDirectory() {
       return [];
     },
   });
+
+  const filterOptions = useMemo(() => ({
+    locations: Array.from(new Set(carers.map((carer) => carer.location).filter(Boolean))).sort(),
+    skills: Array.from(new Set(carers.flatMap((carer) => carer.specialties))).sort(),
+    genders: Array.from(new Set(carers.map((carer) => carer.gender).filter(Boolean))).sort(),
+  }), [carers]);
+
+  const filteredCarers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return carers.filter((carer) => {
+      const searchableText = [
+        carer.name,
+        carer.location,
+        carer.gender,
+        carer.bio,
+        ...carer.specialties,
+      ].join(" ").toLowerCase();
+
+      return (
+        (!query || searchableText.includes(query)) &&
+        (!selectedLocation || carer.location === selectedLocation) &&
+        (!selectedSkill || carer.specialties.includes(selectedSkill)) &&
+        (!selectedGender || carer.gender === selectedGender) &&
+        (availability === "all" || (availability === "available" ? carer.available : !carer.available))
+      );
+    });
+  }, [availability, carers, searchQuery, selectedGender, selectedLocation, selectedSkill]);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedLocation("");
+    setSelectedSkill("");
+    setSelectedGender("");
+    setAvailability("all");
+  };
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
@@ -296,6 +333,41 @@ export default function CarerDirectory() {
 
           {/* Grid of Carer Cards */}
           <div className="mx-auto container p-4 sm:p-6 lg:p-8 space-y-6 pb-20 max-w-[1616px]">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Filter carers">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <label className="relative sm:col-span-2 xl:col-span-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search name, skill or location"
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none transition focus:border-cyan-700 focus:ring-2 focus:ring-cyan-700/15"
+                  />
+                </label>
+                <select value={selectedLocation} onChange={(event) => setSelectedLocation(event.target.value)} className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-cyan-700">
+                  <option value="">All locations</option>
+                  {filterOptions.locations.map((location) => <option key={location} value={location}>{location}</option>)}
+                </select>
+                <select value={selectedSkill} onChange={(event) => setSelectedSkill(event.target.value)} className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-cyan-700">
+                  <option value="">All skills & specialisms</option>
+                  {filterOptions.skills.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
+                </select>
+                <select value={selectedGender} onChange={(event) => setSelectedGender(event.target.value)} className="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-cyan-700" disabled={filterOptions.genders.length === 0}>
+                  <option value="">{filterOptions.genders.length ? "All genders" : "Gender unavailable"}</option>
+                  {filterOptions.genders.map((gender) => <option key={gender} value={gender}>{gender}</option>)}
+                </select>
+                <div className="flex gap-2">
+                  <select value={availability} onChange={(event) => setAvailability(event.target.value)} className="h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-cyan-700">
+                    <option value="all">Any availability</option>
+                    <option value="available">Available</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                  <button type="button" onClick={clearFilters} className="h-11 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </section>
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
                 <Loader2 className="size-10 animate-spin text-cyan-700" />
@@ -311,9 +383,14 @@ export default function CarerDirectory() {
                 <p className="text-slate-600 font-semibold text-lg">No carers found in directory.</p>
                 <p className="text-gray-400 text-sm mt-1">Carers added or saved by your agency will appear here.</p>
               </div>
+            ) : filteredCarers.length === 0 ? (
+              <div className="w-full rounded-2xl border border-neutral-200/80 bg-white p-12 text-center shadow-xs">
+                <p className="text-lg font-semibold text-slate-600">No carers match your filters.</p>
+                <button type="button" onClick={clearFilters} className="mt-3 text-sm font-semibold text-cyan-700 hover:underline">Clear filters</button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {carers.map((carer, index) => (
+                {filteredCarers.map((carer, index) => (
                   <div
                     key={`${carer.id}-${index}`}
                     className="bg-white rounded-2xl border border-neutral-200/80 shadow-[0px_2px_4px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group"
@@ -337,24 +414,8 @@ export default function CarerDirectory() {
                     {/* Card Content */}
                     <div className="p-5 sm:p-6 flex flex-col gap-4 flex-1 justify-between">
                       <div className="space-y-3">
-                        {/* Rating & Location Row */}
-                        <div className="flex items-center justify-between text-xs">
-                          {/* Rating Stars */}
-                          <div className="flex items-center gap-1 text-amber-500">
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className="size-3.5 fill-amber-400 text-amber-400"
-                                />
-                              ))}
-                            </div>
-                            <span className="font-semibold text-slate-700 ml-1">
-                              {carer.rating} ({carer.reviewsCount})
-                            </span>
-                          </div>
-
-                          {/* Location */}
+                        {/* Location */}
+                        <div className="flex items-center text-xs">
                           <div className="flex items-center gap-1 text-gray-500">
                             <MapPin className="size-3.5" />
                             <span>{carer.location}</span>

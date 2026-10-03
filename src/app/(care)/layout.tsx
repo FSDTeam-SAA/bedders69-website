@@ -129,7 +129,7 @@ export default function CarersLayout({
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
       setIsLogoutModalOpen(false);
-      router.replace("/login");
+      router.replace("/");
       router.refresh();
       setIsLoggingOut(false);
     }
@@ -346,4 +346,3 @@ export default function CarersLayout({
     </div>
   );
 }
-
