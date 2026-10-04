@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, MessageCircle, Star, ArrowUpRight } from "lucide-react";
+import { MapPin, MessageCircle, ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,6 @@ export interface CareCompanyCardProps {
   id?: string;
   name: string;
   location: string;
-  rating: string;
-  reviews: string;
   tags: string[];
   image?: string;
   email?: string;
@@ -26,8 +24,6 @@ const Card = ({
   id,
   name,
   location,
-  rating = "4.9",
-  reviews = "18",
   tags = [],
   image = DEFAULT_IMAGE,
   email,
@@ -102,19 +98,6 @@ const Card = ({
               </span>
             </div>
 
-            {/* Rating */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star key={index} className="size-3.5 fill-yellow-500 text-yellow-500" />
-                ))}
-              </div>
-
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold leading-5 text-cyan-700">{rating}</span>
-                <span className="text-xs font-normal leading-4 text-gray-500">({reviews})</span>
-              </div>
-            </div>
           </div>
 
           {/* Tags */}

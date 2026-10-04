@@ -112,8 +112,6 @@ const FeaturedCompanies = () => {
                   email={item.email}
                   phoneNumber={item.phoneNumber}
                   websiteLink={item.websiteLink}
-                  rating={item.rating || "4.9"}
-                  reviews={item.reviews || "18+"}
                 />
               );
             })}

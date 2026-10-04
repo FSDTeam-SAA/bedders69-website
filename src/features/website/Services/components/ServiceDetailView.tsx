@@ -321,16 +321,6 @@ export const ServiceDetailView = () => {
               )}
             </div>
 
-            {/* Rating */}
-            <div className="flex items-center gap-1.5 pt-1">
-              <div className="flex items-center">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-sm font-bold text-slate-700 ml-1">4.9</span>
-              <span className="text-xs text-slate-400">(24 verified reviews)</span>
-            </div>
           </div>
 
           {/* Tab Navigation */}

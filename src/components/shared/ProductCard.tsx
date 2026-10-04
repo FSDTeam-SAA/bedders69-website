@@ -1,6 +1,6 @@
 "use client";
 
-import { FaHeart, FaStar } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { useState } from "react";
@@ -73,17 +73,6 @@ const ProductCard = ({
             by <span className="text-slate-600 font-semibold">{seller}</span>
           </p>
 
-          <div className="flex items-center gap-1 mt-0.5">
-            <div className="flex items-center gap-0.5">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <FaStar key={index} className="size-3 text-amber-400" />
-              ))}
-            </div>
-
-            <span className="text-xs font-bold text-slate-700 ml-1">
-              {rating}
-            </span>
-          </div>
         </div>
 
         {/* Price & Add to Cart */}

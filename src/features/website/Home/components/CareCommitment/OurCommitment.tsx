@@ -1,4 +1,3 @@
-import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -19,9 +18,9 @@ const OurCommitment = () => {
           </h2>
 
           <div className="mt-6 flex w-full flex-col items-start gap-8">
-            <p className="max-w-xl text-sm font-normal leading-6 text-neutral-700 sm:text-base">
+            {/* <p className="max-w-xl text-sm font-normal leading-6 text-neutral-700 sm:text-base">
               Our care plans are designed around the unique needs and preferences of each individual, so they can live comfortably and confidently at home or in the right residential setting.
-            </p>
+            </p> */}
 
             {/* Care Services */}
             <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
@@ -72,7 +71,7 @@ const OurCommitment = () => {
           </div>
         </div>
 
-        {/* Images + Rating */}
+        {/* Images */}
 <div className="flex w-full flex-col items-start gap-4 sm:flex-row lg:flex-1">
   <div className="w-full sm:w-1/2">
     <Image
@@ -84,30 +83,14 @@ const OurCommitment = () => {
     />
   </div>
 
-  <div className="flex w-full flex-col gap-4 sm:w-1/2">
+    <div className="w-full sm:w-1/2">
     <Image
       src="/images/commitment-small.jpg"
       alt="Care support"
       width={311}
       height={224}
-      className="h-44 w-full rounded-xl object-cover sm:h-52 lg:h-56"
+      className="h-full min-h-44 w-full rounded-xl object-cover sm:min-h-52 lg:min-h-56"
     />
-
-    <div className="flex flex-col items-start rounded-xl border border-black/5 bg-white p-5 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Star key={index} className="size-4 fill-yellow-500 text-yellow-500" />
-        ))}
-      </div>
-
-      <div className="pt-2">
-        <div className="text-2xl font-extrabold leading-8 text-gray-900">98%</div>
-      </div>
-
-      <span className="text-sm font-normal leading-5 text-gray-400">
-        Client satisfaction
-      </span>
-    </div>
   </div>
 </div>
       </div>

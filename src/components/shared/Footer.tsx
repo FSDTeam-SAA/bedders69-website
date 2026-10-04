@@ -94,12 +94,12 @@ const Footer = () => {
         </div>
 
         {/* Bottom Footer */}
-        <div className="flex w-full flex-col gap-6 border-t border-white/20 pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex justify-center w-full flex-col gap-6 border-t border-white/20 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-normal leading-5 text-gray-200 sm:text-base">
             © 2026 All rights reserved.
           </p>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* <div className="flex flex-wrap items-center gap-2">
             <a href="#" className="text-sm font-normal leading-5 text-gray-200 transition hover:text-white sm:text-base">
               Privacy Policy
             </a>
@@ -109,7 +109,7 @@ const Footer = () => {
             <a href="#" className="text-sm font-normal leading-5 text-gray-200 transition hover:text-white sm:text-base">
               Terms of Service
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

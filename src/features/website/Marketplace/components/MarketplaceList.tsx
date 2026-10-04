@@ -238,10 +238,10 @@ export const MarketplaceList = ({
                     <span className="text-slate-400 font-medium truncate max-w-[180px]">
                       {product.seller}
                     </span>
-                    <div className="flex items-center gap-1 text-slate-700 font-bold shrink-0">
+                    {/* <div className="flex items-center gap-1 text-slate-700 font-bold shrink-0">
                       <Star className="size-3.5 fill-amber-400 text-amber-400" />
                       <span>{product.rating}</span>
-                    </div>
+                    </div> */}
                   </div>
 
                   <Link href={productUrl} className="block cursor-pointer">

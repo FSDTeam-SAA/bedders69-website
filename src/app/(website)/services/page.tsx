@@ -11,12 +11,15 @@ const ServicesContent = () => {
   const searchParams = useSearchParams();
   const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
   const urlLocation = searchParams.get("location") || "";
+  const urlLookingFor = searchParams.get("lookingFor") || "";
 
   // Search state
   const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [selectedLocation, setSelectedLocation] = useState(urlLocation);
+  const [selectedLookingFor, setSelectedLookingFor] = useState(urlLookingFor);
   const [searchTriggeredQuery, setSearchTriggeredQuery] = useState(urlSearch);
   const [searchTriggeredLocation, setSearchTriggeredLocation] = useState(urlLocation);
+  const [searchTriggeredLookingFor, setSearchTriggeredLookingFor] = useState(urlLookingFor);
 
   // Synchronize when URL searchParams change
   useEffect(() => {
@@ -28,7 +31,11 @@ const ServicesContent = () => {
       setSelectedLocation(urlLocation);
       setSearchTriggeredLocation(urlLocation);
     }
-  }, [urlSearch, urlLocation]);
+    if (urlLookingFor !== selectedLookingFor) {
+      setSelectedLookingFor(urlLookingFor);
+      setSearchTriggeredLookingFor(urlLookingFor);
+    }
+  }, [urlSearch, urlLocation, urlLookingFor]);
 
   // Sidebar filters state
   const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([]);
@@ -54,13 +61,16 @@ const ServicesContent = () => {
     setSelectedRating("");
     setSearchQuery("");
     setSelectedLocation("");
+    setSelectedLookingFor("");
     setSearchTriggeredQuery("");
     setSearchTriggeredLocation("");
+    setSearchTriggeredLookingFor("");
   };
 
   const handleSearch = () => {
     setSearchTriggeredQuery(searchQuery);
     setSearchTriggeredLocation(selectedLocation);
+    setSearchTriggeredLookingFor(selectedLookingFor);
   };
 
   return (
@@ -72,6 +82,8 @@ const ServicesContent = () => {
         setSearchQuery={setSearchQuery}
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
+        selectedLookingFor={selectedLookingFor}
+        setSelectedLookingFor={setSelectedLookingFor}
         onSearch={handleSearch}
       />
 
@@ -92,8 +104,9 @@ const ServicesContent = () => {
 
           {/* Directory Listings */}
           <ServicesList
-            searchQuery={searchTriggeredQuery || searchQuery}
-            selectedLocation={searchTriggeredLocation || selectedLocation}
+            searchQuery={searchTriggeredQuery}
+            selectedLocation={searchTriggeredLocation}
+            selectedLookingFor={searchTriggeredLookingFor}
             selectedServiceTypes={selectedServiceTypes}
             selectedRegions={selectedRegions}
             selectedRating={selectedRating}

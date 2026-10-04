@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { MapPin, Star, ChevronLeft, ChevronRight, Building2, ArrowUpRight } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, Building2, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import servicesApi from "../api/servicesApi";
 import { CareCompanyItem } from "../types/services.types";
@@ -9,6 +9,7 @@ import { CareCompanyItem } from "../types/services.types";
 interface ServicesListProps {
   searchQuery: string;
   selectedLocation: string;
+  selectedLookingFor: string;
   selectedServiceTypes: string[];
   selectedRegions: string[];
   selectedRating: string;
@@ -17,6 +18,7 @@ interface ServicesListProps {
 export const ServicesList = ({
   searchQuery,
   selectedLocation,
+  selectedLookingFor,
   selectedServiceTypes,
   selectedRegions,
   selectedRating,
@@ -68,7 +70,7 @@ export const ServicesList = ({
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedLocation, selectedServiceTypes, selectedRegions, selectedRating]);
+  }, [searchQuery, selectedLocation, selectedLookingFor, selectedServiceTypes, selectedRegions, selectedRating]);
 
   // Format API companies for the listing.
   const allCompanies = useMemo(() => {
@@ -128,7 +130,13 @@ export const ServicesList = ({
         if (!matchesLocation && !matchesRegions) return false;
       }
 
-      // 3. Regions checklist filter from Sidebar
+      // 3. "I'm looking for" filter from the hero. This directory contains
+      // care providers and agencies; other home-page categories are not listings here.
+      if (selectedLookingFor && !["care", "agency"].includes(selectedLookingFor)) {
+        return false;
+      }
+
+      // 4. Regions checklist filter from Sidebar
       if (selectedRegions.length > 0) {
         const matchesRegion = selectedRegions.some((reg) =>
           company.location.toLowerCase().includes(reg.toLowerCase()) ||
@@ -137,7 +145,7 @@ export const ServicesList = ({
         if (!matchesRegion) return false;
       }
 
-      // 4. Service Types checklist filter from Sidebar
+      // 5. Service Types checklist filter from Sidebar
       if (selectedServiceTypes.length > 0) {
         const matchesType = selectedServiceTypes.some((selectedType) => {
           const sTypeLower = selectedType.toLowerCase().replace(" care", "");
@@ -148,7 +156,7 @@ export const ServicesList = ({
         if (!matchesType) return false;
       }
 
-      // 5. Rating filter
+      // 6. Rating filter
       if (selectedRating && selectedRating.trim() !== "") {
         const stars = parseInt(selectedRating.split(" ")[0], 10);
         const companyRating = parseFloat(company.rating);
@@ -159,7 +167,7 @@ export const ServicesList = ({
 
       return true;
     });
-  }, [allCompanies, searchQuery, selectedLocation, selectedRegions, selectedServiceTypes, selectedRating]);
+  }, [allCompanies, searchQuery, selectedLocation, selectedLookingFor, selectedRegions, selectedServiceTypes, selectedRating]);
 
   // Pagination calculation
   const totalItems = filteredCompanies.length;
@@ -278,24 +286,6 @@ export const ServicesList = ({
                       <MapPin className="size-3.5 shrink-0" />
                       <span className="text-xs font-medium truncate">
                         {company.location}
-                      </span>
-                    </div>
-
-                    {/* Star Ratings */}
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="size-3.5 fill-amber-400 text-amber-400"
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs font-bold text-slate-700 ml-1">
-                        {company.rating}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        ({company.reviews.split(" ")[0]} reviews)
                       </span>
                     </div>
 

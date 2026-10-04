@@ -1,5 +1,4 @@
 import React from "react";
-import { Star } from "lucide-react";
 
 export const CommitmentSection = () => {
   return (
@@ -17,9 +16,9 @@ export const CommitmentSection = () => {
             <h2 className="text-3xl md:text-4xl font-extrabold text-[#1B2C54] font-['Poppins'] leading-tight">
               Your Well-Being<br />Is Our Priority
             </h2>
-            <p className="text-xs md:text-sm text-slate-500 font-normal leading-relaxed max-w-xl font-['Plus_Jakarta_Sans']">
+            {/* <p className="text-xs md:text-sm text-slate-500 font-normal leading-relaxed max-w-xl font-['Plus_Jakarta_Sans']">
               Our care plans are designed around the unique needs and preferences of each individual, so they can live comfortably and confidently at home or in the right residential setting.
-            </p>
+            </p> */}
           </div>
 
           {/* 2x2 Grid of Bordered Service Blocks (No icons, matching Figma) */}
@@ -75,7 +74,7 @@ export const CommitmentSection = () => {
           </div>
         </div>
 
-        {/* Right Column: Visual Layout with overlapping satisfaction card */}
+        {/* Right Column: Visual Layout */}
         <div className="lg:col-span-5 flex flex-row items-center gap-6 justify-center lg:justify-end">
           
           {/* Main Image */}
@@ -85,30 +84,6 @@ export const CommitmentSection = () => {
               alt="Care assistance"
               className="w-full h-full object-cover"
             />
-          </div>
-
-          {/* Satisfaction Card */}
-          <div className="w-48 bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-lg flex flex-col">
-            <div className="h-28 bg-slate-100 overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=300"
-                alt="Client satisfaction caregiver"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="p-4 flex flex-col gap-1.5 text-left">
-              <div className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="size-3.5 fill-amber-400 text-transparent" />
-                ))}
-              </div>
-              <span className="text-2xl font-black text-slate-800 font-['Inter'] leading-none mt-1">
-                98%
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium font-['Inter']">
-                Client satisfaction
-              </span>
-            </div>
           </div>
 
         </div>

@@ -123,7 +123,6 @@ const CareMarketplace = () => {
                   category={product.category || "Care Supplies"}
                   price={priceStr}
                   image={image}
-                  rating="4.9"
                 />
               );
             })}

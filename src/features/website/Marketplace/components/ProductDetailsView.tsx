@@ -262,7 +262,7 @@ export const ProductDetailsView = ({ productId }: ProductDetailsViewProps) => {
                 <span className="text-3xl font-bold text-emerald-700">
                   {priceFormatted}
                 </span>
-                <div className="flex items-center gap-1.5 text-sm">
+                {/* <div className="flex items-center gap-1.5 text-sm">
                   <div className="flex text-amber-400">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className="size-4 fill-current" />
@@ -270,7 +270,7 @@ export const ProductDetailsView = ({ productId }: ProductDetailsViewProps) => {
                   </div>
                   <span className="font-bold text-slate-700">4.9</span>
                   <span className="text-slate-400">(42 customer reviews)</span>
-                </div>
+                </div> */}
               </div>
 
               {/* Description */}
