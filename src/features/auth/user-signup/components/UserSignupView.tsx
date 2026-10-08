@@ -337,12 +337,17 @@ export const UserSignupView = () => {
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 className="size-4.5 rounded border-gray-400 text-cyan-700 accent-cyan-700 focus:ring-cyan-700 cursor-pointer"
               />
-              <label
-                htmlFor="terms"
-                className="text-base font-medium text-gray-600 cursor-pointer select-none"
-              >
-                I agree to the Terms and Conditions
-              </label>
+              <div className="text-base font-medium text-gray-600 select-none">
+                <label htmlFor="terms" className="cursor-pointer">
+                  I agree to the{" "}
+                </label>
+                <Link
+                  href="/terms-and-conditions"
+                  className="font-semibold text-cyan-700 underline underline-offset-2 transition-colors hover:text-cyan-800"
+                >
+                  Terms and Conditions
+                </Link>
+              </div>
             </div>
 
             {/* Sign Up Button */}
