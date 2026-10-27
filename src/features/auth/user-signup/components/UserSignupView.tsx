@@ -57,6 +57,8 @@ export const UserSignupView = () => {
       const role = isCarer ? "carer" : "family";
       const payload: Record<string, any> = {
         fullName: `${firstName} ${lastName}`.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         password,
         role,

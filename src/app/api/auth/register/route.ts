@@ -23,6 +23,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       fullName,
+      firstName,
+      lastName,
       email,
       password,
       role,
@@ -56,6 +58,8 @@ export async function POST(request: Request) {
       role: normalizedRole,
     };
 
+    if (firstName) payload.firstName = firstName;
+    if (lastName) payload.lastName = lastName;
     if (phoneNumber) payload.phoneNumber = phoneNumber;
     if (address) payload.address = address;
     if (city) payload.city = city;
