@@ -153,7 +153,7 @@ export default function Overview() {
                 ))}
               </section>
             )}
-            <PerformanceChart profileViews={overview.metrics?.profileViews ?? 0} />
+            {/* <PerformanceChart profileViews={overview.metrics?.profileViews ?? 0} /> */}
             <RecentApplicants applicants={overview.recentApplicants} />
           </div>
         </div>

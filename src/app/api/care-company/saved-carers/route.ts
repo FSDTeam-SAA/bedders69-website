@@ -10,11 +10,19 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("bedders_access_token")?.value;
+    const role = cookieStore.get("bedders_role")?.value;
 
     if (!token) {
       return NextResponse.json(
         { message: "Unauthorized. Please log in." },
         { status: 401 }
+      );
+    }
+
+    if (role !== "care_company") {
+      return NextResponse.json(
+        { message: "Forbidden. Only care companies can view saved carers." },
+        { status: 403 }
       );
     }
 
@@ -47,11 +55,19 @@ export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("bedders_access_token")?.value;
+    const role = cookieStore.get("bedders_role")?.value;
 
     if (!token) {
       return NextResponse.json(
         { message: "Unauthorized. Please log in." },
         { status: 401 }
+      );
+    }
+
+    if (role !== "care_company") {
+      return NextResponse.json(
+        { message: "Forbidden. Only care companies are allowed to save carers." },
+        { status: 403 }
       );
     }
 

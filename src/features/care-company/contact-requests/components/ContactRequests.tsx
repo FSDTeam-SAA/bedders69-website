@@ -213,8 +213,21 @@ export default function ContactRequests() {
                               <span>{request.time}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Phone className="size-3.5 text-gray-400" />
-                              <span>{request.phone}</span>
+                              {request.phone && request.phone !== "N/A" ? (
+                                <a
+                                  href={`tel:${request.phone}`}
+                                  className="text-cyan-700 hover:underline flex items-center gap-1.5 font-medium"
+                                  title="Call inquirer"
+                                >
+                                  <Phone className="size-3.5 text-cyan-600" />
+                                  <span>{request.phone}</span>
+                                </a>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <Phone className="size-3.5 text-gray-400" />
+                                  <span>No phone provided</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

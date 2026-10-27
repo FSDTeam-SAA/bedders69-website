@@ -14,6 +14,7 @@ export interface ApiResponse<T> {
 
 export interface CareCompanyItem {
   id: string;
+  userId?: string;
   companyName: string;
   email: string;
   phoneNumber?: string;

@@ -44,6 +44,14 @@ export const ServiceDetailView = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
+  // Inquiry Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inquiryName, setInquiryName] = useState("");
+  const [inquiryPhone, setInquiryPhone] = useState("");
+  const [inquiryService, setInquiryService] = useState("");
+  const [inquiryMessage, setInquiryMessage] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+
   // Check login status asynchronously without blocking viewing
   useEffect(() => {
     let isMounted = true;
@@ -75,7 +83,7 @@ export const ServiceDetailView = () => {
     };
   }, []);
 
-  const handleSendConnectionRequest = async () => {
+  const handleOpenInquiryModal = () => {
     if (!company) return;
 
     if (!isAuthed) {
@@ -87,20 +95,42 @@ export const ServiceDetailView = () => {
       return;
     }
 
+    setFormError(null);
+    if (!inquiryService && company.serviceOffered && company.serviceOffered.length > 0) {
+      setInquiryService(company.serviceOffered[0]);
+    } else if (!inquiryService) {
+      setInquiryService("Personal Care");
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company) return;
+
+    if (!inquiryName.trim() || !inquiryPhone.trim() || !inquiryMessage.trim()) {
+      setFormError("Please fill in your name, contact phone number, and care requirements.");
+      return;
+    }
+
     setIsSubmitting(true);
+    setFormError(null);
+
     try {
       await contactRequestsApi.createContactRequest({
-        targetUserId: company.id,
+        targetUserId: company.userId || company.id,
+        name: inquiryName.trim(),
+        phone: inquiryPhone.trim(),
+        category: inquiryService || "Care Inquiry",
+        message: inquiryMessage.trim(),
       });
+
+      setIsModalOpen(false);
+      setInquiryMessage("");
       setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 4000);
+      setTimeout(() => setShowSuccessToast(false), 5000);
     } catch (err: any) {
-      console.warn("Connection request error:", err?.message);
-      router.push(
-        `/login?redirect=/services/${encodeURIComponent(rawId)}&reason=contact&message=${encodeURIComponent(
-          "Please sign in to contact " + (company.companyName || "this care provider")
-        )}`
-      );
+      setFormError(err?.message || "Failed to send inquiry. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -604,18 +634,11 @@ export const ServiceDetailView = () => {
 
               <button
                 type="button"
-                onClick={handleSendConnectionRequest}
-                disabled={isSubmitting}
-                className="w-full bg-cyan-700 hover:bg-cyan-800 disabled:bg-slate-300 text-white py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-98"
+                onClick={handleOpenInquiryModal}
+                className="w-full bg-cyan-700 hover:bg-cyan-800 text-white py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-98"
               >
-                {isSubmitting ? (
-                  <span>Sending Request...</span>
-                ) : (
-                  <>
-                    <MessageSquare className="size-4" />
-                    {isAuthed ? "Send Connection Request" : "Sign In to Connect"}
-                  </>
-                )}
+                <MessageSquare className="size-4" />
+                {isAuthed ? "Request Care / Contact Provider" : "Sign In to Request Care"}
               </button>
 
               {company.email && (
@@ -656,14 +679,152 @@ export const ServiceDetailView = () => {
         </div>
       </section>
 
+      {/* Care Inquiry Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in font-['Wix_Madefor_Text']">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative flex flex-col gap-5 border border-slate-100 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-xl font-bold text-[#1B2C54]">
+                  Request Care Support
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Send your care requirements directly to{" "}
+                  <span className="font-semibold text-cyan-800">{companyName}</span>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="size-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Error banner */}
+            {formError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3">
+                {formError}
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleInquirySubmit} className="flex flex-col gap-4 text-xs">
+              {/* Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-slate-700">
+                  Your Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={inquiryName}
+                  onChange={(e) => setInquiryName(e.target.value)}
+                  placeholder="e.g. Margaret Turner"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 text-slate-800"
+                />
+              </div>
+
+              {/* Phone */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-slate-700">
+                  Contact Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={inquiryPhone}
+                  onChange={(e) => setInquiryPhone(e.target.value)}
+                  placeholder="e.g. +44 7700 900123"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 text-slate-800"
+                />
+              </div>
+
+              {/* Service Required */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-slate-700">
+                  Service / Care Type Needed
+                </label>
+                <select
+                  value={inquiryService}
+                  onChange={(e) => setInquiryService(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 text-slate-800 bg-white"
+                >
+                  {company?.serviceOffered && company.serviceOffered.length > 0 ? (
+                    company.serviceOffered.map((svc) => (
+                      <option key={svc} value={svc}>
+                        {svc}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Personal Care">Personal Care & Hygiene</option>
+                      <option value="Dementia Care">Dementia & Memory Care</option>
+                      <option value="Live-in Care">Live-in Care Support</option>
+                      <option value="Respite Care">Respite Care</option>
+                      <option value="Companionship">Companionship & Social Support</option>
+                      <option value="Medication Support">Medication Administration</option>
+                      <option value="Palliative Care">Palliative & End of Life Care</option>
+                      <option value="General Inquiry">General Care Inquiry</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* Message */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-slate-700">
+                  Care Requirements & Details <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={inquiryMessage}
+                  onChange={(e) => setInquiryMessage(e.target.value)}
+                  placeholder="Please describe your care needs (e.g. Looking for residential or home care for my 82-year-old mother, needs morning and evening support...)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-600/20 focus:border-cyan-600 text-slate-800 resize-none leading-relaxed"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 rounded-xl bg-cyan-700 hover:bg-cyan-800 disabled:bg-slate-300 text-white font-bold transition-all shadow-sm cursor-pointer flex items-center gap-2 active:scale-98"
+                >
+                  {isSubmitting ? (
+                    <span>Submitting...</span>
+                  ) : (
+                    <>
+                      <Send className="size-3.5" />
+                      <span>Submit Request</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Success Toast */}
       {showSuccessToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#E8F8F0] border border-emerald-200 text-emerald-800 rounded-2xl p-4 shadow-xl flex items-center gap-3.5 max-w-sm font-['Wix_Madefor_Text']">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#E8F8F0] border border-emerald-200 text-emerald-800 rounded-2xl p-4 shadow-xl flex items-center gap-3.5 max-w-sm font-['Wix_Madefor_Text'] animate-fade-in">
           <CheckCircle2 className="size-6 text-emerald-600 shrink-0" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold">Connection Request Sent!</span>
+            <span className="text-sm font-bold">Care Request Sent!</span>
             <span className="text-xs text-emerald-600/95 font-medium mt-0.5">
-              Your connection request has been delivered to the company dashboard.
+              Your inquiry has been delivered directly to {companyName}&apos;s dashboard. They will contact you shortly.
             </span>
           </div>
         </div>

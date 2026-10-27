@@ -14,11 +14,19 @@ export async function GET(
     const { id } = await params;
     const cookieStore = await cookies();
     const token = cookieStore.get("bedders_access_token")?.value;
+    const role = cookieStore.get("bedders_role")?.value;
 
     if (!token) {
       return NextResponse.json(
         { message: "Unauthorized. Please log in." },
         { status: 401 }
+      );
+    }
+
+    if (role !== "care_company") {
+      return NextResponse.json(
+        { message: "Forbidden. Only care companies can view saved carer details." },
+        { status: 403 }
       );
     }
 
@@ -55,11 +63,19 @@ export async function DELETE(
     const { id } = await params;
     const cookieStore = await cookies();
     const token = cookieStore.get("bedders_access_token")?.value;
+    const role = cookieStore.get("bedders_role")?.value;
 
     if (!token) {
       return NextResponse.json(
         { message: "Unauthorized. Please log in." },
         { status: 401 }
+      );
+    }
+
+    if (role !== "care_company") {
+      return NextResponse.json(
+        { message: "Forbidden. Only care companies can remove saved carers." },
+        { status: 403 }
       );
     }
 

@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, UserCheck, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, UserCheck, Bookmark, BookmarkCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import findCareApi from "../api/findCareApi";
+import savedCarersApi from "@/features/care-company/saved-carers/api/savedCarersApi";
 import { CarerItem } from "../types/findCare.types";
 
 export interface CarerProps {
@@ -38,10 +40,135 @@ export const CarersList = ({
   selectedServiceTypes,
   selectedRegions,
 }: CarersListProps) => {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [backendCarers, setBackendCarers] = useState<CarerItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const itemsPerPage = 6;
+
+  // Saved Carers State for Care Company
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [savedCarerIds, setSavedCarerIds] = useState<Set<string>>(new Set());
+  const [loadingCarerId, setLoadingCarerId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
+  // Determine user role and load saved carers if care_company
+  useEffect(() => {
+    let role: string | null = null;
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
+      if (match) {
+        role = decodeURIComponent(match[1]);
+        setUserRole(role);
+      }
+    }
+
+    // Verify with /api/auth/me for accurate session state
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.authenticated && data.role) {
+          setUserRole(data.role);
+          role = data.role;
+        }
+        if (role === "care_company") {
+          savedCarersApi
+            .getSavedCarers()
+            .then((res) => {
+              if (res && res.data) {
+                const ids = new Set(
+                  res.data.map((c) => String(c.carerId || c.id || c._id))
+                );
+                setSavedCarerIds(ids);
+              }
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {
+        if (role === "care_company") {
+          savedCarersApi
+            .getSavedCarers()
+            .then((res) => {
+              if (res && res.data) {
+                const ids = new Set(
+                  res.data.map((c) => String(c.carerId || c.id || c._id))
+                );
+                setSavedCarerIds(ids);
+              }
+            })
+            .catch(() => {});
+        }
+      });
+  }, []);
+
+  const handleToggleSave = async (carer: CarerProps) => {
+    const carerId = String(carer.id || "");
+    if (!carerId) return;
+
+    if (!userRole) {
+      router.push(`/login?redirect=/find-care&reason=save_carer`);
+      return;
+    }
+
+    if (userRole !== "care_company") {
+      showToast("Only registered Care Companies can save carers to their dashboard.");
+      return;
+    }
+
+    setLoadingCarerId(carerId);
+    const isAlreadySaved = savedCarerIds.has(carerId);
+
+    if (isAlreadySaved) {
+      try {
+        await savedCarersApi.removeSavedCarer(carerId);
+        setSavedCarerIds((prev) => {
+          const next = new Set(prev);
+          next.delete(carerId);
+          return next;
+        });
+        showToast("Carer removed from saved list.");
+      } catch (err: any) {
+        showToast(err?.message || "Failed to remove carer.");
+      } finally {
+        setLoadingCarerId(null);
+      }
+    } else {
+      try {
+        await savedCarersApi.saveCarer({
+          carerId,
+          name: carer.name,
+          location: carer.location,
+          bio: carer.biography,
+          skills: carer.skills,
+          experience: carer.experience,
+          verified: carer.verified ? "DBS Verified" : "Verified",
+          rate: "£18/hr",
+          available: carer.available,
+          image: carer.image || "",
+          rating: 4.9,
+          reviews: 12,
+        });
+        setSavedCarerIds((prev) => {
+          const next = new Set(prev);
+          next.add(carerId);
+          return next;
+        });
+        showToast("Carer saved to your Care Company dashboard!");
+      } catch (err: any) {
+        showToast(err?.message || "Failed to save carer.");
+      } finally {
+        setLoadingCarerId(null);
+      }
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -229,31 +356,62 @@ export const CarersList = ({
               carer.name.toLowerCase().replace(/\s+/g, "-")
             );
             const carerUrl = `/find-care/${slug}`;
+            const isSaved = savedCarerIds.has(String(carer.id || ""));
 
             return (
               <div
                 key={carer.id || index}
-                className="group bg-white border border-slate-100 rounded-2xl shadow-[0px_4px_6px_0px_rgba(43,110,166,0.06)] hover:shadow-[0px_10px_20px_0px_rgba(43,110,166,0.12)] transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1"
+                className="group bg-white border border-slate-100 rounded-2xl shadow-[0px_4px_6px_0px_rgba(43,110,166,0.06)] hover:shadow-[0px_10px_20px_0px_rgba(43,110,166,0.12)] transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1 relative"
               >
                 {/* Top Image Box */}
-                <Link
-                  href={carerUrl}
-                  className="w-full h-[220px] relative overflow-hidden shrink-0 bg-slate-100 block cursor-pointer"
-                >
-                  {carer.available && (
-                    <span className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-sm">
-                      Available
-                    </span>
-                  )}
-                  <img
-                    src={carer.image || fallbackCarerImages[index % fallbackCarerImages.length]}
-                    alt={carer.name}
-                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-cyan-700 opacity-0 shadow transition-opacity duration-300 group-hover:opacity-100">
-                    <ArrowUpRight className="size-4" />
-                  </div>
-                </Link>
+                <div className="w-full h-[220px] relative overflow-hidden shrink-0 bg-slate-100 block">
+                  <Link
+                    href={carerUrl}
+                    className="w-full h-full block cursor-pointer"
+                  >
+                    {carer.available && (
+                      <span className="absolute top-3 left-3 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-lg z-10 shadow-sm">
+                        Available
+                      </span>
+                    )}
+                    <img
+                      src={carer.image || fallbackCarerImages[index % fallbackCarerImages.length]}
+                      alt={carer.name}
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </Link>
+
+                  {/* Bookmark / Save Carer Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleToggleSave(carer);
+                    }}
+                    disabled={loadingCarerId === String(carer.id)}
+                    title={
+                      isSaved
+                        ? "Remove from Saved Carers"
+                        : userRole === "care_company"
+                        ? "Save Carer to Dashboard"
+                        : "Only Care Companies can save carers"
+                    }
+                    className={`absolute top-3 right-3 size-9 rounded-full flex items-center justify-center transition-all duration-200 z-20 shadow-md ${
+                      isSaved
+                        ? "bg-[#2b6ea6] text-white hover:bg-red-500 hover:text-white"
+                        : "bg-white/95 text-slate-700 hover:bg-white hover:text-[#2b6ea6] hover:scale-105"
+                    }`}
+                  >
+                    {loadingCarerId === String(carer.id) ? (
+                      <Loader2 className="size-4 animate-spin text-[#2b6ea6]" />
+                    ) : isSaved ? (
+                      <BookmarkCheck className="size-4 fill-white text-white" />
+                    ) : (
+                      <Bookmark className="size-4" />
+                    )}
+                  </button>
+                </div>
 
                 {/* Details Section */}
                 <div className="p-5 flex-1 flex flex-col justify-between gap-4">
@@ -399,6 +557,14 @@ export const CarersList = ({
               <ChevronRight className="size-4" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-[#1B2C54] px-5 py-3.5 text-white shadow-2xl text-xs sm:text-sm font-semibold border border-slate-700/50">
+          <BookmarkCheck className="size-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

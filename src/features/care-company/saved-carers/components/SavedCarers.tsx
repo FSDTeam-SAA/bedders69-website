@@ -1,36 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CareCompanySidebar from "@/features/care-company/components/CareCompanySidebar";
 import CareCompanyHeaderBadge from "@/features/care-company/components/CareCompanyHeaderBadge";
-import { MapPin, Star, BookmarkCheck, MessageSquare, Loader2 } from "lucide-react";
+import { MapPin, BookmarkCheck, Loader2 } from "lucide-react";
 import { useSavedCarers } from "../hooks/useSavedCarers";
 
 export default function SavedCarers() {
   const { carers, removeCarer, isLoading } = useSavedCarers();
-  const [contactedCarer, setContactedCarer] = useState<string | null>(null);
-
-  const handleContact = (carerName: string) => {
-    setContactedCarer(carerName);
-    setTimeout(() => {
-      setContactedCarer(null);
-    }, 2500);
-  };
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] font-['Wix_Madefor_Text',Arial,sans-serif] text-[#203746]">
-      {/* Contact Toast */}
-      {contactedCarer && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-emerald-600 px-5 py-3 text-white shadow-xl animate-fade-in">
-          <MessageSquare className="h-5 w-5" />
-          <span className="font-semibold text-sm">
-            Contact request initiated for {contactedCarer}!
-          </span>
-        </div>
-      )}
-
       <div className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col lg:flex-row">
         {/* Left Sidebar */}
         <CareCompanySidebar activeHref="/care-company/save-carers" />
@@ -61,6 +43,12 @@ export default function SavedCarers() {
                 <BookmarkCheck className="h-12 w-12 text-slate-300 mb-3" />
                 <h3 className="text-lg font-semibold text-slate-700">No Saved Carers Yet</h3>
                 <p className="text-sm text-slate-500 mt-1">Carers you bookmark will appear here.</p>
+                <Link
+                  href="/find-care"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#2b6ea6] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#20527f] shadow-sm cursor-pointer"
+                >
+                  Browse Available Carers
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -99,32 +87,15 @@ export default function SavedCarers() {
                       {/* Content Section */}
                       <div className="p-6 flex flex-col justify-between flex-1 gap-6">
                         <div className="space-y-4">
-                          {/* Rating & Location Row */}
-                          <div className="flex items-center justify-between">
-                            {/* Rating Stars */}
-                            <div className="flex items-center gap-1.5">
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className="h-3.5 w-3.5 fill-[#eab308] text-[#eab308]"
-                                    strokeWidth={1.5}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-xs text-gray-500 font-normal">
-                                {carer.rating} ({carer.reviews})
-                              </span>
-                            </div>
-
-                            {/* Location */}
-                            <div className="flex items-center gap-1 text-gray-500">
-                              <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                              <span className="text-xs font-normal">
+                          {/* Location */}
+                          {carer.location && (
+                            <div className="flex items-center gap-1.5 text-gray-500">
+                              <MapPin className="h-3.5 w-3.5 text-[#2b6ea6]" />
+                              <span className="text-xs font-medium">
                                 {carer.location}
                               </span>
                             </div>
-                          </div>
+                          )}
 
                           {/* Name & Bio */}
                           <div className="space-y-2">
@@ -180,20 +151,9 @@ export default function SavedCarers() {
                       </div>
                     </Link>
                   </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleContact(carer.name);
-                      }}
-                      className="w-full rounded-md bg-[#2b6ea6] py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[#20527f] cursor-pointer shadow-sm active:scale-[0.99]"
-                    >
-                      Contact Carer
-                    </button>
-                  </div>
                 </div>
-              );
+              </div>
+            );
             })}
           </div>
         )}

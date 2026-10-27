@@ -14,8 +14,12 @@ import {
   ArrowLeft,
   UserCheck,
   Lock,
+  Bookmark,
+  BookmarkCheck,
+  Loader2,
 } from "lucide-react";
 import findCareApi from "../api/findCareApi";
+import savedCarersApi from "@/features/care-company/saved-carers/api/savedCarersApi";
 import { CarerItem } from "../types/findCare.types";
 
 const fallbackCarerImages = [
@@ -35,27 +39,45 @@ export const CarerDetailView = () => {
   const [carer, setCarer] = useState<CarerItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Saved Carer state
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     async function checkAuthAndLoadCarer() {
       // 1. Verify user authentication
       let authed = false;
+      let role: string | null = null;
+
       try {
         const authRes = await fetch("/api/auth/me", { cache: "no-store" });
         if (authRes.ok) {
           const authData = await authRes.json();
           if (authData.authenticated) {
             authed = true;
+            role = authData.role;
           }
         }
       } catch {
         // network error
       }
 
-      if (!authed && typeof document !== "undefined") {
-        if (document.cookie.includes("bedders_role=")) {
+      if (typeof document !== "undefined") {
+        const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
+        if (match) {
           authed = true;
+          if (!role) role = decodeURIComponent(match[1]);
         }
       }
 
@@ -70,6 +92,7 @@ export const CarerDetailView = () => {
 
       if (isMounted) {
         setIsAuthenticated(true);
+        setUserRole(role);
       }
 
       // 2. Load carer details only when authenticated
@@ -83,10 +106,25 @@ export const CarerDetailView = () => {
               encodeURIComponent(c.careName.toLowerCase().replace(/\s+/g, "-")) === id
           );
 
-          if (matched) {
-            setCarer(matched);
-          } else if (res.data.length > 0) {
-            setCarer(res.data[0]);
+          const targetCarer = matched || (res.data.length > 0 ? res.data[0] : null);
+          if (targetCarer) {
+            setCarer(targetCarer);
+
+            // Check if saved if role is care_company
+            if (role === "care_company") {
+              try {
+                const savedRes = await savedCarersApi.getSavedCarers();
+                if (savedRes && savedRes.data && isMounted) {
+                  const targetId = String(targetCarer.id || "");
+                  const found = savedRes.data.some(
+                    (s) => String(s.carerId || s.id || s._id) === targetId
+                  );
+                  setIsSaved(found);
+                }
+              } catch {
+                // ignore
+              }
+            }
           }
         }
       } catch (err) {
@@ -192,6 +230,58 @@ export const CarerDetailView = () => {
   const cleanPhone = carer.phoneNumber
     ? carer.phoneNumber.replace(/[^0-9]/g, "")
     : "";
+
+  const handleToggleSave = async () => {
+    if (!userRole) {
+      router.push(`/login?redirect=/find-care/${encodeURIComponent(id)}&reason=save_carer`);
+      return;
+    }
+
+    if (userRole !== "care_company") {
+      showToast("Only registered Care Companies can save carers to their dashboard.");
+      return;
+    }
+
+    if (!carer) return;
+
+    const carerId = String(carer.id || "");
+    setIsSaving(true);
+
+    if (isSaved) {
+      try {
+        await savedCarersApi.removeSavedCarer(carerId);
+        setIsSaved(false);
+        showToast("Carer removed from saved list.");
+      } catch (err: any) {
+        showToast(err?.message || "Failed to remove carer.");
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      try {
+        await savedCarersApi.saveCarer({
+          carerId,
+          name: carer.careName,
+          location,
+          bio,
+          skills: skillsList,
+          experience: `${expYears} Years`,
+          verified: "DBS Verified",
+          rate: carer.hourlyRate || "£18/hr",
+          available: carer.isAvailable !== false,
+          image,
+          rating: 4.9,
+          reviews: 12,
+        });
+        setIsSaved(true);
+        showToast("Carer saved to your Care Company dashboard!");
+      } catch (err: any) {
+        showToast(err?.message || "Failed to save carer.");
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   return (
     <main className="w-full bg-[#F4F7FC] min-h-screen pb-16 font-['Wix_Madefor_Text']">
@@ -338,6 +428,47 @@ export const CarerDetailView = () => {
 
           {/* Right Column: Sticky Contact Sidebar */}
           <div className="lg:col-span-4 lg:sticky lg:top-24 flex flex-col gap-4">
+            {/* Save Carer Card (Care Company Action) */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Care Company
+                </span>
+                {isSaved && (
+                  <span className="text-[11px] font-bold text-[#2b6ea6] bg-[#E5F2FC] px-2.5 py-0.5 rounded-full">
+                    Saved
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleSave}
+                disabled={isSaving}
+                className={`w-full py-3.5 px-5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.99] ${
+                  isSaved
+                    ? "bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 border border-slate-200"
+                    : "bg-[#2b6ea6] text-white hover:bg-[#20527f]"
+                }`}
+              >
+                {isSaving ? (
+                  <Loader2 className="size-4 animate-spin text-current" />
+                ) : isSaved ? (
+                  <>
+                    <BookmarkCheck className="size-4 text-[#2b6ea6]" />
+                    Saved to Dashboard (Click to remove)
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="size-4" />
+                    Save Carer to Dashboard
+                  </>
+                )}
+              </button>
+              <p className="text-[11px] text-slate-400 text-center leading-normal">
+                Saved carers can be viewed anytime in your Care Company dashboard.
+              </p>
+            </div>
+
             <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h4 className="text-base font-bold text-slate-800">
                 Direct Contact
@@ -392,6 +523,13 @@ export const CarerDetailView = () => {
           </div>
         </div>
       </section>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-[#1B2C54] px-5 py-3.5 text-white shadow-2xl text-xs sm:text-sm font-semibold border border-slate-700/50">
+          <BookmarkCheck className="size-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </main>
   );
 };
