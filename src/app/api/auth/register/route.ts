@@ -32,6 +32,10 @@ export async function POST(request: Request) {
       address,
       city,
       postCode,
+      registrationNumber,
+      registerNumber,
+      website,
+      websiteLink,
     } = body;
 
     if (!email || !password) {
@@ -64,6 +68,18 @@ export async function POST(request: Request) {
     if (address) payload.address = address;
     if (city) payload.city = city;
     if (postCode) payload.postCode = postCode;
+
+    const finalRegNum = registerNumber || registrationNumber;
+    if (finalRegNum) {
+      payload.registerNumber = finalRegNum;
+      payload.registrationNumber = finalRegNum;
+    }
+
+    const finalWebsite = website || websiteLink;
+    if (finalWebsite) {
+      payload.website = finalWebsite;
+      payload.websiteLink = finalWebsite;
+    }
 
     const response = await fetch(`${backendUrl}/auth/register`, {
       method: "POST",

@@ -73,6 +73,16 @@ export const UploadDocumentsView = () => {
     e.preventDefault();
     setLoading(true);
 
+    const docNames = [
+      ...(cvFile ? [{ name: cvFile.name, url: "" }] : []),
+      ...supportingFiles.map((f) => ({ name: f.name, url: "" })),
+    ];
+    if (typeof window !== "undefined" && docNames.length > 0) {
+      try {
+        localStorage.setItem("bedders_uploaded_docs", JSON.stringify(docNames));
+      } catch (err) {}
+    }
+
     const businessEmail = getBusinessEmail();
 
     setTimeout(() => {

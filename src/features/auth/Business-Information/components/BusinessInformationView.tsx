@@ -94,6 +94,10 @@ export const BusinessInformationView = () => {
           role: accountType,
           phoneNumber: phoneNumber.trim(),
           address: address.trim(),
+          registrationNumber: registrationNumber.trim(),
+          registerNumber: registrationNumber.trim(),
+          website: website.trim(),
+          websiteLink: website.trim(),
         }),
       });
 
@@ -114,9 +118,13 @@ export const BusinessInformationView = () => {
             email: email.trim(),
             phoneNumber: phoneNumber.trim(),
             registrationNumber: registrationNumber.trim(),
+            registerNumber: registrationNumber.trim(),
             website: website.trim(),
+            websiteLink: website.trim(),
             address: address.trim(),
             password,
+            logoUrl: logoPreview || "",
+            bannerUrl: coverPhotoPreview || "",
           })
         );
       }

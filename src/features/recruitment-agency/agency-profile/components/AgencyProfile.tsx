@@ -70,29 +70,87 @@ export default function AgencyProfile() {
         if (res.ok) {
           const data = await res.json();
           if (data) {
-            if (data.name) setAgencyName(data.name);
-            if (data.registerNumber) setCompanyRegNumber(data.registerNumber);
-            if (data.website) setWebsite(data.website);
+            let localReg = "";
+            let localWeb = "";
+            let localAddress = "";
+            let localPhone = "";
+            let localLogo = "";
+            let localBanner = "";
+            if (typeof window !== "undefined") {
+              try {
+                const stored = localStorage.getItem("bedders_business_info");
+                if (stored) {
+                  const info = JSON.parse(stored);
+                  if (!info.email || !data.email || info.email.toLowerCase() === data.email.toLowerCase()) {
+                    localReg = info.registrationNumber || info.registerNumber || "";
+                    localWeb = info.website || info.websiteLink || "";
+                    localAddress = info.address || "";
+                    localPhone = info.phoneNumber || "";
+                    localLogo = info.logoUrl || "";
+                    localBanner = info.bannerUrl || "";
+                  }
+                }
+              } catch (e) {}
+            }
+
+            const effectiveName = data.name || "";
+            const effectiveReg = data.registerNumber || localReg;
+            const effectiveWeb = data.website || localWeb;
+            const effectiveAddress = data.address || localAddress;
+            const effectivePhone = data.phoneNumber || localPhone;
+            const effectiveLogo = data.logoUrl || data.logo || data.profilePicture || localLogo;
+            const effectiveBanner = data.bannerUrl || data.banner || localBanner;
+
+            if (effectiveName) setAgencyName(effectiveName);
+            if (effectiveReg) setCompanyRegNumber(effectiveReg);
+            if (effectiveWeb) setWebsite(effectiveWeb);
             if (data.discription || data.description) setCompanyDescription(data.discription || data.description);
             if (data.email) setEmail(data.email);
-            if (data.phoneNumber) setPhoneNumber(data.phoneNumber);
+            if (effectivePhone) setPhoneNumber(effectivePhone);
             if (data.alternatageEmail || data.alternateEmail) setAltEmail(data.alternatageEmail || data.alternateEmail);
-            if (data.address) setAddress(data.address);
+            if (effectiveAddress) setAddress(effectiveAddress);
+
             if (Array.isArray(data.specialisations) && data.specialisations.length > 0) {
               setSpecialisations(data.specialisations);
             }
+
             if (Array.isArray(data.documents) && data.documents.length > 0) {
               setUploadedDocs(
                 data.documents.map((d: any) =>
                   typeof d === "string" ? { name: d.split("/").pop() || "Uploaded Document", url: d } : d
                 )
               );
+            } else if (typeof window !== "undefined") {
+              try {
+                const storedDocs = localStorage.getItem("bedders_uploaded_docs");
+                if (storedDocs) {
+                  const parsedDocs = JSON.parse(storedDocs);
+                  if (Array.isArray(parsedDocs) && parsedDocs.length > 0) {
+                    setUploadedDocs(parsedDocs);
+                  }
+                }
+              } catch (e) {}
             }
-            if (data.logoUrl || data.logo || data.profilePicture) {
-              setLogoUrl(data.logoUrl || data.logo || data.profilePicture);
+
+            if (effectiveLogo) {
+              setLogoUrl(effectiveLogo);
             }
-            if (data.bannerUrl || data.banner) {
-              setBannerUrl(data.bannerUrl || data.banner);
+            if (effectiveBanner) {
+              setBannerUrl(effectiveBanner);
+            }
+
+            // Auto-sync recovered fields back to backend if backend was missing them
+            const backgroundSync: Record<string, any> = {};
+            if (!data.registerNumber && localReg) backgroundSync.registerNumber = localReg;
+            if (!data.website && localWeb) backgroundSync.website = localWeb;
+            if (!data.address && localAddress) backgroundSync.address = localAddress;
+            if (!data.phoneNumber && localPhone) backgroundSync.phoneNumber = localPhone;
+            if (Object.keys(backgroundSync).length > 0) {
+              fetch("/api/recruitment-agency/agency-profile", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(backgroundSync),
+              }).catch(() => {});
             }
           }
         }
