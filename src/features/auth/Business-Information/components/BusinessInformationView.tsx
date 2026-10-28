@@ -173,10 +173,22 @@ export const BusinessInformationView = () => {
         body: JSON.stringify({ email: email.trim() }),
       }).catch(() => {});
 
+      const isProductSupplierOrServiceProvider =
+        accountType === "supplier" ||
+        accountType === "product_supplier" ||
+        accountType === "service_provider" ||
+        accountType === "service";
+
       setLoading(false);
-      router.push(
-        `/upload-documents?type=${accountType}&email=${encodeURIComponent(email.trim())}`
-      );
+      if (isProductSupplierOrServiceProvider) {
+        router.push(
+          `/verify-otp?email=${encodeURIComponent(email.trim())}&type=${accountType}&from=business`
+        );
+      } else {
+        router.push(
+          `/upload-documents?type=${accountType}&email=${encodeURIComponent(email.trim())}`
+        );
+      }
     } catch (err: any) {
       setLoading(false);
       setError("Failed to connect to server. Please try again.");

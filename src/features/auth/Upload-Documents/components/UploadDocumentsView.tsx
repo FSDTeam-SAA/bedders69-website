@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, FormEvent } from "react";
+import React, { useState, useRef, useEffect, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,6 +19,11 @@ export const UploadDocumentsView = () => {
   const searchParams = useSearchParams();
   const accountType = searchParams.get("type") || "care_company";
   const isCarer = accountType === "carer" || accountType === "care";
+  const isProductSupplierOrServiceProvider =
+    accountType === "supplier" ||
+    accountType === "product_supplier" ||
+    accountType === "service_provider" ||
+    accountType === "service";
 
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
@@ -62,6 +67,15 @@ export const UploadDocumentsView = () => {
     return businessEmail || "your email";
   };
 
+  useEffect(() => {
+    if (isProductSupplierOrServiceProvider) {
+      const businessEmail = getBusinessEmail();
+      router.replace(
+        `/verify-otp?email=${encodeURIComponent(businessEmail)}&type=${accountType}&from=business`
+      );
+    }
+  }, [isProductSupplierOrServiceProvider, accountType]);
+
   const handleSkip = () => {
     const businessEmail = getBusinessEmail();
     router.push(
@@ -95,6 +109,14 @@ export const UploadDocumentsView = () => {
       }, 800);
     }, 800);
   };
+
+  if (isProductSupplierOrServiceProvider) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="size-8 animate-spin text-cyan-700" />
+      </main>
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#F5F9FD] via-[#EEF5FC] to-[#E5F0FA] px-4 py-12 font-['Wix_Madefor_Text',Arial,sans-serif]">
