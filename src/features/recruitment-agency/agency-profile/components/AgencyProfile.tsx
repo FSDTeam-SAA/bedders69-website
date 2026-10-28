@@ -145,6 +145,8 @@ export default function AgencyProfile() {
             if (!data.website && localWeb) backgroundSync.website = localWeb;
             if (!data.address && localAddress) backgroundSync.address = localAddress;
             if (!data.phoneNumber && localPhone) backgroundSync.phoneNumber = localPhone;
+            if (!data.logoUrl && !data.logo && localLogo) backgroundSync.logoUrl = localLogo;
+            if (!data.bannerUrl && !data.banner && localBanner) backgroundSync.bannerUrl = localBanner;
             if (Object.keys(backgroundSync).length > 0) {
               fetch("/api/recruitment-agency/agency-profile", {
                 method: "PATCH",
@@ -173,20 +175,23 @@ export default function AgencyProfile() {
     const currentLogo = images?.logo !== undefined ? images.logo : logoUrl;
     const currentBanner = images?.banner !== undefined ? images.banner : bannerUrl;
 
-    const payload = {
+    const payload: Record<string, any> = {
       name: agencyName,
       registerNumber: companyRegNumber,
       website: website,
       discription: companyDescription,
       email: email,
       phoneNumber: phoneNumber,
-      alternatageEmail: altEmail,
       address: address,
       specialisations: specialisations,
       logoUrl: currentLogo,
       bannerUrl: currentBanner,
       documents: uploadedDocs.map((d) => d.url || d.name),
     };
+
+    if (altEmail && altEmail.trim()) {
+      payload.alternatageEmail = altEmail.trim();
+    }
 
     try {
       const res = await fetch("/api/recruitment-agency/agency-profile", {

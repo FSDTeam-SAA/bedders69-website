@@ -81,6 +81,18 @@ export async function POST(request: Request) {
       payload.websiteLink = finalWebsite;
     }
 
+    const finalLogo = body.logoUrl || body.logo;
+    if (finalLogo) {
+      payload.logoUrl = finalLogo;
+      payload.logo = finalLogo;
+    }
+
+    const finalBanner = body.bannerUrl || body.coverPhoto;
+    if (finalBanner) {
+      payload.bannerUrl = finalBanner;
+      payload.coverPhoto = finalBanner;
+    }
+
     const response = await fetch(`${backendUrl}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
