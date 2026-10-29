@@ -49,36 +49,33 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem("bedders69_cart", JSON.stringify(newCart));
   };
 
-  const isUserAuthenticated = (): boolean => {
-    if (typeof document === "undefined") return false;
-    const match = document.cookie.match(/(?:^|; )bedders_role=([^;]*)/);
-    return Boolean(match && match[1] && match[1].trim() !== "");
-  };
-
   const addToCart = (product: any, quantityToAdd = 1): boolean => {
-    if (!isUserAuthenticated()) {
-      const currentUrl =
-        typeof window !== "undefined"
-          ? window.location.pathname + window.location.search
-          : "/marketplace";
-      const name = product?.title || product?.name || "item";
-      router.push(
-        `/login?redirect=${encodeURIComponent(currentUrl)}&reason=cart_add&productName=${encodeURIComponent(name)}`
-      );
-      return false;
-    }
-
-    const existing = cartItems.find((item) => item.id === product.id);
+    if (!product) return false;
+    const productId = product.id || product._id || product.title || product.name;
+    const existing = cartItems.find((item) => item.id === productId);
     let updatedCart: CartItem[];
 
     if (existing) {
       updatedCart = cartItems.map((item) =>
-        item.id === product.id
+        item.id === productId
           ? { ...item, quantity: item.quantity + quantityToAdd }
           : item
       );
     } else {
-      updatedCart = [...cartItems, { ...product, quantity: quantityToAdd }];
+      updatedCart = [
+        ...cartItems,
+        {
+          id: productId,
+          title: product.title || product.name || "Care Product",
+          price: product.price !== undefined ? String(product.price) : "£0.00",
+          rating: product.rating || "4.9",
+          category: product.category || "Care Supplies",
+          seller: product.seller || "Verified Care Supplier",
+          imageBg: product.imageBg || "bg-slate-100",
+          imageUrl: product.imageUrl || product.photos?.[0],
+          quantity: quantityToAdd,
+        },
+      ];
     }
     saveCart(updatedCart);
     return true;

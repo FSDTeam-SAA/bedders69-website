@@ -10,6 +10,9 @@ import {
   Building2,
   Zap,
   CheckCircle2,
+  Tag,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import membershipApi from "../api/membershipApi";
 import { PackageItem } from "../types/membership.types";
@@ -25,6 +28,10 @@ export const MembershipView = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [loginNotice, setLoginNotice] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -166,6 +173,11 @@ export const MembershipView = () => {
 
   const handlePlanAction = async (planId: string) => {
     setSelectedPlanId(planId);
+    setAppliedCoupon(null);
+    setCouponError("");
+    setCouponInput("");
+    setIsSuccess(false);
+
     const auth = await fetch("/api/auth/me").then((response) =>
       response.json(),
     );
@@ -182,24 +194,89 @@ export const MembershipView = () => {
       }, 1400);
       return;
     }
-    setIsProcessing(true);
-    const response = await fetch(
-      `/api/membership/checkout/${encodeURIComponent(planId)}`,
-      { method: "POST" },
-    );
-    const payload = await response.json().catch(() => ({}));
-    setIsProcessing(false);
-    const checkoutUrl = payload?.data?.checkoutUrl;
-    if (response.ok && checkoutUrl) window.location.assign(checkoutUrl);
-    else setIsModalOpen(true);
+
+    setIsModalOpen(true);
   };
 
-  const handleConfirmPlan = () => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter a coupon code");
+      return;
+    }
+
+    setIsValidatingCoupon(true);
+    setCouponError("");
+
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: code,
+          category: "SUBSCRIPTION",
+          amount: selectedPlan?.price || 0,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAppliedCoupon(null);
+        setCouponError(data?.message || "Invalid coupon code");
+      } else if (data?.data) {
+        setAppliedCoupon(data.data);
+        setCouponInput("");
+        setCouponError("");
+      }
+    } catch {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError("");
+    setCouponInput("");
+  };
+
+  const handleConfirmPlan = async () => {
+    if (!selectedPlan) return;
+    if (selectedPlan.price <= 0) {
+      setIsProcessing(true);
+      setTimeout(() => {
+        setIsProcessing(false);
+        setIsSuccess(true);
+      }, 1200);
+      return;
+    }
+
     setIsProcessing(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch(
+        `/api/membership/checkout/${encodeURIComponent(selectedPlan.id)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            couponCode: appliedCoupon?.couponCode || undefined,
+          }),
+        },
+      );
+      const payload = await response.json().catch(() => ({}));
       setIsProcessing(false);
-      setIsSuccess(true);
-    }, 1200);
+      const checkoutUrl = payload?.data?.checkoutUrl;
+      if (response.ok && checkoutUrl) {
+        window.location.assign(checkoutUrl);
+      } else {
+        setCouponError(payload?.message || "Checkout failed");
+      }
+    } catch {
+      setIsProcessing(false);
+      setCouponError("Failed to initiate checkout");
+    }
   };
 
   return (
@@ -462,10 +539,24 @@ export const MembershipView = () => {
                   <h3 className="text-2xl font-bold text-[#1B2C54] mt-1">
                     {selectedPlan.name}
                   </h3>
-                  <div className="flex items-baseline gap-1 mt-2">
-                    <span className="text-3xl font-extrabold text-slate-800">
-                      £{selectedPlan?.price}
-                    </span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    {appliedCoupon ? (
+                      <>
+                        <span className="text-xl line-through text-slate-400">
+                          £{selectedPlan?.price}
+                        </span>
+                        <span className="text-3xl font-extrabold text-[#2D6A9F]">
+                          £{Math.max(0, (selectedPlan?.price || 0) - (appliedCoupon.totalDiscount || 0)).toFixed(2)}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                          Save £{appliedCoupon.totalDiscount.toFixed(2)} ({appliedCoupon.discountValue}% off)
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-3xl font-extrabold text-slate-800">
+                        £{selectedPlan?.price}
+                      </span>
+                    )}
                     <span className="text-xs text-slate-500 font-medium">
                       {selectedPlan?.period}
                     </span>
@@ -488,6 +579,74 @@ export const MembershipView = () => {
                           <span>{f}</span>
                         </div>
                       ))}
+                  </div>
+                )}
+
+                {/* Coupon Code Section */}
+                {selectedPlan?.price > 0 && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-xs font-bold text-slate-700 block mb-2">
+                      Have a Coupon Code?
+                    </span>
+
+                    {appliedCoupon ? (
+                      <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Tag className="size-4 text-emerald-600" />
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-xs text-emerald-800">
+                                {appliedCoupon.couponCode}
+                              </span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                {appliedCoupon.appliesTo}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-emerald-600 font-medium">
+                              {appliedCoupon.discountValue}% Off applied
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="p-1 rounded-full text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                          title="Remove Coupon"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleApplyCoupon} className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponInput}
+                            onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            placeholder="Enter coupon code"
+                            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs uppercase focus:outline-none focus:border-[#2D6A9F] font-semibold"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isValidatingCoupon || !couponInput.trim()}
+                            className="px-4 py-2 bg-[#2D6A9F] hover:bg-[#20527F] disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            {isValidatingCoupon ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              "Apply"
+                            )}
+                          </button>
+                        </div>
+
+                        {couponError && (
+                          <div className="flex items-center gap-1.5 p-2 bg-red-50 text-red-600 rounded-xl text-[11px] font-semibold">
+                            <AlertCircle className="size-3.5 shrink-0" />
+                            <span>{couponError}</span>
+                          </div>
+                        )}
+                      </form>
+                    )}
                   </div>
                 )}
 

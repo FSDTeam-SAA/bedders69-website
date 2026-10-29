@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, CheckCircle2, Tag, X, AlertCircle } from "lucide-react";
 import { PlanType, PricingPlan } from "../types/choose-plan.types";
 
 const PLANS: PricingPlan[] = [
@@ -52,6 +52,52 @@ export const ChoosePlanView = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = couponCodeInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Please enter a coupon code");
+      return;
+    }
+    setIsValidatingCoupon(true);
+    setCouponError("");
+    try {
+      const planPrice = selectedPlan === "premium" ? 49 : selectedPlan === "business" ? 149 : 50;
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: code,
+          category: "SUBSCRIPTION",
+          amount: planPrice,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAppliedCoupon(null);
+        setCouponError(data?.message || "Invalid coupon code");
+      } else if (data?.data) {
+        setAppliedCoupon(data.data);
+        setCouponCodeInput("");
+        setCouponError("");
+      }
+    } catch {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError("");
+    setCouponCodeInput("");
+  };
 
   useEffect(() => {
     if (isExternalRole) {
@@ -152,7 +198,11 @@ export const ChoosePlanView = () => {
         if (loginRes.ok) {
           const loginData = await loginRes.json();
           if (membershipPlanId) {
-            const checkoutRes = await fetch(`/api/membership/checkout/${encodeURIComponent(membershipPlanId)}`, { method: "POST" });
+            const checkoutRes = await fetch(`/api/membership/checkout/${encodeURIComponent(membershipPlanId)}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ couponCode: appliedCoupon?.couponCode || undefined }),
+            });
             const checkoutData = await checkoutRes.json().catch(() => ({}));
             const checkoutUrl = checkoutData?.data?.checkoutUrl;
             if (checkoutRes.ok && checkoutUrl) {
@@ -319,6 +369,70 @@ export const ChoosePlanView = () => {
               </div>
             );
           })}
+
+          {/* Coupon Input Section for Paid Plans */}
+          {(selectedPlan !== "free" || membershipPlanId) && (
+            <div className="mt-2 pt-4 border-t border-slate-100 flex flex-col gap-2">
+              <span className="text-xs font-semibold text-slate-700">Have a subscription coupon?</span>
+              {appliedCoupon ? (
+                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Tag className="size-4 text-emerald-600" />
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-emerald-800">
+                          {appliedCoupon.couponCode}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                          {appliedCoupon.appliesTo}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 font-medium">
+                        {appliedCoupon.discountValue}% discount applied
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="p-1 rounded-full text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCodeInput}
+                      onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                      placeholder="Enter promo code"
+                      className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-xs uppercase focus:outline-none focus:border-cyan-700 font-semibold"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={isValidatingCoupon || !couponCodeInput.trim()}
+                      className="px-4 py-2 bg-cyan-700 hover:bg-cyan-800 disabled:opacity-60 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      {isValidatingCoupon ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <div className="flex items-center gap-1.5 p-2 bg-red-50 text-red-600 rounded-lg text-[11px] font-semibold">
+                      <AlertCircle className="size-3.5 shrink-0" />
+                      <span>{couponError}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Bottom Actions Bar */}
