@@ -1,0 +1,12 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "Course Q&A | The Care Directory" };
+const questions = [
+  ["How do I find a course?", "Return to the course list and use the search box to look for a course by title or topic. You can also scroll through the full list. If there is a specific course you need that is not shown, please get in touch with us directly."],
+  ["What do the listed duration and CPD units mean?", "These are the estimated study hours and Continuing Professional Development credits awarded upon completion. Always check the course provider's website to confirm the most up-to-date information before enrolling."],
+  ["How many attempts do I get if I fail a course?", "You have up to three attempts to pass each course. If you need further attempts after that, please email us with your phone number so we can discuss your options."],
+  ["How do I enrol?", "Each course shows clear enrolment instructions from the provider. If you don't see an enrolment option, please contact us and we'll guide you through the next steps."],
+  ["Are the prices and course details guaranteed to be current?", "Course information is subject to change. We recommend confirming the latest price, course content, and suitability directly with the provider before completing your enrolment."],
+];
+export default function CoursesFaqPage() { return <main className="min-h-screen bg-white text-[#202c42]"><header className="border-b border-[#dfe6ee] py-5"><div className="mx-auto w-[min(900px,calc(100%-32px))]"><Link className="font-bold text-[#087e9b] hover:underline" href="/Courses">← Back to courses</Link></div></header><div className="mx-auto w-[min(900px,calc(100%-32px))] py-10"><h1 className="mb-2 text-4xl font-extrabold">Course Q&amp;A</h1><p className="mb-8 text-[#637184]">Find answers to common questions about our courses and how they work.</p>{questions.map(([question, answer]) => <section key={question} className="border-t border-[#dfe6ee] py-6"><h2 className="mb-2 text-lg font-extrabold">{question}</h2><p className="text-[#526276]">{answer}</p></section>)}<section className="mt-8 rounded-lg border-l-4 border-[#087e9b] bg-[#f2f8ff] p-6"><h2 className="mb-2 text-xl font-extrabold">Still have a question?</h2><p className="text-[#526276]">Contact us at <a className="font-semibold text-[#087e9b]" href="mailto:courses@thecaredirectory.co.uk">courses@thecaredirectory.co.uk</a> — we&apos;re happy to help.</p></section></div></main>; }

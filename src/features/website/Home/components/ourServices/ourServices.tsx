@@ -81,7 +81,7 @@ const OurServices = () => {
           })}
 
           <Link
-            href="/"
+            href="/Courses"
             className="group col-span-2 flex min-h-40 items-center justify-center gap-5 rounded-xl bg-white px-5 py-4 shadow-[2px_4px_9px_0px_rgba(0,0,0,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(0,0,0,0.1)] border border-slate-100/80 hover:border-emerald-200 md:order-none"
           >
             <div className="flex size-24 shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-105 sm:size-28">
